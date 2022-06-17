@@ -1,0 +1,135 @@
+<!--
+ * @Descripttion: 
+ * @version: 
+ * @Author: houqiangxie
+ * @Date: 2022-04-29 22:15:19
+ * @LastEditors: houqiangxie
+ * @LastEditTime: 2022-05-05 14:57:19
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+    <title>video player</title>
+    <!-- 腾讯视频播放器插件 -->
+    <link href="https://web.sdk.qcloud.com/player/tcplayer/release/v4.5.1/tcplayer.min.css" rel="stylesheet" />
+    <!--如果需要在 Chrome 和 Firefox 等现代浏览器中通过 H5 播放 Webrtc 视频，需要在 tcplayer.vx.x.x.min.js 之前引入 TXLivePlayer-x.x.x.min.js。-->
+    <!--有些浏览器环境不支持 Webrtc，播放器会将 Webrtc 流地址自动转换为 HLS 格式地址，因此快直播场景同样需要引入hls.min.x.xx.xm.js。-->
+    <script src="https://web.sdk.qcloud.com/player/tcplayer/release/v4.5.1/libs/TXLivePlayer-1.2.0.min.js"></script>
+    <!--如果需要在 Chrome 和 Firefox 等现代浏览器中通过 H5 播放 HLS 格式的视频，需要在 tcplayer.vx.x.x.min.js 之前引入 hls.min.x.xx.xm.js。-->
+    <script src="https://web.sdk.qcloud.com/player/tcplayer/release/v4.5.1/libs/hls.min.0.13.2m.js"></script>
+    <!--播放器脚本文件-->
+    <script src="https://web.sdk.qcloud.com/player/tcplayer/release/v4.5.1/tcplayer.v4.5.1.min.js"></script>
+  </head>
+  <style>
+    html,
+    body,
+    video {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+    video,
+    audio {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+    }
+    .vjs-menu-content {
+      display: none !important;
+    }
+    /* .video-box{
+        width:400px;
+        height:200px;
+    }
+    video{
+        width:100%;
+        height:100%;
+    } */
+  </style>
+  <body>
+    <!-- <video src="" preload="auto" controls></video>
+    <audio src="" preload="auto" controls></audio> -->
+    <video id="player-container-id" class="" preload="auto" playsinline webkit-playsinline></video>
+  </body>
+</html>
+<script>
+  let videoPlayer = null;
+  var events = [
+    'loadstart',
+    'suspend',
+    'abort',
+    'error',
+    'emptied',
+    'stalled',
+    'loadedmetadata',
+    'loadeddata',
+    'canplay',
+    'canplaythrough',
+    'playing',
+    'waiting',
+    'seeking',
+    'seeked',
+    'ended',
+    'durationchange',
+    'timeupdate',
+    'progress',
+    'play',
+    'pause',
+    'ratechange',
+    'resize',
+    'volumechange',
+  ];
+  const loadVideo = () => {
+    // const params = new URLSearchParams(window.location.hash.replace('#\/', '?'));
+    // console.log('params: ', params);
+    // console.log('params: ', params.get('url'));
+    const videoUrl = window.location.hash.replace('#\/', '');
+    if (!videoPlayer) {
+      videoPlayer = TCPlayer('player-container-id', {
+        autoplay: true,
+        controls: 'system', //default||'' 显示默认控件，none 不显示控件，system 移动端显示系统控件
+        x5_player: true,
+        x5_type: 'h5-page',
+        x5_fullscreen: true,
+      }); // player-container-id 为播放器容器 ID，必须与 html 中一致
+      events.forEach(function (val, i) {
+        videoPlayer.on(val, function () {
+          window.parent.videoCallback(val);
+          // switch (val) {
+          //   case 'loadstart':
+          //     // if (showLoading.value) loadingInstance = ElLoading.service({ fullscreen: true, background: 'rgba(0, 0, 0, 0.1)', text: 'loading' });
+          //     break;
+          //   case 'progress':
+          //     // loadingInstance?.close();
+          //     break;
+          //   case 'error':
+          //     // loadingInstance?.close();
+          //     // ElMessage.error('视频加载失败');
+          //     break;
+          //   default:
+          //     break;
+          // }
+        });
+      });
+    }
+    videoPlayer.src(videoUrl); // url 播放地址
+  };
+
+  window.onhashchange = () => {
+    loadVideo();
+  };
+  window.onload = () => {
+    const playerContainerId = document.getElementById('player-container-id');
+    playerContainerId.style.width = document.body.offsetWidth + 'px';
+    playerContainerId.style.height = document.body.offsetHeight + 'px';
+    loadVideo();
+  };
+</script>

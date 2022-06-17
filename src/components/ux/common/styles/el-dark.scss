@@ -1,0 +1,185 @@
+// ↓↓↓ 可复用样式往下穿透给子组件使用 ↓↓↓
+// ? @version 0.0.6
+:deep(.ux-dark-el-input) {
+  .el-input__wrapper {
+    padding: 0;
+  }
+  .el-input__inner {
+    height: 36px;
+    line-height: 36px;
+    font-size: 14px;
+    font-family: SourceHanSansCN-Regular, SourceHanSansCN;
+    font-weight: 400;
+    text-indent: 15px;
+    // color: #ffffff;
+    // border: 1px solid #2d6bab;
+    // background: rgba(24, 127, 215, 0.2);
+    &::placeholder {
+      font-size: 14px;
+      font-family: SourceHanSansCN-Regular, SourceHanSansCN;
+      font-weight: 400;
+    }
+  }
+  .el-input__icon {
+    line-height: 36px;
+  }
+}
+// TODO
+:deep(.ux-dark-el-btn) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80px;
+  height: 36px;
+  font-size: 16px;
+  font-family: SourceHanSansCN-Regular, SourceHanSansCN;
+  font-weight: 400;
+  color: #2bb0f0;
+  border: 1px solid #2d6bab;
+  background: transparent;
+  &:focus,
+  &:hover {
+    color: #2bb0f0;
+    border-color: #2d6bab;
+    background: transparent;
+  }
+}
+// TODO
+:deep(.ux-dark-el-table) {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #2d6bab;
+  background-color: transparent;
+  &::before {
+    display: none;
+  }
+  // tbody row hover
+  &.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
+    background: rgba(24, 127, 215, 0.2);
+  }
+  // 多级表头
+  &.el-table--group::after,
+  // 带边框表格
+  &.el-table--border::after {
+    content: unset;
+  }
+  table {
+    tr {
+      background: rgba(24, 127, 215, 0.1);
+      &:last-child {
+        td {
+          border-bottom: none;
+        }
+      }
+      th {
+        padding: 0;
+        border-color: #2d6bab !important;
+        background: rgba(24, 127, 215, 0.3) !important;
+        &:last-child {
+          border-right: none;
+        }
+        .cell {
+          font-size: 16px;
+          font-family: SourceHanSansCN-Medium, SourceHanSansCN;
+          font-weight: 500;
+          background: linear-gradient(180deg, #eeeeee 0%, #4dc5ff 100%);
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+      }
+      td {
+        padding: 0;
+        font-size: 14px;
+        font-family: SourceHanSansCN-Medium, SourceHanSansCN;
+        font-weight: 500;
+        color: #ffffff;
+        border-color: #2d6bab;
+        &:last-child {
+          border-right: none;
+        }
+      }
+    }
+  }
+  .el-table__body-wrapper {
+    flex: 1 1;
+    table {
+      height: 100%;
+    }
+  }
+}
+// TODO
+:deep(.ux-dark-el-pagination) {
+  padding-right: 0;
+  .btn-prev,
+  .el-pager li,
+  .el-pager li:last-child,
+  .el-pager li.active,
+  .btn-next {
+    min-width: 28px !important;
+    min-height: 28px !important;
+    line-height: 26px !important;
+    font-size: 16px !important;
+    color: #ffffff !important;
+    border: 1px solid #2d95ea;
+    background-color: transparent !important;
+  }
+  .el-pager li.active {
+    background: #1c8be2 !important;
+  }
+  .btn-next {
+    margin-right: 0 !important;
+  }
+}
+// TODO
+:deep(.ux-dark-el-radio) {
+  .is-active,
+  .is-focus {
+    span {
+      color: #ffffff;
+      border-color: #2d6bab;
+      background-color: #1c8be2;
+    }
+  }
+  span {
+    padding: 9px 12px;
+    font-size: 16px;
+    font-family: SourceHanSansCN-Regular, SourceHanSansCN;
+    font-weight: 400;
+    color: #2bb0f0;
+    border-color: #2d6bab !important;
+    background: rgba(24, 127, 215, 0.2);
+  }
+}
+:deep(.ux-dark-el-tree) {
+  background: transparent;
+  // 第一级子节点
+  & > .el-tree-node {
+    & > .el-tree-node__content {
+      & > .el-tree-node__expand-icon {
+        color: #454b5b;
+      }
+      & > .el-tree-node__label {
+        font-weight: 900;
+        color: #454b5b;
+      }
+    }
+  }
+  .el-tree-node__content {
+    height: 30px;
+    background: transparent;
+    // 箭头
+    .el-tree-node__expand-icon {
+      font-size: 18px;
+    }
+    // 文本
+    .el-tree-node__label {
+      font-size: 14px;
+      color: #647080;
+    }
+  }
+  .el-tree-node__content:hover,
+  .el-tree-node:focus > .el-tree-node__content {
+    background: #dedede;
+  }
+}
+// ↑↑↑ 可复用样式往下穿透给子组件使用 ↑↑↑
