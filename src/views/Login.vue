@@ -30,7 +30,6 @@
 <script lang="ts" setup>
 // 公钥通常用于加密会话密钥、验证数字签名，或加密可以用相应的私钥解密的数据
 import { get, post } from '@/utils/fetch/fetch';
-import { User, Lock, Picture } from '@element-plus/icons-vue';
 import CryptoJS from 'crypto-js';
 import { darkTheme } from 'naive-ui'
 import { useStorage } from 'vue3-storage';

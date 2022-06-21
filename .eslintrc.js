@@ -3,12 +3,9 @@
  * @version:
  * @Author: houqiangxie
  * @Date: 2022-03-10 12:24:16
- * @LastEditors: Please set LastEditors
- * @LastEditTime: 2022-05-02 15:05:17
+ * @LastEditors: houqiangxie
+ * @LastEditTime: 2022-06-21 10:53:32
  */
-// module.exports = {
-//   extends: ['vue-global-api'],
-// };
 module.exports = {
   env: {
     node: true,
@@ -16,7 +13,7 @@ module.exports = {
     es6: true,
     commonjs: true,
   },
-  extends: ['prettier', 'prettier/vue', 'vue-global-api'],
+  extends: ['prettier', 'prettier/vue'],
   globals: {
     Atomics: 'readonly',
     SharedArrayBuffer: 'readonly',

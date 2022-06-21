@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-23 10:20:59
  * @LastEditors: houqiangxie
- * @LastEditTime: 2022-06-10 17:55:51
+ * @LastEditTime: 2022-06-20 18:32:13
  */
 import { createRouter, createWebHashHistory, createWebHistory, RouteRecordRaw } from 'vue-router';
 import permission from './permission'
@@ -41,15 +41,6 @@ const routes: Array<RouteRecordRaw> = [
     children: indexChildren,
   },
 
-  {
-    path: "/test",
-    name: "Test",
-    component: () => import("@/views/system/test.vue"),
-    meta: {
-      requiresAuth: false,
-      hiddenNavBar: true,
-    },
-  },
   {
     path: "/:pathMatch(.*)*",
     redirect: { name: "HomeIndex" },

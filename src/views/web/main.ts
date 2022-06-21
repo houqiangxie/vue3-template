@@ -4,12 +4,11 @@
  * @Author: houqiangxie
  * @Date: 2022-03-10 12:24:17
  * @LastEditors: houqiangxie
- * @LastEditTime: 2022-06-17 09:52:08
+ * @LastEditTime: 2022-06-21 10:53:43
  */
 import 'virtual:windi.css';
 // import * as echarts from 'echarts';
 import { createApp } from 'vue';
-import 'vue-global-api';
 import { createPinia } from 'pinia';
 import router from '@/router/index';
 import emitter from '@/utils/emitter';
