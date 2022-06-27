@@ -46,21 +46,5 @@
     "vite-plugin-windicss": "^1.8.4",
     "vue-tsc": "^0.29.8",
     "windicss": "^3.5.4"
-  },
-  "vite": {
-    "optimizeDeps": {
-      "include": [
-        "@babel/types",
-        "crypto-js",
-        "echarts",
-        "echarts-liquidfill",
-        "mitt",
-        "pinia",
-        "vue",
-        "vue-global-api",
-        "vue-router",
-        "vue3-storage"
-      ]
-    }
   }
 }
