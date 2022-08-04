@@ -45,22 +45,6 @@
     "vite-plugin-vue-images": "^0.6.1",
     "vite-plugin-windicss": "^1.8.7",
     "vue-tsc": "^0.29.8",
-    "windicss": "^3.5.6"
-  },
-  "vite": {
-    "optimizeDeps": {
-      "include": [
-        "@babel/types",
-        "crypto-js",
-        "echarts",
-        "echarts-liquidfill",
-        "mitt",
-        "pinia",
-        "vue",
-        "vue-global-api",
-        "vue-router",
-        "vue3-storage"
-      ]
-    }
+    "windicss": "^3.5.4"
   }
 }
