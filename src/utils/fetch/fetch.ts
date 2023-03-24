@@ -1,5 +1,5 @@
 import { Cfetch, interceptors } from "./interceptor";
-import { useStorage } from "vue3-storage";
+import { useStorage } from "ux-storage";
 import { deepClone } from "../common";
 const storage = useStorage();
 import { useCommonStore } from "@/store/common";

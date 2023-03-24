@@ -4,11 +4,10 @@
  * @Author: houqiangxie
  * @Date: 2022-05-24 10:57:49
  * @LastEditors: houqiangxie
- * @LastEditTime: 2022-06-07 14:54:57
+ * @LastEditTime: 2023-03-24 13:29:03
 -->
 <template>
-    <div>
-        <img src="@/assets/images/main.png" alt="" class="w-full h-40">
+    <div>app
     </div>
 </template>
 

@@ -1,5 +1,5 @@
 import { routeConfig } from '@/utils/global';
-import router from '@/router';
+import router from '@/router/web';
 import { startHandleEvent } from '@/service/instruction';
 import { kmUnitFormat } from '@/utils/utils';
 import mapSdk from '@/utils/map/mapSdk';

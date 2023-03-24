@@ -1,19 +1,16 @@
 import { defineConfig, loadEnv, UserConfigExport, ConfigEnv, searchForWorkspaceRoot } from 'vite';
+import { fileURLToPath, URL } from "node:url";
 import vue from '@vitejs/plugin-vue';
 import { resolve, join } from "path";
-import { writeFileSync, existsSync, promises } from "fs";
 import Components from 'unplugin-vue-components/vite';
 import vueJsx from '@vitejs/plugin-vue-jsx';
-import html from "vite-plugin-html";
-// import legacy from '@vitejs/plugin-legacy'
+import {createHtmlPlugin} from "vite-plugin-html";
 import viteCompression from 'vite-plugin-compression';
 import {NaiveUiResolver,} from "unplugin-vue-components/resolvers";
 import AutoImport from 'unplugin-auto-import/vite';
 import WindiCSS from 'vite-plugin-windicss';
-import ViteImages from 'vite-plugin-vue-images';
-import fs from "fs-extra";
-const pathResolve = (dir: string): string => resolve(__dirname, '.', dir);
-
+import Pages from 'vite-plugin-pages'
+import ReactivityTransform from "@vue-macros/reactivity-transform/vite";
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   // 环境变量
@@ -22,45 +19,60 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   const isDev = mode === 'dev';
   // vite插件
   const plugins = [
-    vue({
-      script: {
-        refSugar: true, //ref转换
-      },
-      template: {
-        compilerOptions: {
-          isCustomElement: (tag) => /^micro-app/.test(tag),
-        },
-      },
-      reactivityTransform: true, //解构保持响应式
-    }),
+    vue({}),
     vueJsx(), //jsx
+    ReactivityTransform(),
+    Pages({
+      dirs: [
+        { dir: "src/views/web", baseRoute: "/" },
+      ],
+      importMode:'async',
+      moduleId: "~webRoutes",
+      extensions:['vue'],
+      extendRoute(route, parent) {
+        return {
+          ...route,
+          meta: { ...(route.meta||{}),auth:false },
+        }
+      }
+    }),
+    Pages({
+      dirs: [
+        { dir: "src/views/app", baseRoute: "" },
+      ],
+      importMode:'async',
+      moduleId: "~appRoutes",
+      extensions:['vue'],
+      extendRoute(route, parent) {
+        return {
+          ...route,
+          meta: { ...(route.meta||{}),auth:false },
+        }
+      }
+    }),
     /**
      *  注入环境变量到html模板中
      *  如在  .env文件中有环境变量  VITE_APP_APP_TITLE=admin
      *  则在 html模板中  可以这样获取  <%- VITE_APP_APP_TITLE %>
      *  文档：  https://github.com/anncwb/vite-plugin-html
      */
-    html({
-      inject: {
-        data: {
-          env: env,
-        },
-      },
-      minify: true,
-    }),
+    // createHtmlPlugin({
+    //   inject: {
+    //     data: {
+    //       env: env,
+    //     },
+    //   },
+    //   minify: true,
+    // }),
     // elementUi组件自动引入
     Components({
-      resolvers: [
-        NaiveUiResolver(),
-      ],
+      resolvers: [NaiveUiResolver()],
       dts: "src/components.d.ts",
     }),
     // 自动引入
     AutoImport({
       imports: ["vue", "vue-router", "pinia"],
-      resolvers: [
-        NaiveUiResolver(),
-      ],
+      resolvers: [NaiveUiResolver()],
       // 可以选择auto-import.d.ts生成的位置，使用ts建议设置为'src/auto-import.d.ts'
       dts: "src/auto-import.d.ts",
     }),
@@ -76,131 +88,12 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
     //   // 指定symbolId格式
     //   symbolId: 'icon-[name]'
     // })
-    // ViteImages({
-    //   // dirs: ['src/assets/moduleImages'], // 指明图片存放目录
-    // }),
-    (function (options) {
-      const packageJsonPath = join(process.cwd(), "package.json");
-      const field = "vite";
-      return {
-        name: "vite-plugin-package-config",
-        async config() {
-          if (!existsSync(packageJsonPath)) {
-            return;
-          }
-
-          try {
-            const packageJson: Record<string, any> = JSON.parse(
-              await promises.readFile(packageJsonPath, "utf-8")
-            );
-            const extend = packageJson[field];
-            if (!extend) {
-              return;
-            }
-            return extend;
-          } catch (e) {}
-        },
-        api: {
-          options: {
-            packageJsonPath,
-            field,
-          },
-        },
-      };
-    })() as any,
-    (function () {
-      return {
-        name: "vite-plugin-optimize-persist",
-        apply: "serve",
-        configureServer(server) {
-          
-          const vitePluginPackageConfigPlugin = server.config.plugins.find(
-            (plugin) => plugin.name === "vite-plugin-package-config"
-          );
-          const pkgConfig = vitePluginPackageConfigPlugin?.api.options;
-
-          if (!pkgConfig)
-            throw new Error(
-              '[vite-config-optimize-persist] plugin "vite-plugin-package-config" not found, have you installed it ?'
-            );
-
-          const { packageJsonPath, field } = pkgConfig;
-
-          let optimizeDepsMetadata:
-            | { optimized: Record<string, string> }
-            | undefined = server._ssrExternals;
-          const forceIncluded = server.config?.optimizeDeps?.include || [];
-          let newDeps: string[] = [];
-          let timer: NodeJS.Timeout;
-
-          function update() {
-            newDeps = Object.keys(optimizeDepsMetadata?.optimized || {})
-            .filter((dep) => !forceIncluded.includes(dep))
-            clearTimeout(timer);
-            timer = setTimeout(write, 1000);
-          }
-
-          async function write() {
-            if (!newDeps.length) return;
-            const pkg = await fs.readJSON(packageJsonPath);
-            pkg[field] = pkg[field] || {};
-            const extend = pkg[field];
-            extend.optimizeDeps = extend.optimizeDeps || {};
-            extend.optimizeDeps.include = Array.from(
-              new Set([...(extend.optimizeDeps.include || []), ...newDeps])
-            );
-            extend.optimizeDeps.include.sort();
-            server.watcher.unwatch(packageJsonPath);
-            await fs.writeJSON(packageJsonPath, pkg, { spaces: 2 });
-            server.watcher.add(packageJsonPath);
-          }
-
-          
-          Object.defineProperty(server, "_optimizeDepsMetadata", {
-            get() {
-              return optimizeDepsMetadata;
-            },
-            set(v) {
-              optimizeDepsMetadata = v;
-              update();
-            },
-          });
-        },
-      };
-    })() as any,
   ];
 
   if (!isDev) {
     plugins.push(
       // gzip插件，打包压缩代码成gzip  文档： https://github.com/anncwb/vite-plugin-compression
       viteCompression(),
-      (function () {
-        let basePath = "";
-        return {
-          name: "vite:micro-app",
-          apply: "build",
-          configResolved(config) {
-            basePath = `${config.base}${config.build.assetsDir}/`;
-          },
-          writeBundle(options, bundle) {
-            for (const chunkName in bundle) {
-              if (Object.prototype.hasOwnProperty.call(bundle, chunkName)) {
-                const chunk = bundle[chunkName];
-                if (chunk.fileName && chunk.fileName.endsWith(".js")) {
-                  chunk.code = chunk.code.replace(
-                    /(from|import\()(\s*['"])(\.\.?\/)/g,
-                    (all, $1, $2, $3) => {
-                      return all.replace($3, new URL($3, basePath));
-                    }
-                  );
-                  const fullPath = join(options.dir, chunk.fileName);
-                  writeFileSync(fullPath, chunk.code);
-                }
-              }
-            }
-          },
-        };
-      })() as any
     );
   }
   return defineConfig({
@@ -231,7 +124,12 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
       },
     },
     resolve: {
-      alias: [{ find: "@", replacement: pathResolve("src") }],
+      alias: [
+        {
+          find: "@",
+          replacement: fileURLToPath(new URL("./src", import.meta.url)),
+        },
+      ],
     },
     base: env.VITE_APP_BUILD_URL, // 设置打包路径   base打包环境需要绝对地址，否则打包替换url时候会报错
     build: {
@@ -251,7 +149,7 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
       rollupOptions: {
         input: {
           main: resolve(__dirname, "index.html"),
-          // system: resolve(__dirname, 'system/index.html'),
+          app: resolve(__dirname, "app/index.html"),
         },
         output: {
           manualChunks(id) {

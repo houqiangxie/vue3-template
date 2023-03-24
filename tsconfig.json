@@ -16,7 +16,7 @@
       // 用于设置模块名到基于baseUrl的路径映射
       "@/*": ["src/*"]
     },
-    "types": ["vite/client", "unplugin-vue-define-options"]
+    "types": ["vite/client", "unplugin-vue-define-options","@vue-macros/reactivity-transform/macros-global"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "windi.config.ts","declare", "src/plugin/vite-plugin-package-config.js", "src/plugin/vite-plugin-optimize-persist.js"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "windi.config.ts","declare"]
 }

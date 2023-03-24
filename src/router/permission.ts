@@ -6,7 +6,7 @@
  * @LastEditors: houqiangxie
  * @LastEditTime: 2022-05-30 14:50:41
  */
-import { useStorage } from 'vue3-storage';
+import { useStorage } from 'ux-storage';
 const storage = useStorage();
 import { useCommonStore } from '@/store/common';
 import {Router} from 'vue-router'
