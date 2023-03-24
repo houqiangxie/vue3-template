@@ -4,12 +4,11 @@
  * @Author: houqiangxie
  * @Date: 2022-05-23 10:20:59
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-03-24 13:33:21
+ * @LastEditTime: 2023-03-24 17:09:12
  */
 import { createRouter, createWebHashHistory, createWebHistory, RouteRecordRaw } from 'vue-router';
 import permission from './permission'
 import webRoutes from '~webRoutes'
-console.log('webRoutes: ', webRoutes);
 const routes: Array<RouteRecordRaw> = [
   {
     path: "/login",
