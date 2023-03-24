@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-25 11:37:54
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-03-24 17:07:08
+ * @LastEditTime: 2023-03-24 17:24:46
 -->
 <template>
     <div class="w-full p-5 bg-white common-form" :class="{'hide-border':disabledHideBorder}">
@@ -29,7 +29,7 @@
                     <n-grid x-gap="12" :cols="item.key&&item.key.length">
                         <template v-for="(it,i) in item.key" :key="i">
                             <n-form-item-gi   :path="it" :rule="setRule(item,i)" v-if="!(item?.bind?.[i].hidden)">
-                                <component class="w-full" :is="componentList[item.component&&item.component[i]||'NInput']" :type="item.type&&item.type[i]||'input'" v-model:value="formModel[item.component == 'NDatePicker' ? (it + 'value') : it]" v-model:formatted-value="formModel[it]" :clearable="true" :options="item.options&&item.options[i]" v-bind="item?.bind?.[i]||{}" v-on="{ ...(item?.on?.[i]??{}) }"></component>
+                                <component class="w-full" :is="item.bind?.[i]?.renderComponent ? RenderTsx(item.bind?.[i]?.renderComponent(item, formModel, formModel[it])) : componentList[item.component&&item.component[i]||'NInput']" :type="item.type&&item.type[i]||'input'" v-model:value="formModel[item.component == 'NDatePicker' ? (it + 'value') : it]" v-model:formatted-value="formModel[it]" :clearable="true" :options="item.options&&item.options[i]" v-bind="item?.bind?.[i]||{}" v-on="{ ...(item?.on?.[i]??{}) }"></component>
                             </n-form-item-gi>
                         </template>
                     </n-grid>
