@@ -32,7 +32,7 @@
 import { get, post } from '@/utils/fetch/fetch';
 import CryptoJS from 'crypto-js';
 import { darkTheme } from 'naive-ui'
-import { useStorage } from 'vue3-storage';
+import { useStorage } from 'ux-storage';
 import { loadFull } from "tsparticles";
 import { useCommonStore } from '@/store/common';
 const commonStore=useCommonStore()

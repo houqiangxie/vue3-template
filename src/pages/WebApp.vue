@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-03-10 12:24:17
  * @LastEditors: houqiangxie
- * @LastEditTime: 2022-06-15 16:41:10
+ * @LastEditTime: 2023-03-24 13:29:50
 -->
 <template>
   <n-config-provider :theme="lightTheme" :locale="zhCN" :date-locale="dateZhCN" :theme-overrides="themeOverrides">
@@ -18,7 +18,7 @@
           <div class="absolute top-0 left-0 w-full h-[60px] border-b flex justify-between items-center	" v-if="!route.meta.hiddenNavBar">
             <div class='flex'>
               <img src="@/assets/images/logo.png" style="height:50px; margin-top:4px; margin-left:6px;">
-              <p class="text-2xl leading-[60px] text-[#333399] font-bold">深圳市应急管理综合平台</p>
+              <p class="text-2xl leading-[60px] text-[#333399] font-bold"></p>
             </div>
           </div>
           <n-dropdown :options="userDropDownOptions" :on-select="userDropSelect">
@@ -38,7 +38,7 @@ import { lightTheme, zhCN, dateZhCN, GlobalThemeOverrides } from 'naive-ui';
 // @ts-ignore：无法被执行的代码的错误
 import customTheme from '@/assets/nativeCustomTheme/customTheme.json';
 import { useCommonStore } from '@/store/common';
-import { useStorage } from 'vue3-storage';
+import { useStorage } from 'ux-storage';
 const storage = useStorage()
 const commonStore = useCommonStore();
 const themeOverrides: GlobalThemeOverrides = customTheme;
