@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-25 11:37:54
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-03-30 11:20:23
+ * @LastEditTime: 2023-03-31 09:33:34
 -->
 <template>
     <div class="w-full p-5 bg-white common-form" :class="{ 'hide-border': disabledHideBorder }">
@@ -84,6 +84,22 @@ interface ConfigItem {
     bindItem?: Record<string, any> //bind到formItem的属性（class等） 
     renderComponent?: ((item: any, formData: any, curData: any) => any) //自定義render函數渲染組件
 }
+//组件使用方法
+// const configItem:ConfigItem = {
+//     title: '文字',
+//     key: 'key',
+//     required: false,
+//     notValidate: false,
+//     hidden: false,
+//     component: 'NInput',
+//     options: [{label:'33',value:'33'}], //select,tree等下拉list
+//     type: 'input', //日期组件或textarea等组件type
+//     on: {'updateValue':()=>{}},//bind到动态组件的事件，需要什么属性参考组件文档
+//     bind: {disabled:true,pattern:/^.+$/,},//bind到动态组件的属性，需要什么属性参考组件文档  pattern表单校验正则，patternType默认校验的正则（validateReg）fileType自定义文件校验类型
+//     slot: {default:(item: any, formModel: any, curData: any)=>(<div>3333</div>)},//动态组件slot插槽  插槽内容可以为string,html tsx
+//     bindItem: {class:'col-span-2'} //bind到formItem的属性（class等） 
+//     renderComponent: ((item: any, formModel: any, curData: any) => any) //自定義render函數渲染組件 内容可以为string,html tsx
+// }
 const { config = [], cols = 2, formModel = {}, basePath = '', disabledHideBorder = false } = defineProps<{
     config: Array<ConfigItem>
     cols?: Number, //grid布局列
