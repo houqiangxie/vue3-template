@@ -116,6 +116,11 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
           secure: false,
           rewrite: (path) => path.replace(/^\/gateway/, ""),
         },
+        "/api": {
+          target: "http://uav.szius.com:1985/",
+          changeOrigin: true, // 是否跨域
+          secure: false,
+        },
         "/myResource": {
           target: "http://172.17.30.184:8888",
           changeOrigin: true, // 是否跨域

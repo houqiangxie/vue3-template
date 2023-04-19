@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-03-10 12:24:17
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-03-24 13:11:06
+ * @LastEditTime: 2023-03-30 21:25:25
 -->
 <template>
   <n-config-provider :theme="lightTheme" :locale="zhCN" :date-locale="dateZhCN" :theme-overrides="themeOverrides">
@@ -39,6 +39,7 @@ import { lightTheme, zhCN, dateZhCN, GlobalThemeOverrides } from 'naive-ui';
 import customTheme from '@/assets/nativeCustomTheme/customTheme.json';
 import { useCommonStore } from '@/store/common';
 import { useStorage } from 'ux-storage';
+import fetchJsonp from 'fetch-jsonp'
 const storage = useStorage()
 const commonStore = useCommonStore();
 const themeOverrides: GlobalThemeOverrides = customTheme;
@@ -84,7 +85,24 @@ function changeActive(item:any) {
 }
 // const userName = computed(()=>commonStore.token?.userName)
 
-const getUserName = ()=>storage.getStorageSync('token')?.userName??'-'
+const getUserName = () => storage.getStorageSync('token')?.userName ?? '-'
+try {
+  
+
+
+fetchJsonp('/api/v1/streams')
+  .then(function (response) {
+    console.log('response: ', response);
+    return response.json()
+  }).then(function (json) {
+    console.log('parsed json', json)
+  }).catch(function (ex) {
+    console.log('parsing failed', ex)
+  })
+} catch (error) {
+  console.log('error: ', error);
+
+}
 </script>
 
 <style lang="scss">
