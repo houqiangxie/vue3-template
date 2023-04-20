@@ -4,18 +4,18 @@
  * @Author: houqiangxie
  * @Date: 2022-05-23 10:20:59
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-03-24 13:28:21
+ * @LastEditTime: 2023-04-02 15:20:29
 -->
 <template>
   <div class="flex h-full pt-[60px]">
-    <n-menu
+    <!-- <n-menu
       ref="menuInstRef"
       class="w-[200px] bg-[#2c3350]"
       :collapsed-width="64"
       :collapsed-icon-size="22"
       :options="menuOptions"
       v-model:value="selectKey"
-    />
+    /> -->
     <router-view class="h-full overflow-auto flex-1 bg-[#f4f4f4]"></router-view>
   </div>
 </template>

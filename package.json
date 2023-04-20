@@ -1,6 +1,7 @@
 {
   "name": "vue3-template",
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite --mode dev",
     "test": "vite build --mode test",
@@ -8,8 +9,10 @@
     "build": "vite build --mode build"
   },
   "dependencies": {
+    "@micro-zoe/micro-app": "^1.0.0-beta.2",
     "@turf/turf": "^6.5.0",
     "@types/file-saver": "^2.0.5",
+    "@vitejs/plugin-basic-ssl": "^1.0.1",
     "@vitejs/plugin-vue-jsx": "^3.0.1",
     "crypto-js": "^4.1.1",
     "dayjs": "^1.11.7",
@@ -33,6 +36,7 @@
     "vite-plugin-pages": "^0.29.0",
     "vue": "^3.2.47",
     "vue-router": "^4.1.6",
+    "wujie-vue3": "^1.0.14",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

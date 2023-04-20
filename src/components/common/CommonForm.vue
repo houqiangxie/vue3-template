@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-25 11:37:54
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-03-31 09:33:34
+ * @LastEditTime: 2023-04-02 15:07:51
 -->
 <template>
     <div class="w-full p-5 bg-white common-form" :class="{ 'hide-border': disabledHideBorder }">
@@ -150,7 +150,7 @@ const setRule = (item: any, index?: number): Record<string, any> => {
 
     let value: any = formModel[item.key];
     if (index) value = formModel[item.key[index]];
-    const bind = item?.bind?.[(index) as number] || item.bind
+    const bind = item?.bind?.[(index) as number] || item.bind||{}
 
     let fileType: string = 'string'
     switch (item.component) {

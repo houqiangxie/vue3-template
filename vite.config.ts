@@ -11,6 +11,7 @@ import AutoImport from 'unplugin-auto-import/vite';
 import WindiCSS from 'vite-plugin-windicss';
 import Pages from 'vite-plugin-pages'
 import ReactivityTransform from "@vue-macros/reactivity-transform/vite";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   // 环境变量
@@ -19,36 +20,38 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   const isDev = mode === 'dev';
   // vite插件
   const plugins = [
-    vue({}),
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => /^micro-app/.test(tag),
+        },
+      },
+    }),
     vueJsx(), //jsx
     ReactivityTransform(),
     Pages({
-      dirs: [
-        { dir: "src/views/web", baseRoute: "/" },
-      ],
-      importMode:'async',
+      dirs: [{ dir: "src/views/web", baseRoute: "/" }],
+      importMode: "async",
       moduleId: "~webRoutes",
-      extensions:['vue'],
+      extensions: ["vue"],
       extendRoute(route, parent) {
         return {
           ...route,
-          meta: { ...(route.meta||{}),auth:false },
-        }
-      }
+          meta: { ...(route.meta || {}), auth: false },
+        };
+      },
     }),
     Pages({
-      dirs: [
-        { dir: "src/views/app", baseRoute: "" },
-      ],
-      importMode:'async',
+      dirs: [{ dir: "src/views/app", baseRoute: "" }],
+      importMode: "async",
       moduleId: "~appRoutes",
-      extensions:['vue'],
+      extensions: ["vue"],
       extendRoute(route, parent) {
         return {
           ...route,
-          meta: { ...(route.meta||{}),auth:false },
-        }
-      }
+          meta: { ...(route.meta || {}), auth: false },
+        };
+      },
     }),
     /**
      *  注入环境变量到html模板中
@@ -106,9 +109,10 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
       // 设置代理，根据我们项目实际情况配置
       open: false, // 设置服务启动时是否自动打开浏览器
       cors: true, // 允许跨域
-      port: 80,
+      port: 81,
       hmr: { overlay: false },
       host: "0.0.0.0",
+      // https: true,
       proxy: {
         "/gateway": {
           target: "http://172.17.30.184:8899/",
@@ -121,6 +125,18 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
           changeOrigin: true, // 是否跨域
           secure: false,
         },
+        "/rsxt": {
+          target: "https://172.17.30.184:8888",
+          changeOrigin: true, // 是否跨域
+          secure: false,
+          rewrite: (path) => path.replace(/^\/rsxt/, ""),
+        },
+        // "/assets": {
+        //   target: "https://172.17.30.184:8888/",
+        //   changeOrigin: true, // 是否跨域
+        //   secure: false,
+        //   // rewrite: (path) => path.replace(/^\/yjdw/, ""),
+        // },
       },
     },
     resolve: {
