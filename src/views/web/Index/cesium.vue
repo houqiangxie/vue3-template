@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2023-04-19 20:33:26
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-04-24 15:53:42
+ * @LastEditTime: 2023-05-24 16:48:46
 -->
 <template>
     <div id="map3d" class="w-full h-full">
@@ -14,12 +14,14 @@
 
 <script setup lang="ts">
 import BaiduImageryProvider from '@/utils/providers/BaiduImageryProvider';
+import addMarker from '@/utils/map/cesium3d.mjs'
+
 //加载geojson，
-const files = import.meta.glob("../../../../public/jdb/*.json",{eager:true});
+const files = import.meta.glob("/src/assets/jdb/*.json",{eager:true});
 console.log('files: ', files);
 const mapJson = {}; // 轮廓线数据
 Object.keys(files).forEach((key) => {
-    const name = key.replace(/\.\.\/\.\.\/\.\.\/\.\.\/public\/jdb\/|.json/g, '');
+    const name = key.replace(/\/src\/src\/jdb\/|.json/g, '');
   mapJson[name] = files[key].default || files[key];
 });
 console.log('mapJson: ', mapJson);
@@ -115,7 +117,12 @@ const loadMap = async() => {
     //     }
 
     // }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
-    let positions = Cesium.Cartesian3.fromDegreesArrayHeights([108, 32, 10, 109, 32, 10]);
+    // let positions = Cesium.Cartesian3.fromDegreesArrayHeights([108, 32, 10, 109, 32, 10]);
+    let list = {
+        list: [{ lng: 114.1135659351782, lat: 22.602362676248773 }, { lng: 114.114359351782, lat: 22.6042676248773 }],
+        name: '视频'
+    }
+    addMarker.add(list)
     // window.viewer.entities.add({
     //     polyline: {
     //         positions: positions,
