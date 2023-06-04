@@ -19,7 +19,7 @@
     "mitt": "^3.0.0",
     "pinia": "^2.0.33",
     "ux-indexdb-store": "^0.0.5",
-    "ux-storage": "^1.0.6",
+    "ux-storage": "^1.0.7",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-pages": "^0.29.0",
     "vue": "^3.2.47",
