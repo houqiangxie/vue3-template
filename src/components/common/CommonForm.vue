@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-25 11:37:54
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-04-02 15:07:51
+ * @LastEditTime: 2023-06-20 10:02:09
 -->
 <template>
     <div class="w-full p-5 bg-white common-form" :class="{ 'hide-border': disabledHideBorder }">
@@ -52,7 +52,7 @@
 
 <script setup lang="tsx">
 import { NRate, NButton } from 'naive-ui'
-import RenderComponent from './Render.tsx'
+import RenderComponent from './Render'
 const RenderTsx = (data: any) => {
     return h(RenderComponent, { render: data })
 }

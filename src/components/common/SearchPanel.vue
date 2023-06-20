@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-24 18:46:42
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-03-30 11:21:16
+ * @LastEditTime: 2023-06-20 09:36:24
 -->
 <template>
     <div class="w-full p-5 search-box bg-white relative rounded-t-lg">
@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import RenderComponent from './Render.tsx'
+import RenderComponent from './Render'
 const RenderTsx = (data: any) => {
     return h(RenderComponent, { render: data })
 }

@@ -1,10 +1,13 @@
-import { Cfetch, interceptors } from "./interceptor";
-import { useStorage } from "ux-storage";
-import { deepClone } from "../common";
-const storage = useStorage();
-import { useCommonStore } from "@/store/common";
-import { da } from "date-fns/locale";
+import { Cfetch, interceptors } from './interceptor';
+import { deepClone } from '../common';
+import {showFailToast } from "vant";
+import {db,local} from 'ux-web-storage'
+import { useCommonStore } from '@/store/common';
 const commonStore = useCommonStore();
+window.addEventListener("unhandledrejection", e => {
+  console.log( e.reason);
+  e.preventDefault();
+});
 /**
  * config 自定义配置项
  * @param withoutCheck 不使用默认的接口状态校验，直接返回 response
@@ -23,25 +26,27 @@ let configDefault: any = {
   timeout: 10000,
   mode: "cors",
   cache: "no-cache",
+  cached: false,
+  catchExpires:null,
 };
 
 // 根据请求方式，url等生成请求key
-function generateReqKey(config: any) {
-  const { method, url, body } = config;
-  return [method, url, new URLSearchParams(body)].join("&");
+function generateReqKey(config:any) {
+  const { method, url, body,requestKey } = config;
+  return requestKey||[method, url, new URLSearchParams(body)].join("&");
 }
 
 const pendingRequest = new Map();
 function addPendingRequest(config: any) {
-  const requestKey = config.requestKey ?? generateReqKey(config);
-  if (!pendingRequest.has(requestKey)) {
-    pendingRequest.set(requestKey, true);
-  }
+  const requestKey =generateReqKey(config);
+    if (!pendingRequest.has(requestKey)) {
+      pendingRequest.set(requestKey, true);
+    }
 }
 
-function removePendingRequest(config: any) {
-  const requestKey = config.requestKey ?? generateReqKey(config);
-  if (!config.requestKey) config.generateReqKey = requestKey;
+function removePendingRequest(config:any) {
+  const requestKey = generateReqKey(config);
+  if (!config.requestKey) config.requestKey = requestKey;
   if (pendingRequest.has(requestKey)) {
     const cancelToken = pendingRequest.get(requestKey);
     if (cancelToken) {
@@ -51,30 +56,38 @@ function removePendingRequest(config: any) {
     pendingRequest.delete(requestKey);
   }
 }
-
-// 添加请求拦截器
-interceptors.request.use((config: any = {}) => {
-  commonStore.showLoading = true;
-  const token = storage.getStorageSync("token")?.token;
-  const controller = new AbortController();
-  const { signal } = controller;
-  let configTemp = Object.assign(
-    {
-      responseType: "json",
-      headers: {
-        "Content-Type": config.formData
-          ? "application/x-www-form-urlencoded"
-          : "application/json;charset=utf-8",
-        // authorization: `Bearer ${token}`,
-        token,
+  
+  
+  
+  // 添加请求拦截器
+  interceptors.request.use(async(config:any = {}) => {
+    if(!config.hideLoading) commonStore.showLoading = true;
+    const token = local.token?.token;
+    const controller = new AbortController();
+    const { signal } = controller;
+    let configTemp = Object.assign(
+      {
+        responseType: "json",
+        headers: {
+          "Content-Type":config.formData
+            ? "application/x-www-form-urlencoded":
+            config.fileUpload?'multipart/form-data;'
+            : "application/json;charset=utf-8",
+          // authorization: `Bearer ${token}`,
+          token
+        },
       },
-    },
-    { signal, ...configDefault, ...config, controller }
-  );
-  if (config.isNotAuth) delete configTemp.headers["token"];
-
-  removePendingRequest(configTemp); // 检查是否存在重复请求，若存在则取消已发的请求
-  addPendingRequest(configTemp); // 把当前请求信息添加到pendingRequest对象中
+      { signal, ...configDefault, ...config, controller }
+    );
+    if (config.isNotAuth) delete configTemp.headers['token'];
+    if (config.fileUpload) delete configTemp.headers["Content-Type"];
+    removePendingRequest(configTemp); // 检查是否存在重复请求，若存在则取消已发的请求
+    addPendingRequest(configTemp); // 把当前请求信息添加到pendingRequest对象中
+    if (config.cached) {//缓存数据
+      const requestKey = generateReqKey(config)
+      const res = await db.get(requestKey)
+      if(res) return Promise.resolve({cached:true,requestKey,res});
+    }
   return configTemp;
 });
 
@@ -84,28 +97,25 @@ interceptors.response.use(
     // TODO: 这里是复制一份结果处理，在这里可以做一些操作
     commonStore.showLoading = false;
     const res: any = await resultReduction(response);
-    removePendingRequest(response.requestConfig); // 从pendingRequest对象中移除请求
-    if (
-      (response.status == 401 || res.code == 401) &&
-      !response.requestConfig.withoutCheck
-    ) {
-      const { hash, pathname } = window.location;
-      if (!hash.includes("returnUrl"))
-        window.location.href =
-          pathname +
-          "#/login?returnUrl=" +
-          encodeURIComponent(hash.replace("#", ""));
+    removePendingRequest(await response.requestConfig); // 从pendingRequest对象中移除请求
+    if ((response.status == 401 || res.code == 401) && !response.requestConfig.withoutCheck) {
+      const { hash, pathname } = location;
+      if (!hash.includes('returnUrl')) {
+        if (window.eventCenterForAppEmergencyTeam) parent.location.replace((location.ancestorOrigins[0]||'')+'#/login')
+        else location.href =  pathname + '#/login?returnUrl=' + encodeURIComponent(hash);;
+      }
       return res;
     }
-
+    if (res.code == 403) window.history.go(-1);
     // HTTP 状态码 2xx 状态入口，data.code 为 200 表示数据正确，无任何错误
     if (response.status >= 200 && response.status < 300 && res.code != 401) {
-      if (
-        res.code !== 0 &&
-        res.message &&
-        !response.requestConfig.withoutCheck
-      ) {
-        window.$message.error(res.message);
+      if (res.code !== 0 && res.message && !response.requestConfig.withoutCheck) {
+        if (location.pathname.includes('app')) showFailToast(res.code !== 500 ? res.message : '接口异常，请联系管理员!');
+        else window.$message.error(res.code !== 500 ? res.message : '接口异常，请联系管理员!');
+      }
+      if (response.requestConfig.cached) {
+        const requestKey = generateReqKey(response.requestConfig)
+        db.set(requestKey,deepClone(res),response.requestConfig.catchExpires)
       }
       return res;
     } else {
@@ -115,24 +125,26 @@ interceptors.response.use(
         return Promise.reject(response);
       }
       // return Promise.reject(response);
-      if (res.code !== 0 && res.message) {
-        window.$message.error(res.message);
+        if (res.code !== 0 && res.code !== 500 && res.message) {
+        if(location.pathname.includes('app'))showFailToast(res.message);
+        else window.$message.error(res.message);
       }
+      
     }
   },
   async ({ error, requestConfig }: any) => {
+    if (error?.cached) return Promise.resolve(deepClone(error.res));
     // 响应拦截进来隐藏loading效果，此处采用延时处理是合并loading请求效果，避免多次请求loading关闭又开启
     commonStore.showLoading = false;
-    if (!requestConfig.abortRequest)
-      window.$message.error("服务器异常，请稍后再试"); //非手动阻止请求抛出异常
+    if (!requestConfig.abortRequest)window.$message.error("服务器异常，请稍后再试"); //非手动阻止请求抛出异常
     removePendingRequest(requestConfig || {}); // 从pendingRequest对象中移除请求
     // return Promise.reject(new Error(error));
-  }
+  },
 );
 
 // 结果处理，fetch请求响应结果是promise，还得处理
-async function resultReduction(response: any) {
-  let res = "";
+async function resultReduction(response:any) {
+  let res = '';
   switch (response.requestConfig.responseType) {
     case "json":
       res = await response.json();
@@ -143,6 +155,9 @@ async function resultReduction(response: any) {
     case "blob":
       res = await response.blob();
       break;
+    case "arrayBuffer":
+      res = await response.arrayBuffer();
+      break;
     default:
       res = await response?.json();
       break;
@@ -150,57 +165,50 @@ async function resultReduction(response: any) {
   return await res;
 }
 
-function request(
-  method: string,
-  path: string,
-  data: { [prop: string]: any },
-  config: any = {}
-) {
-  const paramsData = deepClone(data);
-  for (const key in paramsData) {
-    if (!paramsData[key]) {
-      delete paramsData[key];
+function request(method: string, path: string, data: { [prop: string]: any }, config: any = {}): Promise<{ data: any, code: number }> {
+  if (!config.fileUpload) {
+    const paramsData = deepClone(data);
+    for (const key in paramsData) {
+      if (paramsData[key] === null) {
+        delete paramsData[key];
+      }
     }
+    data = paramsData;
   }
-  data = paramsData;
-  path = (config?.unwanted ? "" : import.meta.env.VITE_APP_baseUrl) + path;
+  path = (config?.unwanted ? '' : import.meta.env.VITE_APP_baseUrl) + path;
   let myInit = {
     method,
     ...configDefault,
     ...config,
-    body: config.formData ? new URLSearchParams(data) : JSON.stringify(data),
+    body : config.fileUpload?data:(config.formData ? new URLSearchParams(data) : JSON.stringify(data))
   };
-  if (method === "GET") delete myInit.body;
-  let params = "";
-  if (data && (method === "GET" || config.joinUrl)) {
+  if (method==='GET') delete myInit.body
+  let params = '';
+  if (data&&(method === 'GET'||config.joinUrl)) {
     // 对象转url参数
-    params = (JSON.stringify(data) as any)
-      ?.replace(/:/g, "=")
-      ?.replace(/"/g, "")
-      ?.replace(/,/g, "&")
-      ?.match(/\{([^)]*)\}/)[1];
+    params =( JSON.stringify(data)as any)?.replace(/:/g, '=')?.replace(/"/g, '')?.replace(/,/g, '&')?.match(/\{([^)]*)\}/)[1];
   }
 
-  return Cfetch(params ? `${path}${params ? "?" : ""}${params}` : path, myInit);
+  return Cfetch(params ? `${path}${params ? "?" : ""}${params}`:path, myInit) as Promise<{data:any,code:number}>;
 }
 // get请求方法使用封装
-export function get(path = "", data = {}, config = {}) {
-  return request("GET", path, data, config);
+export function get(path = '', data = {}, config = {}) {
+  return request('GET', path, data, config);
 }
 
 // post请求方法使用封装
-export function post(path = "", data = {}, config = {}) {
-  return request("POST", path, data, config);
+export function post(path = '', data = {}, config = {}) {
+  return request('POST', path, data, config);
 }
 
 // put请求方法使用封装
-export function put(path = "", data = {}, config = {}) {
-  return request("PUT", path, data, config);
+export function put(path = '', data = {}, config = {}) {
+  return request('PUT', path, data, config);
 }
 
 // delete请求方法使用封装
-export function del(path = "", data = {}, config = {}) {
-  return request("DELETE", path, data, config);
+export function del(path = '', data = {}, config = {}) {
+  return request('DELETE', path, data, config);
 }
 
 export default {

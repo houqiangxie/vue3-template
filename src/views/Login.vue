@@ -1,7 +1,7 @@
 <template>
 <div class="login  w-screen h-screen relative">
-    <Particles id="tsparticles" class="login__particles" :particlesInit="particlesInit"
-                :particlesLoaded="particlesLoaded" :options="particles" />
+    <!-- <Particles id="tsparticles" class="login__particles" :particlesInit="particlesInit"
+                :particlesLoaded="particlesLoaded" :options="particles" /> -->
      <div class="loginForm w-[400px]  absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
        <n-config-provider :theme="darkTheme">
         <div class="text-center text-white text-2xl mb-15">应急管理队伍建设信息系统</div>
@@ -32,18 +32,17 @@
 import { get, post } from '@/utils/fetch/fetch';
 import CryptoJS from 'crypto-js';
 import { darkTheme } from 'naive-ui'
-import { useStorage } from 'ux-storage';
-import { loadFull } from "tsparticles";
+import { local } from 'ux-web-storage';
 import { useCommonStore } from '@/store/common';
 const commonStore=useCommonStore()
 
-const particlesInit = async (engine:any) => {
-    await loadFull(engine);
-}
+// const particlesInit = async (engine:any) => {
+//     await loadFull(engine);
+// }
 
-const particlesLoaded = async (container:any) => {
-    console.log("Particles container loaded", container);
-}
+// const particlesLoaded = async (container:any) => {
+//     console.log("Particles container loaded", container);
+// }
 
 // 加密方法
 function Encrypt(word) {
@@ -59,7 +58,6 @@ function Encrypt(word) {
 }
 const router = useRouter();
 const route = useRoute();
-const storage = useStorage();
 const codeUrl = ref('');
 const loginForm = ref()
 const form = reactive({
@@ -93,7 +91,7 @@ const loginSubmit = async () => {
     const res: any = await post ('/ManageUser/login', params)
     const  {code, data } = res
     if (code ===0) {
-      storage.setStorageSync('token', data);
+      local.token=data
       const returnUrl = route.query.returnUrl;
       window.$message.success('登录成功')
       let url = returnUrl;

@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-03-10 12:24:17
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-03-30 21:25:25
+ * @LastEditTime: 2023-06-20 10:19:28
 -->
 <template>
   <n-config-provider :theme="lightTheme" :locale="zhCN" :date-locale="dateZhCN" :theme-overrides="themeOverrides">
@@ -38,9 +38,8 @@ import { lightTheme, zhCN, dateZhCN, GlobalThemeOverrides } from 'naive-ui';
 // @ts-ignore：无法被执行的代码的错误
 import customTheme from '@/assets/nativeCustomTheme/customTheme.json';
 import { useCommonStore } from '@/store/common';
-import { useStorage } from 'ux-storage';
+import { local } from 'ux-web-storage';
 import fetchJsonp from 'fetch-jsonp'
-const storage = useStorage()
 const commonStore = useCommonStore();
 const themeOverrides: GlobalThemeOverrides = customTheme;
 const route:any = useRoute();
@@ -59,7 +58,7 @@ const userDropDownOptions:Array<{[prop:string]:string}> = [
 const userDropSelect = (key: string | number) => {
   if (key == 'logout') {
     router.push({ name: 'Login' })
-    storage.removeStorageSync('token')
+    local.clearItem('token')
   }
   
 }
