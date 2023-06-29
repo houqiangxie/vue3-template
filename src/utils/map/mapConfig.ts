@@ -1,6 +1,6 @@
 import AmapMercatorTilingScheme from '@/utils/providers/AmapMercatorTilingScheme';
 import clusterBackground from '@/assets/images/mapIcon/clusterBG.png';
-// const tiandituToken_env: string = import.meta.env.VITE_APP_TIANDITUTOKE;
+// const tiandituToken_env: string = import.meta.env.VITE_TIANDITUTOKE;
 const tiandituToken: string = '1518ed2cee89372f7a49a66fed009e8e';
 export const tencentKey: string = 'BUPBZ-X5BWU-LW6VQ-4Z2ZP-XGGW2-5AFQM';
 

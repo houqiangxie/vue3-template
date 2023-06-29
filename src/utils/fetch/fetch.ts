@@ -31,30 +31,41 @@ let configDefault: any = {
 };
 
 // 根据请求方式，url等生成请求key
-function generateReqKey(config:any) {
+const generateReqKey=(config:any)=> {
   const { method, url, body,requestKey } = config;
   return requestKey||[method, url, new URLSearchParams(body)].join("&");
 }
 
+// 请求配置map
 const pendingRequest = new Map();
-function addPendingRequest(config: any) {
+// 添加请求map
+const addPendingRequest=(config: any)=> {
   const requestKey =generateReqKey(config);
     if (!pendingRequest.has(requestKey)) {
-      pendingRequest.set(requestKey, true);
+      pendingRequest.set(requestKey, config);
     }
 }
-
-function removePendingRequest(config:any) {
-  const requestKey = generateReqKey(config);
+// 移除请求map
+const removePendingRequest = (config: any, requestKey?: string) => {
+  if(!requestKey)requestKey = generateReqKey(config);
   if (!config.requestKey) config.requestKey = requestKey;
   if (pendingRequest.has(requestKey)) {
     const cancelToken = pendingRequest.get(requestKey);
     if (cancelToken) {
-      config.abortRequest = true;
-      config.controller.abort();
+      cancelToken.abortRequest = true;
+      cancelToken.controller.abort();
     }
     pendingRequest.delete(requestKey);
   }
+}
+
+// 移除所有pending请求
+const removeAllPendingRequest = () => {
+  pendingRequest.forEach((source) => {
+      if (source) {
+        removePendingRequest(source)
+      }
+    })
 }
   
   
@@ -84,7 +95,7 @@ function removePendingRequest(config:any) {
     removePendingRequest(configTemp); // 检查是否存在重复请求，若存在则取消已发的请求
     addPendingRequest(configTemp); // 把当前请求信息添加到pendingRequest对象中
     if (config.cached) {//缓存数据
-      const requestKey = generateReqKey(config)
+      const requestKey = generateReqKey(configTemp)
       const res = await db.get(requestKey)
       if(res) return Promise.resolve({cached:true,requestKey,res});
     }
@@ -175,7 +186,7 @@ function request(method: string, path: string, data: { [prop: string]: any }, co
     }
     data = paramsData;
   }
-  path = (config?.unwanted ? '' : import.meta.env.VITE_APP_baseUrl) + path;
+  path = (config?.unwanted ? '' : import.meta.env.VITE_baseUrl) + path;
   let myInit = {
     method,
     ...configDefault,
@@ -216,5 +227,7 @@ export default {
   get,
   post,
   put,
-  delete: del,
+  del,
+  removePendingRequest,
+  removeAllPendingRequest
 };

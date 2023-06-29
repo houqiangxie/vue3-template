@@ -53,8 +53,8 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
     }),
     /**
      *  注入环境变量到html模板中
-     *  如在  .env文件中有环境变量  VITE_APP_APP_TITLE=admin
-     *  则在 html模板中  可以这样获取  <%- VITE_APP_APP_TITLE %>
+     *  如在  .env文件中有环境变量  VITE_APP_TITLE=admin
+     *  则在 html模板中  可以这样获取  <%- VITE_APP_TITLE %>
      *  文档：  https://github.com/anncwb/vite-plugin-html
      */
     // createHtmlPlugin({
@@ -150,10 +150,10 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
         },
       ],
     },
-    base: env.VITE_APP_BUILD_URL, // 设置打包路径   base打包环境需要绝对地址，否则打包替换url时候会报错
+    base: env.VITE_BUILD_URL, // 设置打包路径   base打包环境需要绝对地址，否则打包替换url时候会报错
     build: {
       target: "es2015",
-      outDir: env.VITE_APP_outputDir,
+      outDir: env.VITE_outputDir,
       assetsDir: "assets",
       assetsInlineLimit: 2048,
       cssCodeSplit: true,

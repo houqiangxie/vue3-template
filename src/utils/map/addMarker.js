@@ -25,7 +25,6 @@ class AddMarker {
   //   this.map = new Map()
   //   this.init()
   // }
-  static mark = new Map()
   static add({ list=[], type='billbord', name='default', icon=pointDefaultIcon, config, nodetail=false}){
     if(type === 'polygon'){
       return AddMarker.polygonFn({list, name, config, nodetail})
