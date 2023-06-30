@@ -13,7 +13,7 @@ import {
   mapAreaMidPoint,
   clusterBG,
 } from '@/utils/map/mapConfig';
-import { post, get } from '@/utils/fetch/fetch';
+import { post, get } from '@/utils/fetch';
 import CoordTransform from '@/utils/providers/CoordTransform.js';
 import * as turf from '@turf/turf';
 import { layerConfigurationParameters } from '@/utils/map/layerConfig';

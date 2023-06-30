@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-25 11:37:54
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-06-20 10:02:09
+ * @LastEditTime: 2023-06-29 15:16:51
 -->
 <template>
     <div class="w-full p-5 bg-white common-form" :class="{ 'hide-border': disabledHideBorder }">
@@ -14,8 +14,7 @@
                 <n-form-item class="col-span-1" :label="item.label || item.title"
                     :path="basePath + (typeof item.key == 'string' ? item.key : item.key?.[0])"
                     v-for="(item, index) in config" :key="index" :rule="setRule(item)"
-                    :show-feedback="typeof item.key == 'string' || !item.notValidate" v-bind="item.bindItem"
-                    v-show="!item.hidden">
+                    :show-feedback="((typeof item.key )== 'string')" v-show="!item.hidden" v-bind="item.bindItem">
                     <template #label>
                         <n-ellipsis class="w-full pr-2 "
                             :class="{ 'text-[#757575]': disabledHideBorder && item.bind && item.bind.disabled }">{{ item.label || item.title }}</n-ellipsis>

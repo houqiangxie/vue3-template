@@ -4,15 +4,10 @@
     v-show="visible"
     class="plot-box top-[150px] rounded-[8px] absolute right-5 p-[16px] pt-0 text-[#20a4f7] bg-[rgba(5,28,63,0.9)] z-10 w-[480px] h-[calc(100%-180px)]"
   >
-    <PublicHeader
-      class="expertDefinition-header border-[rgba(255,255,255,0.24)] border-b mb-[14px]"
-      titleName="地图标绘"
-      @closePopup="visible = false"
-    />
-    <!-- <div class="top relative mb-2">
+    <div class="top relative mb-2">
       <span class="title text-[20px]">地图标绘</span>
-      <el-icon class="rotate-45 transform cursor-pointer !absolute top-0 right-1" @click="visible = false"> <circle-plus /></el-icon>
-    </div> -->
+      <n-icon class="rotate-45 transform cursor-pointer !absolute top-0 right-1" @click="visible = false"> <circle-plus /></n-icon>
+    </div>
     <ul class="tabs rounded border-[1px] border-[#20a4f7] p-[4px] text-[14px] overflow-hidden">
       <li
         class="float-left leading-[32px] w-1/2 text-center cursor-pointer"
@@ -28,21 +23,18 @@
       <template v-if="tabsActive == 0">
         <div class="fileNameBox flex">
           <label class="el-form-item__label" style="width: 80px"><span class="text-[red] mr-1 align-middle">*</span>文件名称</label>
-          <el-input v-model="saveData.name" placeholder="请输入名称" size="large" clearable class="fileName" />
+          <n-input v-model="saveData.name" placeholder="请输入名称" size="large" clearable class="fileName" />
         </div>
         <div class="typeBox mb-[-16px]" v-if="visible">
           <div class="title-label">标绘类型</div>
-          <el-scrollbar width="100%" class="!h-[96px]">
+          <n-scrollbar width="100%" class="!h-[96px]">
             <ul>
               <li v-for="item in plotType" :key="item.type" @click="plotClick(item)" :class="{ active: item.label == activeItem.label }">
-                <!-- <img :src="item.icon" :alt="item.label"> -->
-                <svg class="icon-plot" aria-hidden="true">
-                  <use :xlink:href="'#icon-' + item.icon"></use>
-                </svg>
+                <SvgIcon :name="item.icon" />
                 <p>{{ item.label }}</p>
               </li>
             </ul>
-          </el-scrollbar>
+          </n-scrollbar>
         </div>
         <div class="styleBox" v-show="activeItem.type != 'shoushi'">
           <div class="title-label">样式管理</div>
@@ -52,7 +44,7 @@
         <div class="blockBox flex-1 overflow-hidden">
           <div class="title-label">图层管理</div>
           <div class="h-[calc(100%-80px)]">
-            <el-table
+            <n-data-table
               :data="saveData.data"
               style="width: 100%"
               empty-text="无数据"
@@ -94,7 +86,7 @@
                   <el-icon title="删除" style="color: #b74d57" @click="deleteSelect(row)"><delete /></el-icon>
                 </template>
               </el-table-column>
-            </el-table>
+            </n-data-table>
           </div>
         </div>
 
@@ -141,7 +133,7 @@
     </div>
   </div>
 
-  <el-dialog v-model="editVisible" custom-class="editPlot" title="修改" width="500px">
+  <n-modal v-model="editVisible" custom-class="editPlot" title="修改" width="500px">
     <PlotUnits :config="editStyleManage" :form-data="editData" :showItem="editData.showType" class="styleBox" />
     <template #footer>
       <span class="dialog-footer">
@@ -149,7 +141,7 @@
         <el-button type="primary" @click="editConfirm(editData)">确定</el-button>
       </span>
     </template>
-  </el-dialog>
+  </n-modal>
 </template>
 
 <script lang="ts" setup>
