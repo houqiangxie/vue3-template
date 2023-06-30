@@ -18,6 +18,21 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   const isDev = mode === 'dev';
   // vite插件
   const plugins = [
+  // 多页面history模式路由中间件
+    {
+      name: 'rewrite-middleware',
+      configureServer(serve) {
+        serve.middlewares.use((req, res, next) => {
+        for (const appName in serve.config.build.rollupOptions.input) {
+          if (req.url.startsWith(`/${appName}/`)) {
+            req.url = `/${appName}/`;
+            break;
+          }
+        }
+          next()
+        })
+      }
+    },
     vue({
       template: {
         compilerOptions: {

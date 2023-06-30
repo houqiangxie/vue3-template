@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-03-10 12:24:17
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-06-20 10:19:28
+ * @LastEditTime: 2023-06-30 09:21:13
 -->
 <template>
   <n-config-provider :theme="lightTheme" :locale="zhCN" :date-locale="dateZhCN" :theme-overrides="themeOverrides">
@@ -23,7 +23,7 @@
           </div>
           <n-dropdown :options="userDropDownOptions" :on-select="userDropSelect">
             <!-- <n-button>用户资料</n-button> -->
-            <div class="absolute top-0 right-5 h-15 flex items-center"><svg class="icon text-xl text-[#666666]" aria-hidden="true"><use xlink:href="#icon-zhanghao"></use></svg><span>{{getUserName()}}</span></div>
+            <div class="absolute top-0 right-5 h-15 flex items-center"><svg class="icon text-xl text-[#666666]" aria-hidden="true"><use xlink:href="#icon-zhanghao"></use></svg><span></span></div>
           </n-dropdown>
           <div class=" w-screen h-screen">
             <router-view></router-view>
@@ -80,28 +80,7 @@ const headlist = [
     key: '4'
   }
 ]
-function changeActive(item:any) {
-}
-// const userName = computed(()=>commonStore.token?.userName)
 
-const getUserName = () => storage.getStorageSync('token')?.userName ?? '-'
-try {
-  
-
-
-fetchJsonp('/api/v1/streams')
-  .then(function (response) {
-    console.log('response: ', response);
-    return response.json()
-  }).then(function (json) {
-    console.log('parsed json', json)
-  }).catch(function (ex) {
-    console.log('parsing failed', ex)
-  })
-} catch (error) {
-  console.log('error: ', error);
-
-}
 </script>
 
 <style lang="scss">

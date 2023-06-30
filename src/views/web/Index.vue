@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-23 10:20:59
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-06-20 10:28:17
+ * @LastEditTime: 2023-06-30 09:22:01
 -->
 <template>
   <div class="flex h-full pt-[60px]">
@@ -61,14 +61,14 @@ const route = useRoute();
 //   },
 // ]
 
-watch(selectKey,(val:string)=>{
-  if(route.name!=val)router.push({name:val})
-})
+// watch(selectKey,(val:string)=>{
+//   if(route.name!=val)router.push({name:val})
+// })
 
-onMounted(() => {
-  selectKey.value=route.name
-  menuInstRef.value?.showOption(selectKey.value)
-})
+// onMounted(() => {
+//   selectKey.value=route.name
+//   menuInstRef.value?.showOption(selectKey.value)
+// })
 
 
 </script>

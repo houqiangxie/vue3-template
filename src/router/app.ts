@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-23 10:20:59
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-03-24 13:32:17
+ * @LastEditTime: 2023-06-30 09:56:17
  */
 import { createRouter, createWebHashHistory, createWebHistory, RouteRecordRaw } from 'vue-router';
 import permission from './permission'
@@ -23,7 +23,7 @@ const routes: Array<RouteRecordRaw> = [
 ];
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory('/app'),
   routes, // short for `routes: routes`
 });
 permission(router)
