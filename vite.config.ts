@@ -33,6 +33,16 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
         })
       }
     },
+    {//自定义模块扩展
+      name: "vite-custom-block-plugin",
+      transform(code, id) {
+        if (/vue&type=custom-block/.test(id)) {
+          return `export default Comp => {
+            Comp.customBlock = ${code}
+          }`;
+        }
+      },
+    },
     vue({
       template: {
         compilerOptions: {
