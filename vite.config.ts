@@ -149,7 +149,7 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
           secure: false,
         },
         "/myResource": {
-          target: "http://172.17.30.184:8888",
+          target: "https://172.17.30.184:8888",
           changeOrigin: true, // 是否跨域
           secure: false,
         },

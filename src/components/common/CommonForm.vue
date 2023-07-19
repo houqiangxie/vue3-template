@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-25 11:37:54
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-06-29 15:16:51
+ * @LastEditTime: 2023-07-19 15:08:50
 -->
 <template>
     <div class="w-full p-5 bg-white common-form" :class="{ 'hide-border': disabledHideBorder }">
@@ -20,20 +20,22 @@
                             :class="{ 'text-[#757575]': disabledHideBorder && item.bind && item.bind.disabled }">{{ item.label || item.title }}</n-ellipsis>
                     </template>
                     <slot v-if="item.bind?.slotName" :name="item.bind.slotName" :row="item"></slot>
+                    <RenderComponent v-else-if="item.renderComponent" :data="()=>item.renderComponent?.(item, formModel, formModel[item.key as string])"></RenderComponent>
                     <component v-else-if="typeof item.key == 'string'" class="w-full"
-                        :is="item.renderComponent ? RenderTsx(item.renderComponent(item, formModel, formModel[item.key])) : componentList[item.component || 'NInput']"
+                        :is="componentList[item.component || 'NInput']"
                         :type="item.type || 'input'"
                         v-model:value="formModel[item.component == 'NDatePicker' ? (item.key + 'value') : item.key]"
                         v-model:formatted-value="formModel[item.key]" :clearable="true" :options="item.options"
                         v-bind="item.bind" v-on="{ ...item.on }">
                         <template #[si] v-for="(sl, si) in item?.slot" :key="si">
-                            <component :is="RenderTsx(sl(item, formModel, formModel[item.key]))"></component>
+                            <RenderComponent :data="()=>sl(item, formModel, formModel[item.key as string])"></RenderComponent>
                         </template>
                     </component>
                     <n-grid v-else x-gap="12" :cols="item.key && item.key.length">
                         <template v-for="(it, i) in item.key" :key="i">
                             <n-form-item-gi :path="it" :rule="setRule(item, i)" v-if="!(item?.bind?.[i].hidden)">
-                                <component class="w-full" :is="componentList[item.component && item.component[i] || 'NInput']"
+                                <RenderComponent v-if="item.bind?.[i]?.renderComponent" :data="()=>item.bind?.[i]?.renderComponent(item.bind[i],formModel,formModel[it])"></RenderComponent>
+                                <component v-else class="w-full" :is="componentList[item.component && item.component[i] || 'NInput']"
                                     :type="item.type && item.type[i] || 'input'"
                                     v-model:value="formModel[item.component == 'NDatePicker' ? (it + 'value') : it]"
                                     v-model:formatted-value="formModel[it]" :clearable="true"
@@ -51,9 +53,8 @@
 
 <script setup lang="tsx">
 import { NRate, NButton } from 'naive-ui'
-import RenderComponent from './Render'
-const RenderTsx = (data: any) => {
-    return h(RenderComponent, { render: data })
+const RenderComponent = (props:any) => {
+    return h(<>{props.data()}</>)
 }
 const themeOverridesConfig = {
     "common": {

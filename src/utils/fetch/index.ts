@@ -50,7 +50,7 @@ const removePendingRequest = (config: any, requestKey?: string) => {
   if(!requestKey)requestKey = generateReqKey(config);
   if (!config.requestKey) config.requestKey = requestKey;
   if (pendingRequest.has(requestKey)) {
-    const cancelToken = pendingRequest.get(requestKey);
+    const cancelToken = config||pendingRequest.get(requestKey);
     if (cancelToken) {
       cancelToken.abortRequest = true;
       cancelToken.controller.abort();

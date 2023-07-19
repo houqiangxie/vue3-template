@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-24 18:46:42
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-06-20 09:36:24
+ * @LastEditTime: 2023-07-19 15:15:05
 -->
 <template>
     <div class="w-full p-5 search-box bg-white relative rounded-t-lg">
@@ -13,15 +13,17 @@
                 <n-form-item :label="item.label || item.title" v-for="(item, index) in config" :key="index"
                     v-show="showAllSearchField || item.isSearch" v-bind="item.bindItem">
                     <slot v-if="item.bind?.slotName" :name="item.bind.slotName" :row="item"></slot>
+                    <RenderComponent v-else-if="item.renderComponent" :data="() => item.renderComponent?.(item, searchModel, searchModel[item.key as string])"></RenderComponent>
                     <component v-else-if="typeof item.key == 'string'" class="w-full"
-                        :is="item.renderComponent ? RenderTsx(item.renderComponent(item, formModel, formModel[item.key])) : componentList[item.component || 'NInput']"
+                        :is="componentList[item.component || 'NInput']"
                         v-model:value="searchModel[item.component == 'NDatePicker' ? (item.key + 'value') : item.key]"
                         v-model:formatted-value="searchModel[item.key]" :options="item.options" :type="item.type"
                         :clearable="true" v-bind="item.bind" v-on="{ ...item.on }"></component>
                     <n-grid v-else x-gap="12" :cols="item.key && item.key.length">
                         <n-form-item-gi v-for="(it, i) in item.key" :key="i">
+                            <RenderComponent v-if="item.bind?.[i]?.renderComponent" :data="item.bind?.[i]?.renderComponent"></RenderComponent>
                             <component class="w-full"
-                                :is="item.renderComponent ? RenderTsx(item.renderComponent(item, formModel, formModel[item.key])) : componentList[item.component && item.component[i] || 'NInput']"
+                                :is="componentList[item.component && item.component[i] || 'NInput']"
                                 :type="item.type && item.type[i] || 'input'"
                                 v-model:value="searchModel[item.component == 'NDatePicker' ? (it + 'value') : it]"
                                 :clearable="true" :options="item.options?.[i]" v-model:formatted-value="searchModel[it]"
@@ -48,10 +50,9 @@
     </div>
 </template>
 
-<script setup lang="ts">
-import RenderComponent from './Render'
-const RenderTsx = (data: any) => {
-    return h(RenderComponent, { render: data })
+<script  lang="tsx" setup>
+const RenderComponent = (props:any) => {
+    return h(<>{ props.data() } </>)
 }
 // 备注：当同一个label需要渲染多个组件，key,component，options,bind，bindItem等属性需要数组形式 bindItem:{showSlot:true,slotName:'name'}会优先渲染动态插槽
 interface ConfigItem {
