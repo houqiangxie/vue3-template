@@ -105,7 +105,7 @@ const loadPublicFile = (url: string): string => new URL(import.meta.url.replace(
  * @param target 源数据 
  * @returns  copyTarget
  */
-const deepClone=(target:any):any=> {
+export const deepClone=(target:any):any=> {
   if (target&&typeof target === "object") {
     const result:any = Array.isArray(target) ? [] : {};
     for (const key in target) {
@@ -125,5 +125,5 @@ const getConfigCol = (key: string,list:Array<{key:string}>): any => {
   return list.find(listItem=>listItem.key === key)??{}
 }
 
-export { exportXlsx, importXlsx, loadPublicFile, deepClone, getConfigCol };
+export { exportXlsx, importXlsx, loadPublicFile, getConfigCol };
 

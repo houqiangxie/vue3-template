@@ -203,31 +203,22 @@ function request(method: string, path: string, data: { [prop: string]: any }, co
   return Cfetch(params ? `${path}${params ? "?" : ""}${params}`:path, myInit) as Promise<{data:any,code:number}>;
 }
 // get请求方法使用封装
-export function get(path = '', data = {}, config = {}) {
-  return request('GET', path, data, config);
-}
+// export function get(path = '', data = {}, config = {}) {
+//   return request('GET', path, data, config);
+// }
 
-// post请求方法使用封装
-export function post(path = '', data = {}, config = {}) {
-  return request('POST', path, data, config);
-}
+// // post请求方法使用封装
+// export function post(path = '', data = {}, config = {}) {
+//   return request('POST', path, data, config);
+// }
 
-// put请求方法使用封装
-export function put(path = '', data = {}, config = {}) {
-  return request('PUT', path, data, config);
-}
+// // put请求方法使用封装
+// export function put(path = '', data = {}, config = {}) {
+//   return request('PUT', path, data, config);
+// }
 
-// delete请求方法使用封装
-export function del(path = '', data = {}, config = {}) {
-  return request('DELETE', path, data, config);
-}
+// // delete请求方法使用封装
+// export function del(path = '', data = {}, config = {}) {
+//   return request('DELETE', path, data, config);
+// }
 
-export default {
-  fetch: Cfetch,
-  get,
-  post,
-  put,
-  del,
-  removePendingRequest,
-  removeAllPendingRequest
-};
