@@ -4,9 +4,10 @@
  * @Author: houqiangxie
  * @Date: 2022-03-10 12:24:17
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-06-20 10:26:00
+ * @LastEditTime: 2023-10-31 19:51:20
  */
-import 'virtual:windi.css';
+// main.ts
+import 'virtual:uno.css';
 // import * as echarts from 'echarts';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';

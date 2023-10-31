@@ -7,9 +7,9 @@ import vueJsx from '@vitejs/plugin-vue-jsx';
 import viteCompression from 'vite-plugin-compression';
 import {NaiveUiResolver,} from "unplugin-vue-components/resolvers";
 import AutoImport from 'unplugin-auto-import/vite';
-import WindiCSS from 'vite-plugin-windicss';
 import Pages from 'vite-plugin-pages'
 import ReactivityTransform from "@vue-macros/reactivity-transform/vite";
+import UnoCSS from 'unocss/vite'
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   // 环境变量
@@ -103,7 +103,7 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
       dts: "src/auto-import.d.ts",
       dirs:['src/utils/**','src/store/**']
     }),
-    WindiCSS(),
+    UnoCSS(),
     /**
      *  把src/icons 下的所有svg 自动加载到body下，供组件使用
      *  类似于webpack中的svg-sprite-loader
@@ -214,6 +214,7 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
         scss: {
           additionalData: `
             @use "@/assets/scss/variables.scss" as *;
+            @import "@/assets/scss/common.scss";
           `,
         },
       },
