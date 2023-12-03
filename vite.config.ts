@@ -10,6 +10,7 @@ import AutoImport from 'unplugin-auto-import/vite';
 import Pages from 'vite-plugin-pages'
 import ReactivityTransform from "@vue-macros/reactivity-transform/vite";
 import UnoCSS from 'unocss/vite'
+import lightningcss from 'vite-plugin-lightningcss';
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   // 环境变量
@@ -115,6 +116,9 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
     //   // 指定symbolId格式
     //   symbolId: 'icon-[name]'
     // })
+    lightningcss({
+      browserslist: '>= 0.25%',
+    }),
   ];
 
   if (!isDev) {

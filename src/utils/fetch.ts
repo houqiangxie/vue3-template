@@ -35,6 +35,7 @@ const generateReqKey = (config: any) => {
 
 // 请求配置map
 const pendingRequest = new Map();
+const cacheRequestMap = new Map()
 // 添加请求map
 export const addPendingRequest = (config: any) => {
     const requestKey = generateReqKey(config);
@@ -110,10 +111,12 @@ async function request(method: string, path: string, data: { [prop: string]: any
     );
     if (config.isNotAuth) delete configTemp.headers['token'];
     if (config.fileUpload) delete configTemp.headers["Content-Type"];
-    removePendingRequest(configTemp); // 检查是否存在重复请求，若存在则取消已发的请求
+    // removePendingRequest(configTemp); // 检查是否存在重复请求，若存在则取消已发的请求
     addPendingRequest(configTemp); // 把当前请求信息添加到pendingRequest对象中
+    const requestKey = generateReqKey(configTemp)
+    // 共享promise
+    if (cacheRequestMap.has(requestKey)) return cacheRequestMap.get(requestKey)
     if (config.cached) {//缓存数据
-        const requestKey = generateReqKey(configTemp)
         const res = await db.get(requestKey)
         if (res) return Promise.resolve({ cached: true, requestKey, res }) as any;
     }
@@ -142,12 +145,13 @@ async function request(method: string, path: string, data: { [prop: string]: any
         params = (JSON.stringify(data) as any)?.replace(/:/g, '=')?.replace(/"/g, '')?.replace(/,/g, '&')?.match(/\{([^)]*)\}/)[1];
     }
 
-    return new Promise((resolve, reject) => {
+    const fetchPromise :any= new Promise((resolve, reject) => {
         fetch(params ? `${path}${params ? "?" : ""}${params}` : path, myInit).then(async response => {
             // TODO: 这里是复制一份结果处理，在这里可以做一些操作
             commonStore.showLoading = false;
             const res: any = await resultReduction(response);
             removePendingRequest(configTemp); // 从pendingRequest对象中移除请求
+            cacheRequestMap.delete(requestKey)
             if ((response.status == 401 || res.code == 401) && !configTemp.withoutCheck) {
                 const { hash, pathname } = location;
                 if (!hash.includes('returnUrl')) {
@@ -181,8 +185,12 @@ async function request(method: string, path: string, data: { [prop: string]: any
             commonStore.showLoading = false;
             if (!configTemp.abortRequest) window.$message.error("服务器异常，请稍后再试"); //非手动阻止请求抛出异常
             removePendingRequest(configTemp || {}); // 从pendingRequest对象中移除请求
+            cacheRequestMap.delete(requestKey)
         })
     })
+    cacheRequestMap.set(requestKey, fetchPromise)
+    return fetchPromise
+
 }
 // get请求方法使用封装
 export async function get(path = '', data = {}, config = {}) {
