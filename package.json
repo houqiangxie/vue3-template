@@ -34,7 +34,7 @@
     "@vue-macros/reactivity-transform": "^0.3.23",
     "eslint": "^8.51.0",
     "express": "^4.18.2",
-    "naive-ui": "^2.35.0",
+    "naive-ui": "^2.37.3",
     "sass": "^1.69.1",
     "typescript": "^5.2.2",
     "unocss": "^0.57.7",
