@@ -124,7 +124,7 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   if (!isDev) {
     plugins.push(
       // gzip插件，打包压缩代码成gzip  文档： https://github.com/anncwb/vite-plugin-compression
-      viteCompression({ deleteOriginFile :true}),
+      viteCompression({ deleteOriginFile :false}),
     );
   }
   return defineConfig({
