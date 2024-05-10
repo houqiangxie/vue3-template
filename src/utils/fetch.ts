@@ -211,3 +211,62 @@ export async function put(path = '', data = {}, config = {}) {
 export async function del(path = '', data = {}, config = {}) {
     return await request('DELETE', path, data, config);
 }
+
+
+// fetch stream 封装
+class FetchStream {
+    url = '';
+    requestInit = null;
+    onmessage = null;
+    ondone = null;
+    onerror = null;
+
+    constructor(options = {}) {
+        this.url = options.url;
+        this.requestInit = options.requestInit || {};
+        this.onmessage = options.onmessage || (() => { });
+        this.ondone = options.ondone || (() => { });
+        this.onerror = options.onerror || (() => { });
+        this.createFetchRequest();
+    }
+
+    createFetchRequest() {
+        fetch(this.url, {
+            method: 'POST',
+            ...this.requestInit
+        }).then(response => {
+            if (response.status === 200) {
+                return response.body;
+            } else {
+                // fetch() 返回的 Promise 不会被标记为 reject，即使响应的 HTTP 状态码是 404 或 500
+                return Promise.reject(response);
+            }
+        }).then(async (readableStream) => {
+            // 1. 创建 reader 读取流队列
+            const reader = readableStream.getReader();
+            // 2. 记录流队列中分块的索引
+            let index = 0;
+            while (true) {
+                // 3. 读取分块数据，返回一个 Promise
+                // （如果分块可用，Promise 返回 { value: theChunk, done: false } 形式）
+                // （如果流已关闭，Promise 返回 { value: undefined, done: true } 形式）
+                const { value, done } = await reader.read();
+                if (done) { // 响应流处理完成
+                    // 5. 流已关闭，执行外部结束逻辑
+                    this.ondone?.();
+                    break;
+                } else {
+                    // 4. 将分块数据转换为 string 交给外部处理函数使用
+                    const dataText = new TextDecoder('utf-8').decode(value);
+                    const data = dataText.split('\n\n').filter(Boolean); // response 响应的消息可能存在多个，以 \n\n 分割
+                    this.onmessage(data, index++);
+                }
+            }
+        }).catch(response => {
+            // ... error 处理
+            this.onerror?.(response);
+        });
+    }
+
+
+}
