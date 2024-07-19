@@ -6,7 +6,8 @@
     "dev": "vite --mode dev",
     "test": "vite build --mode test",
     "prod": "vite build --mode prod",
-    "build": "vite build --mode build"
+    "build": "vite build --mode build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@types/file-saver": "^2.0.5",

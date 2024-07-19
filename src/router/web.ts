@@ -4,7 +4,7 @@
  * @Author: houqiangxie
  * @Date: 2022-05-23 10:20:59
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-07-11 18:41:13
+ * @LastEditTime: 2024-07-19 10:01:55
  */
 import { createRouter, createWebHashHistory, createWebHistory, RouteRecordRaw } from 'vue-router';
 import permission from './permission'

@@ -4,10 +4,10 @@
  * @Author: houqiangxie
  * @Date: 2022-05-23 10:20:59
  * @LastEditors: houqiangxie
- * @LastEditTime: 2022-06-06 17:11:19
+ * @LastEditTime: 2024-07-19 09:25:54
  */
-var express = require('express');
-var proxy = require('express-http-proxy')
+import express from 'express';
+import proxy from 'express-http-proxy';
 
 
 const app = express();
@@ -20,12 +20,12 @@ app.all('*', function (req, res, next) {
     next();
 })
 
-app.use('/api', proxy('http://172.17.136.54:30022/', {
-    // forwardPath: function(req, res) {
-    //   debugger
-    //   return require('url').parse(req.url).path;
-    // }
-}))
+// app.use('/api', proxy('http://172.17.136.54:30022/', {
+//     // forwardPath: function(req, res) {
+//     //   debugger
+//     //   return require('url').parse(req.url).path;
+//     // }
+// }))
 
 app.use(express.static('dist'))
 

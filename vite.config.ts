@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv, UserConfigExport, ConfigEnv, searchForWorkspaceRoot } from 'vite';
+import { defineConfig, loadEnv, UserConfigExport, ConfigEnv, searchForWorkspaceRoot, splitVendorChunkPlugin } from 'vite';
 import { fileURLToPath, URL } from "node:url";
 import vue from '@vitejs/plugin-vue';
 import { resolve, join } from "path";
@@ -77,6 +77,19 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
         };
       },
     }),
+    // 批量读取组件信息
+    Pages({
+      dirs: [{ dir: "src/moduleComponents", baseRoute: "" }],
+      importMode: "async",
+      moduleId: "~moduleComponentsRoutes",
+      extensions: ["vue"],
+      // extendRoute(route, parent) {
+      //   return {
+      //     ...route,
+      //     meta: { ...(route.meta || {}), auth: false },
+      //   };
+      // },
+    }),
     /**
      *  注入环境变量到html模板中
      *  如在  .env文件中有环境变量  VITE_APP_TITLE=admin
@@ -119,12 +132,13 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
     lightningcss({
       browserslist: '>= 0.25%',
     }),
+    splitVendorChunkPlugin()
   ];
 
   if (!isDev) {
     plugins.push(
       // gzip插件，打包压缩代码成gzip  文档： https://github.com/anncwb/vite-plugin-compression
-      viteCompression({ deleteOriginFile :true}),
+      // viteCompression({ deleteOriginFile :true}),
     );
   }
   return defineConfig({
@@ -172,6 +186,21 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
         // },
       },
     },
+    preview: {
+      // 设置代理，根据我们项目实际情况配置
+      open: false, // 设置服务启动时是否自动打开浏览器
+      cors: true, // 允许跨域
+      port: 81,
+      host: "0.0.0.0",
+      proxy: {
+        "/gateway": {
+          target: "http://172.17.30.184:8899/",
+          changeOrigin: true, // 是否跨域
+          secure: false,
+          rewrite: (path) => path.replace(/^\/gateway/, ""),
+        },
+      },
+    },
     resolve: {
       alias: [
         {
@@ -201,15 +230,15 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
           app: resolve(__dirname, "app/index.html"),
         },
         output: {
-          manualChunks(id) {
-            if (id.includes("node_modules")) {
-              return id
-                .toString()
-                .split("node_modules/")[1]
-                .split("/")[0]
-                .toString();
-            }
-          },
+          // manualChunks(id) {
+          //   if (id.includes("node_modules")) {
+          //     return id
+          //       .toString()
+          //       .split("node_modules/")[1]
+          //       .split("/")[0]
+          //       .toString();
+          //   }
+          // },
         },
       },
     },
