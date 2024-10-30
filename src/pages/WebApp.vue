@@ -16,15 +16,14 @@
       <n-spin :show="commonStore.showLoading">
         <template #default>
           <div class="absolute top-0 left-0 w-full h-[60px] border-b flex justify-between items-center	" v-if="!route.meta.hiddenNavBar">
-            <div class='flex'>
+            <!-- <div class='flex'>
               <img src="@/assets/images/logo.png" style="height:50px; margin-top:4px; margin-left:6px;">
               <p class="text-2xl leading-[60px] text-[#333399] font-bold"></p>
-            </div>
+            </div> -->
           </div>
-          <n-dropdown :options="userDropDownOptions" :on-select="userDropSelect">
-            <!-- <n-button>用户资料</n-button> -->
+          <!-- <n-dropdown :options="userDropDownOptions" :on-select="userDropSelect">
             <div class="absolute top-0 right-5 h-15 flex items-center"><svg class="icon text-xl text-[#666666]" aria-hidden="true"><use xlink:href="#icon-zhanghao"></use></svg><span>{{getUserName()}}</span></div>
-          </n-dropdown>
+          </n-dropdown> -->
           <div class=" w-screen h-screen">
             <router-view></router-view>
           </div>

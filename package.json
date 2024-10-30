@@ -20,6 +20,7 @@
     "pinia": "^2.1.6",
     "terser": "^5.27.0",
     "ux-fileviewer": "^0.2.8",
+    "ux-tmap": "1.0.4",
     "ux-web-storage": "^1.0.6",
     "vant": "^4.7.1",
     "vite-plugin-compression": "^0.5.1",

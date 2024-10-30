@@ -54,11 +54,12 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
     vueJsx(), //jsx
     ReactivityTransform(),
     Pages({
-      dirs: [{ dir: "src/views/web", baseRoute: "/" }],
+      dirs: [{ dir: "src/views/web", baseRoute: "/enterprise_map" }],
       importMode: "async",
       moduleId: "~webRoutes",
       extensions: ["vue"],
       extendRoute(route, parent) {
+        route.name=route.name.replace('enterprise_map-','')
         return {
           ...route,
           meta: { ...(route.meta || {}), auth: false },
@@ -124,7 +125,8 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   if (!isDev) {
     plugins.push(
       // gzip插件，打包压缩代码成gzip  文档： https://github.com/anncwb/vite-plugin-compression
-      viteCompression({ deleteOriginFile :true}),
+      // viteCompression({ deleteOriginFile :true}),
+      viteCompression(),
     );
   }
   return defineConfig({
@@ -180,7 +182,7 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
         },
       ],
     },
-    base: env.VITE_BUILD_URL, // 设置打包路径   base打包环境需要绝对地址，否则打包替换url时候会报错
+    base: '/enterprise_map', // 设置打包路径   base打包环境需要绝对地址，否则打包替换url时候会报错
     build: {
       target: "es2015",
       outDir: env.VITE_outputDir,

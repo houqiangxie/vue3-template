@@ -4,10 +4,10 @@
  * @Author: houqiangxie
  * @Date: 2022-05-23 10:20:59
  * @LastEditors: houqiangxie
- * @LastEditTime: 2023-06-30 09:22:01
+ * @LastEditTime: 2024-10-29 17:42:20
 -->
 <template>
-  <div class="flex h-full pt-[60px]">
+  <div class="flex h-full">
     <!-- <n-menu
       ref="menuInstRef"
       class="w-[200px] bg-[#2c3350]"
@@ -23,7 +23,7 @@
 <route>
   {
     "title": "eeee",
-    "redirect":{"name":"Index-Home"}
+    "redirect":{"name":"Index-Test"}
   }
 </route>
 
