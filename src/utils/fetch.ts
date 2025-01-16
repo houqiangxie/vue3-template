@@ -89,7 +89,7 @@ async function resultReduction(response: any) {
     return await res;
 }
 
-async function request(method: string, path: string, data: { [prop: string]: any }, config: any = {}): Promise<{ data: any, code: number }> {
+async function request(method: string, path: string, data: { [prop: string]: any }, config: any = {}): Promise<any> {
 
     // 请求处理前的操作
     if (!config.hideLoading) commonStore.showLoading = true;
@@ -111,8 +111,10 @@ async function request(method: string, path: string, data: { [prop: string]: any
     );
     if (config.isNotAuth) delete configTemp.headers['token'];
     if (config.fileUpload) delete configTemp.headers["Content-Type"];
+    
     // removePendingRequest(configTemp); // 检查是否存在重复请求，若存在则取消已发的请求
     addPendingRequest(configTemp); // 把当前请求信息添加到pendingRequest对象中
+    if(config.abortCallback)return config.abortCallback(controller)
     const requestKey = generateReqKey(configTemp)
     // 共享promise
     if (cacheRequestMap.has(requestKey)) return cacheRequestMap.get(requestKey)
@@ -131,11 +133,10 @@ async function request(method: string, path: string, data: { [prop: string]: any
         }
         data = paramsData;
     }
-    path = (config?.unwanted ? '' : import.meta.env.VITE_baseUrl) + path;
+    path = (config?.proxy ? '' : import.meta.env.VITE_baseUrl) + path;
     let myInit = {
         method,
-        ...configDefault,
-        ...config,
+        ...configTemp,
         body: config.fileUpload ? data : (config.formData ? new URLSearchParams(data) : JSON.stringify(data))
     };
     if (method === 'GET') delete myInit.body
@@ -144,7 +145,6 @@ async function request(method: string, path: string, data: { [prop: string]: any
         // 对象转url参数
         params = (JSON.stringify(data) as any)?.replace(/:/g, '=')?.replace(/"/g, '')?.replace(/,/g, '&')?.match(/\{([^)]*)\}/)[1];
     }
-
     const fetchPromise :any= new Promise((resolve, reject) => {
         fetch(params ? `${path}${params ? "?" : ""}${params}` : path, myInit).then(async response => {
             // TODO: 这里是复制一份结果处理，在这里可以做一些操作
@@ -189,7 +189,7 @@ async function request(method: string, path: string, data: { [prop: string]: any
         })
     })
     cacheRequestMap.set(requestKey, fetchPromise)
-    return fetchPromise
+    return {fetchPromise, retry: () => { cacheRequestMap.delete(requestKey); return request(method, path, data, config) }}
 
 }
 // get请求方法使用封装
