@@ -1,22 +1,24 @@
-import { defineConfig, loadEnv, UserConfigExport, ConfigEnv, searchForWorkspaceRoot } from 'vite';
+import { defineConfig, loadEnv, ConfigEnv } from 'vite';
 import { fileURLToPath, URL } from "node:url";
 import vue from '@vitejs/plugin-vue';
-import { resolve, join } from "path";
+import { resolve } from "path";
 import Components from 'unplugin-vue-components/vite';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import viteCompression from 'vite-plugin-compression';
 import {NaiveUiResolver,} from "unplugin-vue-components/resolvers";
 import AutoImport from 'unplugin-auto-import/vite';
 import Pages from 'vite-plugin-pages'
-import ReactivityTransform from "@vue-macros/reactivity-transform/vite";
 import UnoCSS from 'unocss/vite'
 import lightningcss from 'vite-plugin-lightningcss';
 // https://vitejs.dev/config/
 export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   // 环境变量
   const env = loadEnv(mode, process.cwd());
+  const buildBase = env.VITE_BUILD_URL ? env.VITE_BUILD_URL.replace(/\/?$/, '/') : '/';
+  const devBase = buildBase === '/' ? '' : buildBase.replace(/\/$/, '');
   // 开发环境判断
   const isDev = mode === 'dev';
+  const root = fileURLToPath(new URL('.', import.meta.url));
   // vite插件
   const plugins = [
   // 多页面history模式路由中间件
@@ -24,14 +26,17 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
       name: 'rewrite-middleware',
       configureServer(serve) {
         serve.middlewares.use((req, res, next) => {
-        for (const appName in serve.config.build.rollupOptions.input) {
-          if (req.url.startsWith(`/${appName}/`)) {
-            req.url = `/${appName}/`;
-            break;
+          const url = req.url || '';
+          const path = devBase && url.startsWith(devBase) ? url.slice(devBase.length) : url;
+          const normalizedPath = path.replace(/^\/+/, '/');
+          for (const appName in serve.config.build.rolldownOptions.input) {
+            if (normalizedPath.startsWith(`/${appName}/`) || normalizedPath === `/${appName}`) {
+              req.url = (appName == 'main' ? '' : devBase)+ `/${appName}/`;
+              break;
+            }
           }
-        }
-          next()
-        })
+          next();
+        });
       }
     },
     {//自定义模块扩展
@@ -44,15 +49,8 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
         }
       },
     },
-    vue({
-      template: {
-        compilerOptions: {
-          isCustomElement: (tag) => /^micro-app/.test(tag),
-        },
-      },
-    }),
+    vue(),
     vueJsx(), //jsx
-    ReactivityTransform(),
     Pages({
       dirs: [{ dir: "src/views/web", baseRoute: "/" }],
       importMode: "async",
@@ -124,7 +122,7 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
   if (!isDev) {
     plugins.push(
       // gzip插件，打包压缩代码成gzip  文档： https://github.com/anncwb/vite-plugin-compression
-      viteCompression({ deleteOriginFile :true}),
+      viteCompression({ deleteOriginFile :false}),
     );
   }
   return defineConfig({
@@ -180,37 +178,29 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
         },
       ],
     },
-    base: env.VITE_BUILD_URL, // 设置打包路径   base打包环境需要绝对地址，否则打包替换url时候会报错
+    base: buildBase, // 设置打包路径，二级目录请确保以 / 结尾，如 /foo/bar/
     build: {
-      target: "es2015",
+      target: "es2018",
       outDir: env.VITE_outputDir,
       assetsDir: "assets",
       assetsInlineLimit: 2048,
       cssCodeSplit: true,
-      // Terser 相对较慢，但大多数情况下构建后的文件体积更小。ESbuild 最小化混淆更快但构建后的文件相对更大。
-      minify: isDev ? "esbuild" : "terser",
-      terserOptions: {
-        compress: {
-          // 生产环境去除console
-          drop_console: !isDev,
-        },
-      },
-      rollupOptions: {
+      rolldownOptions: {
         input: {
-          main: resolve(__dirname, "index.html"),
-          app: resolve(__dirname, "app/index.html"),
+          main: resolve(root, "index.html"),
+          app: resolve(root, "app/index.html"),
         },
-        output: {
-          manualChunks(id) {
-            if (id.includes("node_modules")) {
-              return id
-                .toString()
-                .split("node_modules/")[1]
-                .split("/")[0]
-                .toString();
-            }
-          },
-        },
+        // output: {
+        //   manualChunks(id) {
+        //     if (id.includes("node_modules")) {
+        //       return id
+        //         .toString()
+        //         .split("node_modules/")[1]
+        //         .split("/")[0]
+        //         .toString();
+        //     }
+        //   },
+        // },
       },
     },
     css: {
@@ -218,7 +208,7 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
         scss: {
           additionalData: `
             @use "@/assets/scss/variables.scss" as *;
-            @import "@/assets/scss/common.scss";
+            @use "@/assets/scss/common.scss" as *;
           `,
         },
       },

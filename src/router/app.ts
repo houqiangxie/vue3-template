@@ -22,8 +22,9 @@ const routes: Array<RouteRecordRaw> = [
   },
 ];
 
+const routerBase = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/app/`;
 const router = createRouter({
-  history: createWebHistory('/app'),
+  history: createWebHistory(routerBase),
   routes, // short for `routes: routes`
 });
 permission(router)
