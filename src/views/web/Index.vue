@@ -1,75 +1,37 @@
-<!--
- * @Descripttion: 
- * @version: 
- * @Author: houqiangxie
- * @Date: 2022-05-23 10:20:59
- * @LastEditors: houqiangxie
- * @LastEditTime: 2023-06-30 09:22:01
--->
 <template>
-  <div class="flex h-full pt-[60px]">
-    <!-- <n-menu
-      ref="menuInstRef"
-      class="w-[200px] bg-[#2c3350]"
-      :collapsed-width="64"
-      :collapsed-icon-size="22"
-      :options="menuOptions"
-      v-model:value="selectKey"
-    /> -->
-    <router-view class="h-full overflow-auto flex-1 bg-[#f4f4f4]"></router-view>
-  </div>
+  <Layout />
 </template>
 
-<route>
-  {
-    "title": "eeee",
-    "redirect":{"name":"Index-Home"}
-  }
-</route>
-
 <script setup lang="ts">
-import { MenuOption,MenuInst  } from 'naive-ui'
-// import {RenderSvg}from '@/tsx/svg'
-const router = useRouter()
-const menuInstRef = ref<MenuInst >()
-const selectKey = ref()
-const route = useRoute();
+import { h, onMounted } from 'vue';
+import { NIcon } from 'naive-ui';
+import { HomeOutlined, UserOutlined } from '@vicons/antd';
+import Layout from '@/layout/index.vue';
+import { useMenuStore } from '@/store/modules/menu';
 
-// const expandMenuIcon = (option: MenuOption,icon:string)=>{
-//   // return h('div',null,h('svg',{class: 'icon text-white','aria-hidden':true},h('use',{'xlink:href':'#icon-sanjiaoxing'},'')))
-//   return h(RenderSvg,{icon,className:'text-white'},'')
-// }
+function renderIcon(icon: any) {
+  return () => h(NIcon, null, { default: () => h(icon) });
+}
 
-// const renderIcon= (icon:string)=> {
-//   return ()=> h(RenderSvg,{icon,className:'!text-white !text-xs'},'')
-// }
-// const menuOptions: MenuOption[] = [
-//   {
-//     label:'系统首页',
-//     key: 'Home',
-//     icon:renderIcon('shouye'),
-//     children:[
-//       {
-//         label: '系统首页',
-//         key: 'HomeIndex',
-//       },
-//       {
-//         label: '个人信息管理',
-//         key: 'PersonInfo',
-//       },
-//     ]
-//   },
-// ]
+const menuStore = useMenuStore();
 
-// watch(selectKey,(val:string)=>{
-//   if(route.name!=val)router.push({name:val})
-// })
-
-// onMounted(() => {
-//   selectKey.value=route.name
-//   menuInstRef.value?.showOption(selectKey.value)
-// })
-
-
+onMounted(() => {
+  menuStore.setMenuOptions([
+    {
+      label: '系统首页',
+      key: 'Index-Home',
+      icon: renderIcon(HomeOutlined),
+      children: [
+        {
+          label: '首页',
+          key: 'Index-Home-HomeIndex',
+        },
+        {
+          label: '个人信息',
+          key: 'Index-Home-PersonInfo',
+        },
+      ],
+    },
+  ]);
+});
 </script>
- 

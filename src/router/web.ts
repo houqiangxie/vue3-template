@@ -1,33 +1,45 @@
-/*
- * @Descripttion: 
- * @version: 
- * @Author: houqiangxie
- * @Date: 2022-05-23 10:20:59
- * @LastEditors: houqiangxie
- * @LastEditTime: 2023-07-11 18:41:13
- */
-import { createRouter, createWebHashHistory, createWebHistory, RouteRecordRaw } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router'
 import permission from './permission'
-import webRoutes from '~webRoutes'
-const routes: Array<RouteRecordRaw> = [
-  {
-    path: "/login",
-    name: "Login",
-    component: () => import("@/views/Login.vue"),
-  },
-  ...webRoutes,
-  {
-    path: "/:pathMatch(.*)*",
-    redirect: { name: "Index-Home-HomeIndex" },
-  },
-];
+import { generateFileRoutes } from './utils/generateFileRoutes'
+import { flattenRoutesToPool } from './utils/routeFilter'
 
-const routerBase = import.meta.env.BASE_URL.replace(/\/$/, '') + '/';
+// NOTE: import.meta.glob argument must be a string literal.
+const webModules = import.meta.glob('/src/views/web/**/*.vue')
+
+export const allWebRoutes = generateFileRoutes(webModules, '/src/views/web/', {
+  defaultMeta: { requiresAuth: true },
+  routeConfig: {
+    // Root layout redirects to first child
+    'Index': { redirect: { name: 'Index-Home' } },
+    // Home sub-layout: show title and default to HomeIndex
+    'Index-Home': {
+      meta: { title: '首页' },
+      redirect: { name: 'Index-Home-HomeIndex' },
+    },
+  },
+})
+
+// 将生成的路由转换为路由池，用于动态路由匹配
+const webRoutePool = flattenRoutesToPool(allWebRoutes)
+
+const routerBase = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/`
+
 const router = createRouter({
   history: createWebHistory(routerBase),
-  routes, // short for `routes: routes`
-});
-permission(router)
+  routes: [
+    {
+      path: '/login',
+      name: 'Login',
+      component: () => import('@/views/Login.vue'),
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'StaticCatchAll',
+      component: { render: () => null },
+    },
+  ],
+})
 
+permission(router, webRoutePool)
 
-export default router;
+export default router

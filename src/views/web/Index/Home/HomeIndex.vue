@@ -1,6 +1,6 @@
 <!--
- * @Descripttion: 
- * @version: 
+ * @Descripttion:
+ * @version:
  * @Author: houqiangxie
  * @Date: 2022-05-24 10:57:49
  * @LastEditors: houqiangxie
@@ -27,13 +27,13 @@ const formModel = ref({data:[{},{}]})
 const formRef = ref()
 const submitForm = async () => {
     try {
-        
+
         const e = await formRef.value.validate()
         console.log('e: ', e);
         console.log('e: ', formModel.value);
     } catch (error) {
         console.log('error: ', error);
-        
+
     }
 }
 const subColumns = (i:number) => {

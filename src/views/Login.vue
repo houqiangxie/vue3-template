@@ -20,7 +20,7 @@
              </n-input>
            </n-form-item>
            <n-form-item>
-             <n-button type="primary"  class="w-full" @click="loginSubmit">登录</n-button>
+             <n-button type="primary"  class="w-full" :loading="loading" @click="loginSubmit">登录</n-button>
            </n-form-item>
          </n-form>
        </n-config-provider>
@@ -66,7 +66,7 @@ const form = reactive({
   code: '',
   uuid: '',
 });
-let loading = ref(false);
+const loading = ref(false);
 
 const getCode = async () => {
   // const res = await get('/code');
@@ -77,6 +77,7 @@ const getCode = async () => {
 };
 
 const loginSubmit = async () => {
+  loading.value = true;
   try {
     const e = await loginForm.value.validate()
     if (e) return;
@@ -92,19 +93,19 @@ const loginSubmit = async () => {
     const  {code, data } = res
     if (code ===0) {
       local.token=data
-      const returnUrl = route.query.returnUrl;
-      window.$message.success('登录成功')
-      let url = returnUrl;
-      if (decodeURIComponent(returnUrl).includes('returnUrl=')) {
-        url = decodeURIComponent(returnUrl).split('returnUrl=').pop() || '/';
-      }
-      window.location.href = `${window.location.pathname}#${url}`;
+      window.$message?.success('登录成功')
+      // 使用 vue-router 导航，支持 history 模式
+      const returnUrl = route.query?.returnUrl as string;
+      router.replace(returnUrl ? decodeURIComponent(returnUrl) : '/');
     } else {
+      window.$message?.error(data?.message || '登录失败，请重试');
       getCode();
     }
     
   } catch (e) {
     getCode()
+  } finally {
+    loading.value = false;
   }
 };
 

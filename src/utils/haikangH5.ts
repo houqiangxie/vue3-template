@@ -218,7 +218,6 @@ export default class HaikangH5 {
     this.player.JS_StopTalk().then(
       () => {
         this.btnStatus["talk"] = false;
-        console.log("talkStop success");
       },
       (e) => {
         window.$message.error(errorCode[e] || e);
@@ -229,7 +228,6 @@ export default class HaikangH5 {
     this.player.JS_StopRealPlayAll().then(
       () => {
         this.playback.rate = 0;
-        console.log("stopAllPlay success");
       },
       (e) => {
         window.$message.error(errorCode[e] || e);
@@ -259,7 +257,6 @@ export default class HaikangH5 {
   playbackPause() {
     this.player.JS_Pause().then(
       () => {
-        console.log("playbackPause success");
       },
       (e) => {
         window.$message.error(errorCode[e] || e);
@@ -269,7 +266,6 @@ export default class HaikangH5 {
   playbackResume() {
     this.player.JS_Resume().then(
       () => {
-        console.log("playbackResume success");
       },
       (e) => {
         window.$message.error(errorCode[e] || e);
@@ -284,7 +280,6 @@ export default class HaikangH5 {
       .JS_Seek(this.player.currentWindowIndex, seekStart, endTime)
       .then(
         () => {
-          console.log("seekTo success");
         },
         (e) => {
           window.$message.error(errorCode[e] || e);
@@ -397,7 +392,6 @@ export default class HaikangH5 {
 
     player.JS_StopSave(index).then(
       () => {
-        console.log("record stoped, saving ...");
       },
       (e) => {
         window.$message.error(errorCode[e] || e);
@@ -411,7 +405,6 @@ export default class HaikangH5 {
 
     player.JS_EnableZoom(index).then(
       () => {
-        console.log("enlarge start..., select range...");
       },
       (e) => {
         window.$message.error(errorCode[e] || e);
@@ -424,7 +417,6 @@ export default class HaikangH5 {
 
     player.JS_DisableZoom(index).then(
       () => {
-        console.log("enlargeClose success");
       },
       (e) => {
         window.$message.error(errorCode[e] || e);
@@ -436,18 +428,12 @@ export default class HaikangH5 {
       index = player.currentWindowIndex;
 
     let result = player.JS_RenderALLPrivateData(index, openFlag);
-    console.log(
-      `${openFlag ? "open" : "close"} intellect ${
-        result === 1 ? "success" : "failed"
-      }`
-    );
   }
   getvideoInfo() {
     let player = this.player,
       index = player.currentWindowIndex;
 
     player.JS_GetVideoInfo(index).then(function (videoInfo:any) {
-      console.log("videoInfo:", videoInfo);
     });
   }
   getOSDTime() {
@@ -455,7 +441,6 @@ export default class HaikangH5 {
       index = player.currentWindowIndex;
 
     player.JS_GetOSDTime(index).then(function (time:any) {
-      console.log("osdTime:", new Date(time));
     });
   }
 }

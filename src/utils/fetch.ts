@@ -2,7 +2,6 @@ import { showFailToast } from "vant";
 import { db, local } from 'ux-web-storage'
 const commonStore = useCommonStore();
 window.addEventListener("unhandledrejection", e => {
-    console.log(e.reason);
     e.preventDefault();
 });
 /**
@@ -92,7 +91,7 @@ async function resultReduction(response: any) {
 async function request(method: string, path: string, data: { [prop: string]: any }, config: any = {}): Promise<{ data: any, code: number }> {
 
     // 请求处理前的操作
-    if (!config.hideLoading) commonStore.showLoading = true;
+    if (!config.hideLoading) commonStore.setLoading(true);
     const token = local.token?.token;
     const controller = new AbortController();
     const { signal } = controller;
@@ -118,7 +117,10 @@ async function request(method: string, path: string, data: { [prop: string]: any
     if (cacheRequestMap.has(requestKey)) return cacheRequestMap.get(requestKey)
     if (config.cached) {//缓存数据
         const res = await db.get(requestKey)
-        if (res) return Promise.resolve({ cached: true, requestKey, res }) as any;
+        if (res) {
+            commonStore.setLoading(false);
+            return Promise.resolve({ cached: true, requestKey, res }) as any;
+        }
     }
 
 
@@ -148,7 +150,7 @@ async function request(method: string, path: string, data: { [prop: string]: any
     const fetchPromise :any= new Promise((resolve, reject) => {
         fetch(params ? `${path}${params ? "?" : ""}${params}` : path, myInit).then(async response => {
             // TODO: 这里是复制一份结果处理，在这里可以做一些操作
-            commonStore.showLoading = false;
+            commonStore.setLoading(false);
             const res: any = await resultReduction(response);
             removePendingRequest(configTemp); // 从pendingRequest对象中移除请求
             cacheRequestMap.delete(requestKey)
@@ -182,7 +184,7 @@ async function request(method: string, path: string, data: { [prop: string]: any
             }
         }).catch(error => {
             // 响应拦截进来隐藏loading效果，此处采用延时处理是合并loading请求效果，避免多次请求loading关闭又开启
-            commonStore.showLoading = false;
+            commonStore.setLoading(false);
             if (!configTemp.abortRequest) window.$message.error("服务器异常，请稍后再试"); //非手动阻止请求抛出异常
             removePendingRequest(configTemp || {}); // 从pendingRequest对象中移除请求
             cacheRequestMap.delete(requestKey)

@@ -10,8 +10,6 @@
     <router-view></router-view>
 </template>
 
-<route>
-    {
-       "redirect":{"name":"Index-Home-HomeIndex"}
-    }
-</route>
+<script setup lang="ts">
+
+</script>

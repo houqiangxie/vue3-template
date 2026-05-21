@@ -1,30 +1,37 @@
-<!--
- * @Descripttion: 
- * @version: 
- * @Author: houqiangxie
- * @Date: 2022-05-23 10:20:59
- * @LastEditors: houqiangxie
- * @LastEditTime: 2023-06-30 09:31:18
--->
 <template>
-  <div class="flex h-full pt-[60px]">
-    <router-view class="h-full overflow-auto flex-1 bg-[#f4f4f4]"></router-view>
-  </div>
+  <Layout />
 </template>
 
-<route>
-  {
-    "title": "eeee",
-    "redirect":{"name":"Index-Home"}
-  }
-</route>
-
 <script setup lang="ts">
-import { MenuOption,MenuInst  } from 'naive-ui'
-const router = useRouter()
-const menuInstRef = ref<MenuInst >()
-const selectKey = ref()
-const route = useRoute();
+import { h, onMounted } from 'vue';
+import { NIcon } from 'naive-ui';
+import { HomeOutlined, UserOutlined } from '@vicons/antd';
+import Layout from '@/layout/index.vue';
+import { useMenuStore } from '@/store/modules/menu';
 
+function renderIcon(icon: any) {
+  return () => h(NIcon, null, { default: () => h(icon) });
+}
+
+const menuStore = useMenuStore();
+
+onMounted(() => {
+  menuStore.setMenuOptions([
+    {
+      label: '系统首页',
+      key: 'Index-Home',
+      icon: renderIcon(HomeOutlined),
+      children: [
+        {
+          label: '首页',
+          key: 'Index-Home-HomeIndex',
+        },
+        {
+          label: '个人信息',
+          key: 'Index-Home-PersonInfo',
+        },
+      ],
+    },
+  ]);
+});
 </script>
- 

@@ -7,7 +7,7 @@ import vueJsx from '@vitejs/plugin-vue-jsx';
 import viteCompression from 'vite-plugin-compression';
 import {NaiveUiResolver,} from "unplugin-vue-components/resolvers";
 import AutoImport from 'unplugin-auto-import/vite';
-import Pages from 'vite-plugin-pages'
+
 import UnoCSS from 'unocss/vite'
 import lightningcss from 'vite-plugin-lightningcss';
 // https://vitejs.dev/config/
@@ -42,6 +42,9 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
     {//自定义模块扩展
       name: "vite-custom-block-plugin",
       transform(code, id) {
+        if (/vue&type=route/.test(id)) {
+          return `export default {}`;
+        }
         if (/vue&type=custom-block/.test(id)) {
           return `export default Comp => {
             Comp.customBlock = ${code}
@@ -51,30 +54,7 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
     },
     vue(),
     vueJsx(), //jsx
-    Pages({
-      dirs: [{ dir: "src/views/web", baseRoute: "/" }],
-      importMode: "async",
-      moduleId: "~webRoutes",
-      extensions: ["vue"],
-      extendRoute(route, parent) {
-        return {
-          ...route,
-          meta: { ...(route.meta || {}), auth: false },
-        };
-      },
-    }),
-    Pages({
-      dirs: [{ dir: "src/views/app", baseRoute: "" }],
-      importMode: "async",
-      moduleId: "~appRoutes",
-      extensions: ["vue"],
-      extendRoute(route, parent) {
-        return {
-          ...route,
-          meta: { ...(route.meta || {}), auth: false },
-        };
-      },
-    }),
+
     /**
      *  注入环境变量到html模板中
      *  如在  .env文件中有环境变量  VITE_APP_TITLE=admin
@@ -100,7 +80,7 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
       resolvers: [NaiveUiResolver()],
       // 可以选择auto-import.d.ts生成的位置，使用ts建议设置为'src/auto-import.d.ts'
       dts: "src/auto-import.d.ts",
-      dirs:['src/utils/**','src/store/**']
+      dirs:['src/utils/**','src/store/**','src/hooks/**']
     }),
     UnoCSS(),
     /**

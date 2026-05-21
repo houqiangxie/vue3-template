@@ -5,7 +5,6 @@ import {db,local} from 'ux-web-storage'
 import { useCommonStore } from '@/store/common';
 const commonStore = useCommonStore();
 window.addEventListener("unhandledrejection", e => {
-  console.log( e.reason);
   e.preventDefault();
 });
 /**
@@ -72,7 +71,7 @@ const removeAllPendingRequest = () => {
   
   // 添加请求拦截器
   interceptors.request.use(async(config:any = {}) => {
-    if(!config.hideLoading) commonStore.showLoading = true;
+    if(!config.hideLoading) commonStore.setLoading(true);
     const token = local.token?.token;
     const controller = new AbortController();
     const { signal } = controller;
@@ -106,7 +105,7 @@ const removeAllPendingRequest = () => {
 interceptors.response.use(
   async (response: any) => {
     // TODO: 这里是复制一份结果处理，在这里可以做一些操作
-    commonStore.showLoading = false;
+    commonStore.setLoading(false);
     const res: any = await resultReduction(response);
     removePendingRequest(await response.requestConfig); // 从pendingRequest对象中移除请求
     if ((response.status == 401 || res.code == 401) && !response.requestConfig.withoutCheck) {
@@ -144,9 +143,12 @@ interceptors.response.use(
     }
   },
   async ({ error, requestConfig }: any) => {
-    if (error?.cached) return Promise.resolve(deepClone(error.res));
+    if (error?.cached) {
+      commonStore.setLoading(false);
+      return Promise.resolve(deepClone(error.res));
+    }
     // 响应拦截进来隐藏loading效果，此处采用延时处理是合并loading请求效果，避免多次请求loading关闭又开启
-    commonStore.showLoading = false;
+    commonStore.setLoading(false);
     if (!requestConfig.abortRequest)window.$message.error("服务器异常，请稍后再试"); //非手动阻止请求抛出异常
     removePendingRequest(requestConfig || {}); // 从pendingRequest对象中移除请求
     // return Promise.reject(new Error(error));

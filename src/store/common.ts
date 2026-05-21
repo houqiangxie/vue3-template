@@ -9,8 +9,18 @@
 import { defineStore } from 'pinia';
 
 export const useCommonStore = defineStore('common', () => {
-  const showLoading = ref<boolean>(false); //接口loading
+  const loadingCount = ref(0);
+  const showLoading = computed(() => loadingCount.value > 0);
   const isIframe = ref<boolean>(false);
   const token = ref<{[prop:string]:any}>();
-  return { showLoading, isIframe, token };
+
+  function setLoading(loading: boolean) {
+    if (loading) {
+      loadingCount.value++;
+    } else if (loadingCount.value > 0) {
+      loadingCount.value--;
+    }
+  }
+
+  return { showLoading, loadingCount, setLoading, isIframe, token };
 });
