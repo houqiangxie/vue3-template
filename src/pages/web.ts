@@ -5,7 +5,6 @@ import { createPinia } from 'pinia';
 import router from '@/router/web';
 import emitter from '@/utils/emitter';
 import App from './WebApp.vue';
-import 'ux-fileviewer/dist/main.css';
 
 async function bootstrap() {
   const app = createApp(App);

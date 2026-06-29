@@ -1,9 +1,9 @@
 <template>
   <n-layout class="layout" has-sider>
     <!-- 左侧边栏（vertical / horizontal-mix 模式） -->
+    <!-- show-trigger="bar" -->
     <n-layout-sider
       v-if="showSider"
-      show-trigger="bar"
       :collapsed="collapsed"
       collapse-mode="width"
       :collapsed-width="64"

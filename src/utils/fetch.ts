@@ -24,6 +24,7 @@ let configDefault: any = {
     cache: "no-cache",
     cached: false,
     catchExpires: null,
+    last: false,
 };
 
 // 根据请求方式，url等生成请求key
@@ -38,6 +39,10 @@ const cacheRequestMap = new Map()
 // 添加请求map
 export const addPendingRequest = (config: any) => {
     const requestKey = generateReqKey(config);
+    if (config.last && pendingRequest.has(requestKey)) {
+        removePendingRequest(config, requestKey);
+        cacheRequestMap.delete(requestKey);
+    }
     if (!pendingRequest.has(requestKey)) {
         pendingRequest.set(requestKey, config);
     }
@@ -53,6 +58,7 @@ export const removePendingRequest = (config: any, requestKey?: string) => {
             cancelToken.controller.abort();
         }
         pendingRequest.delete(requestKey);
+        cacheRequestMap.delete(requestKey);
     }
 }
 
@@ -63,6 +69,7 @@ export const removeAllPendingRequest = () => {
             removePendingRequest(source)
         }
     })
+    cacheRequestMap.clear();
 }
 
 // 结果处理，fetch请求响应结果是promise，还得处理
