@@ -1,0 +1,48 @@
+appId: com.vue3-template.app
+productName: Vue3 Template
+asar: true
+npmRebuild: false
+nodeGypRebuild: false
+directories:
+  output: release
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+
+# ---------------------------------------------------------------------------
+# Auto update publish config (template — replace URL before enabling in CI)
+# electron-updater reads app-update.yml generated from this section at build time.
+# ---------------------------------------------------------------------------
+publish:
+  # Generic static server (MinIO / OSS / Nginx directory)
+  - provider: generic
+    url: https://your-update-server.example.com/releases
+    channel: latest
+
+  # GitHub Releases (uncomment and fill when ready)
+  # - provider: github
+  #   owner: your-org
+  #   repo: vue3-template
+  #   releaseType: release
+
+# Windows: NSIS + blockmap for differential (incremental) downloads
+win:
+  target:
+    - nsis
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  differentialPackage: true
+
+mac:
+  target:
+    - dmg
+  # ZIP + blockmap supports incremental updates on macOS
+  # target:
+  #   - zip
+
+linux:
+  target:
+    - AppImage

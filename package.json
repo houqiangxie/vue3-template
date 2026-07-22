@@ -1,12 +1,18 @@
 {
   "name": "vue3-template",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite --mode dev",
+    "dev:electron": "cross-env ELECTRON=true ELECTRON_DISABLE_SECURITY_WARNINGS=true vite --mode dev",
     "test": "vite build --mode test",
     "prod": "vite build --mode prod",
-    "build": "vite build --mode build"
+    "build": "vite build --mode build",
+    "build:electron": "cross-env ELECTRON=true vite build --mode build && node scripts/electron-build.mjs",
+    "build:electron:dir": "cross-env ELECTRON=true vite build --mode build && node scripts/electron-build.mjs --dir",
+    "electron:install": "node scripts/electron-install.mjs",
+    "postinstall": "node scripts/electron-install.mjs && node scripts/generate-tray-icon.mjs"
   },
   "dependencies": {
     "@types/file-saver": "^2.0.7",
@@ -15,6 +21,7 @@
     "@vitejs/plugin-vue-jsx": "^5.1.6",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.4.0",
+    "electron-updater": "^6.6.2",
     "element-resize-detector": "^1.2.4",
     "express-http-proxy": "^2.1.2",
     "fetch-jsonp": "^1.4.0",
@@ -33,7 +40,11 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.1.0",
+    "@types/node": "^24.3.0",
     "@vitejs/plugin-vue": "^6.0.7",
+    "cross-env": "^10.0.0",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
     "eslint": "^10.6.0",
     "express": "^5.2.1",
     "naive-ui": "^2.44.1",
@@ -43,6 +54,7 @@
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^32.1.0",
     "vite": "^8.1.0",
+    "vite-plugin-electron": "^1.1.0",
     "vite-plugin-vue-images": "^0.6.1",
     "vue-tsc": "^3.3.5"
   }

@@ -15,7 +15,7 @@ import type { RoutePoolItem } from './utils/types'
  * @param routePool 路由池（所有文件生成的路由）
  */
 export default (router: Router, routePool: RoutePoolItem[]): void => {
-  router.beforeEach(async (to, from, next) => {
+  router.beforeEach(async (to) => {
     const commonStore = useCommonStore()
     commonStore.isIframe = !!(to.query.token || to.query.isIframe)
 
@@ -26,25 +26,24 @@ export default (router: Router, routePool: RoutePoolItem[]): void => {
     if (token && !permissionStore.routesLoaded && to.name !== 'Login') {
       try {
         await permissionStore.setupRoutes(router, routePool)
-        
+
         // 如果当前匹配的是静态通配符，说明需要重新匹配动态路由
         if (to.name === 'StaticCatchAll' || !to.name) {
           // 必须通过 fullPath 字符串进行跳转，强制路由器重新进行路径匹配
           // 否则如果携带 to.name，路由器会再次匹配到 StaticCatchAll
-          return next({ 
-            path: to.path, 
-            query: to.query, 
-            hash: to.hash, 
-            replace: true 
-          })
+          return {
+            path: to.path,
+            query: to.query,
+            hash: to.hash,
+            replace: true,
+          }
         }
-        
-        // 已经匹配到具体的路由名，直接放行
-        return next()
+
+        return true
       }
       catch (error) {
         console.error('Failed to setup routes:', error)
-        return next('/login')
+        return '/login'
       }
     }
 
@@ -55,17 +54,17 @@ export default (router: Router, routePool: RoutePoolItem[]): void => {
         if (!permissionStore.routesLoaded) {
           await permissionStore.setupRoutes(router, routePool)
         }
-        return next({ name: 'Index-Home-HomeIndex', replace: true })
+        return { name: 'Index-Home-HomeIndex', replace: true }
       }
-      return next()
+      return true
     }
 
     // ── 未认证 ────────────────────────────────────────────────────────────────
     if (!token) {
-      return next(`/login?returnUrl=${encodeURIComponent(to.fullPath)}`)
+      return `/login?returnUrl=${encodeURIComponent(to.fullPath)}`
     }
 
     // ── 正常导航 ──────────────────────────────────────────────────────────────
-    next()
+    return true
   })
 }

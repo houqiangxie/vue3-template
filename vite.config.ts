@@ -1,46 +1,69 @@
-import { defineConfig, loadEnv, ConfigEnv } from 'vite';
-import { fileURLToPath, URL } from "node:url";
+import { cpSync, existsSync, mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
-import { resolve } from "path";
-import Components from 'unplugin-vue-components/vite';
 import vueJsx from '@vitejs/plugin-vue-jsx';
-import viteCompression from 'vite-plugin-compression';
-import {NaiveUiResolver,} from "unplugin-vue-components/resolvers";
+import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
 import AutoImport from 'unplugin-auto-import/vite';
-
-import UnoCSS from 'unocss/vite'
+import Components from 'unplugin-vue-components/vite';
+import UnoCSS from 'unocss/vite';
 import lightningcss from 'vite-plugin-lightningcss';
-// https://vitejs.dev/config/
-export default ({ command, mode }: ConfigEnv): UserConfigExport => {
-  // 环境变量
+import viteCompression from 'vite-plugin-compression';
+import electron from 'vite-plugin-electron/simple';
+import { defineConfig, loadEnv, type ConfigEnv } from 'vite';
+
+const root = fileURLToPath(new URL('.', import.meta.url));
+const isElectron = process.env.ELECTRON === 'true';
+
+function copyElectronAssets() {
+  const src = resolve(root, 'electron/assets');
+  const dest = resolve(root, 'dist-electron/assets');
+  if (!existsSync(src)) {
+    return;
+  }
+  mkdirSync(dest, { recursive: true });
+  cpSync(src, dest, { recursive: true });
+}
+
+function electronAssetsPlugin() {
+  return {
+    name: 'copy-electron-assets',
+    buildStart() {
+      if (isElectron) {
+        copyElectronAssets();
+      }
+    },
+  };
+}
+
+export default ({ command, mode }: ConfigEnv) => {
   const env = loadEnv(mode, process.cwd());
-  const buildBase = env.VITE_BUILD_URL ? env.VITE_BUILD_URL.replace(/\/?$/, '/') : '/';
+  const buildBase = isElectron
+    ? (command === 'serve' ? '/' : './')
+    : (env.VITE_BUILD_URL ? env.VITE_BUILD_URL.replace(/\/?$/, '/') : '/');
   const devBase = buildBase === '/' ? '' : buildBase.replace(/\/$/, '');
-  // 开发环境判断
   const isDev = mode === 'dev';
-  const root = fileURLToPath(new URL('.', import.meta.url));
-  // vite插件
+
   const plugins = [
-  // 多页面history模式路由中间件
     {
       name: 'rewrite-middleware',
       configureServer(serve) {
-        serve.middlewares.use((req, res, next) => {
+        serve.middlewares.use((req, _res, next) => {
           const url = req.url || '';
           const path = devBase && url.startsWith(devBase) ? url.slice(devBase.length) : url;
           const normalizedPath = path.replace(/^\/+/, '/');
           for (const appName in serve.config.build.rolldownOptions.input) {
             if (normalizedPath.startsWith(`/${appName}/`) || normalizedPath === `/${appName}`) {
-              req.url = (appName == 'main' ? '' : devBase)+ `/${appName}/`;
+              req.url = (appName == 'main' ? '' : devBase) + `/${appName}/`;
               break;
             }
           }
           next();
         });
-      }
+      },
     },
-    {//自定义模块扩展
-      name: "vite-custom-block-plugin",
+    {
+      name: 'vite-custom-block-plugin',
       transform(code, id) {
         if (/vue&type=route/.test(id)) {
           return `export default {}`;
@@ -53,134 +76,121 @@ export default ({ command, mode }: ConfigEnv): UserConfigExport => {
       },
     },
     vue(),
-    vueJsx(), //jsx
-
-    /**
-     *  注入环境变量到html模板中
-     *  如在  .env文件中有环境变量  VITE_APP_TITLE=admin
-     *  则在 html模板中  可以这样获取  <%- VITE_APP_TITLE %>
-     *  文档：  https://github.com/anncwb/vite-plugin-html
-     */
-    // createHtmlPlugin({
-    //   inject: {
-    //     data: {
-    //       env: env,
-    //     },
-    //   },
-    //   minify: true,
-    // }),
-    // elementUi组件自动引入
+    vueJsx(),
     Components({
       resolvers: [NaiveUiResolver()],
-      dts: "src/components.d.ts",
+      dts: 'src/components.d.ts',
     }),
-    // 自动引入
     AutoImport({
-      imports: ["vue", "vue-router", "pinia"],
+      imports: ['vue', 'vue-router', 'pinia'],
       resolvers: [NaiveUiResolver()],
-      // 可以选择auto-import.d.ts生成的位置，使用ts建议设置为'src/auto-import.d.ts'
-      dts: "src/auto-import.d.ts",
-      dirs:['src/utils/**','src/store/**','src/hooks/**']
+      dts: 'src/auto-import.d.ts',
+      dirs: ['src/utils/**', 'src/store/**', 'src/hooks/**'],
     }),
     UnoCSS(),
-    /**
-     *  把src/icons 下的所有svg 自动加载到body下，供组件使用
-     *  类似于webpack中的svg-sprite-loader
-     *  文档：https://github.com/anncwb/vite-plugin-svg-icons
-     */
-    // viteSvgIcons({
-    //   // 指定需要缓存的图标文件夹
-    //   iconDirs: [resolve(process.cwd(), 'src/icons')],
-    //   // 指定symbolId格式
-    //   symbolId: 'icon-[name]'
-    // })
     lightningcss({
       browserslist: '>= 0.25%',
     }),
   ];
 
-  if (!isDev) {
+  if (isElectron) {
+    plugins.push(electronAssetsPlugin());
     plugins.push(
-      // gzip插件，打包压缩代码成gzip  文档： https://github.com/anncwb/vite-plugin-compression
-      viteCompression({ deleteOriginFile :false}),
+      electron({
+        main: {
+          entry: 'electron/main.ts',
+          vite: {
+            plugins: [electronAssetsPlugin()],
+            build: {
+              outDir: 'dist-electron',
+              rollupOptions: {
+                external: ['electron'],
+              },
+            },
+          },
+        },
+        preload: {
+          input: 'electron/preload.ts',
+          vite: {
+            build: {
+              outDir: 'dist-electron',
+              rollupOptions: {
+                external: ['electron'],
+                output: {
+                  format: 'cjs',
+                  entryFileNames: 'preload.cjs',
+                },
+              },
+            },
+          },
+        },
+      }),
     );
   }
+
+  if (!isDev) {
+    plugins.push(
+      viteCompression({ deleteOriginFile: false }),
+    );
+  }
+
   return defineConfig({
-    // optimizeDeps: {
-    //   devScan: true,
-    //   include: ["naive-ui/es", "element-plus/es"],
-    // },
     plugins,
     server: {
-      // 设置代理，根据我们项目实际情况配置
-      open: false, // 设置服务启动时是否自动打开浏览器
-      cors: true, // 允许跨域
+      open: false,
+      cors: true,
       port: 81,
       hmr: { overlay: false },
-      host: "0.0.0.0",
-      // https: true,
+      host: '0.0.0.0',
       proxy: {
-        "/gateway": {
-          target: "http://172.17.30.184:8899/",
-          changeOrigin: true, // 是否跨域
+        '/gateway': {
+          target: 'http://172.17.30.184:8899/',
+          changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/gateway/, ""),
+          rewrite: path => path.replace(/^\/gateway/, ''),
         },
-        "/api": {
-          target: "http://uav.szius.com:1985/",
-          changeOrigin: true, // 是否跨域
-          secure: false,
-        },
-        "/myResource": {
-          target: "https://172.17.30.184:8888",
-          changeOrigin: true, // 是否跨域
+        '/api': {
+          target: 'http://uav.szius.com:1985/',
+          changeOrigin: true,
           secure: false,
         },
-        "/rsxt": {
-          target: "https://172.17.30.184:8888",
-          changeOrigin: true, // 是否跨域
+        '/myResource': {
+          target: 'https://172.17.30.184:8888',
+          changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/rsxt/, ""),
         },
-        // "/assets": {
-        //   target: "https://172.17.30.184:8888/",
-        //   changeOrigin: true, // 是否跨域
-        //   secure: false,
-        //   // rewrite: (path) => path.replace(/^\/yjdw/, ""),
-        // },
+        '/rsxt': {
+          target: 'https://172.17.30.184:8888',
+          changeOrigin: true,
+          secure: false,
+          rewrite: path => path.replace(/^\/rsxt/, ''),
+        },
       },
     },
     resolve: {
       alias: [
         {
-          find: "@",
-          replacement: fileURLToPath(new URL("./src", import.meta.url)),
+          find: '@',
+          replacement: fileURLToPath(new URL('./src', import.meta.url)),
         },
       ],
     },
-    base: buildBase, // 设置打包路径，二级目录请确保以 / 结尾，如 /foo/bar/
+    base: buildBase,
     build: {
-      target: "es2018",
+      target: 'es2018',
       outDir: env.VITE_outputDir,
-      assetsDir: "assets",
+      assetsDir: 'assets',
       assetsInlineLimit: 2048,
       cssCodeSplit: true,
       rolldownOptions: {
-        input: {
-          main: resolve(root, "index.html"),
-          app: resolve(root, "app/index.html"),
-        },
-        // output: {
-        //   manualChunks(id) {
-        //     if (id.includes("node_modules")) {
-        //       return id
-        //         .toString()
-        //         .split("node_modules/")[1]
-        //         .split("/")[0]
-        //         .toString();
-        //     }
-        //   },
-        // },
+        input: isElectron
+          ? {
+              main: resolve(root, 'index.html'),
+            }
+          : {
+              main: resolve(root, 'index.html'),
+              app: resolve(root, 'app/index.html'),
+            },
       },
     },
     css: {

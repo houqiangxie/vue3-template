@@ -8,7 +8,8 @@
 -->
 <template>
     <div>
-        <n-form ref="formRef" :model="formModel">
+        <ElectronNotificationDemo />
+        <!-- <n-form ref="formRef" :model="formModel">
             <CommonForm :config="columns" v-model:formModel="formModel">
                 <template #testSlot>
                     <div>
@@ -18,7 +19,7 @@
                 <div>ewoewjoiewi default</div>
             </CommonForm>
         </n-form>
-        <n-button @click="submitForm">提交</n-button>
+        <n-button @click="submitForm">提交</n-button> -->
     </div>
 </template>
 

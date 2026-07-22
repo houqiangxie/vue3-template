@@ -8,6 +8,7 @@
     <n-dialog-provider>
       <n-message-provider>
         <RegisterMessage />
+        <AppUpdater />
         <n-spin :show="commonStore.showLoading">
           <router-view />
         </n-spin>
@@ -21,6 +22,7 @@ import { computed } from 'vue';
 import { lightTheme, darkTheme, zhCN, dateZhCN } from 'naive-ui';
 import type { GlobalThemeOverrides } from 'naive-ui';
 import { useCommonStore } from '@/store/common';
+import AppUpdater from '@/components/common/AppUpdater.vue';
 import { useDesignSettingStore } from '@/store/modules/designSetting';
 import { useProjectSettingStore } from '@/store/modules/projectSetting';
 import { lighten } from '@/utils/layout';
