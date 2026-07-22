@@ -50,7 +50,7 @@ const columns = [
     { label: "ere", key: '444', bind: {}, slot: { prefix() { return 'women ' } } },
     {
         label: "women dous ", key: '33', bind:{
-            renderComponent() {
+            render() {
                 // return <div onClick={() => console.log(22)}>我们都是</div>
                 return formModel.value.data.map((item,i)=><CommonForm config={subColumns(i)} basePath={`data.${i}.`} v-model:formModel={formModel.value.data[i]} />)
             }

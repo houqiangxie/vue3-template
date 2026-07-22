@@ -27,6 +27,10 @@ onMounted(() => {
           key: 'Index-Home-HomeIndex',
         },
         {
+          label: 'Modal 示例',
+          key: 'Index-Home-ModalDemo',
+        },
+        {
           label: '个人信息',
           key: 'Index-Home-PersonInfo',
         },

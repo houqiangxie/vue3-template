@@ -79,6 +79,16 @@ export const usePermissionStore = defineStore('permission', () => {
                 },
               },
               {
+                id: 8,
+                parentId: 2,
+                name: 'Index-Home-ModalDemo',
+                path: '/home/modaldemo',
+                meta: {
+                  title: 'Modal 示例',
+                  icon: 'dashboard',
+                },
+              },
+              {
                 id: 4,
                 parentId: 2,
                 name: 'Index-Home-PersonInfo',
