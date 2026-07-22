@@ -189,6 +189,7 @@ const NAIVE_COMPONENTS: Record<string, Component> = {
 }
 
 const CUSTOM_COMPONENTS: Record<string, Component> = {
+  file: defineAsyncComponent(() => import('@/components/common/UploadFile.vue')),
   // Editor: defineAsyncComponent(() => import('@/components/common/Editor.vue')),
 }
 

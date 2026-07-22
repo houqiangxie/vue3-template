@@ -8,8 +8,7 @@
 -->
 <template>
     <div>
-        <ElectronNotificationDemo />
-        <!-- <n-form ref="formRef" :model="formModel">
+        <n-form ref="formRef" :model="formModel">
             <CommonForm :config="columns" v-model:formModel="formModel">
                 <template #testSlot>
                     <div>
@@ -19,7 +18,7 @@
                 <div>ewoewjoiewi default</div>
             </CommonForm>
         </n-form>
-        <n-button @click="submitForm">提交</n-button> -->
+        <n-button @click="submitForm">提交</n-button>
     </div>
 </template>
 
@@ -44,7 +43,7 @@ const subColumns = (i:number) => {
     ]
 }
 const columns = [
-    { label: "43", key: '333', bind: { required:true} },
+    { label: "上传文件", key: 'fileList', bind: { required:true}, component: 'file' },
     { label: "43", key: '333333', bind: { required:false} },
     { label: "44", key: '44', bind: { required:true} },
     { label: "45", key: '45', bind: { required:true} },

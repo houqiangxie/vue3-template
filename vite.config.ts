@@ -1,6 +1,7 @@
 import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fileViewerRenderers } from '@file-viewer/vite-plugin';
 import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
@@ -77,6 +78,9 @@ export default ({ command, mode }: ConfigEnv) => {
     },
     vue(),
     vueJsx(),
+    fileViewerRenderers({
+      copyAssets: true,
+    }),
     Components({
       resolvers: [NaiveUiResolver()],
       dts: 'src/components.d.ts',
@@ -142,28 +146,16 @@ export default ({ command, mode }: ConfigEnv) => {
       port: 81,
       hmr: { overlay: false },
       host: '0.0.0.0',
+      watch: {
+        // Windows EBUSY on large/locked files under public/vendor (fonts, pdf assets)
+        ignored: ['**/public/vendor/**'],
+      },
       proxy: {
-        '/gateway': {
-          target: 'http://172.17.30.184:8899/',
-          changeOrigin: true,
-          secure: false,
-          rewrite: path => path.replace(/^\/gateway/, ''),
-        },
         '/api': {
-          target: 'http://uav.szius.com:1985/',
+          target: 'http://172.17.29.32',
           changeOrigin: true,
           secure: false,
-        },
-        '/myResource': {
-          target: 'https://172.17.30.184:8888',
-          changeOrigin: true,
-          secure: false,
-        },
-        '/rsxt': {
-          target: 'https://172.17.30.184:8888',
-          changeOrigin: true,
-          secure: false,
-          rewrite: path => path.replace(/^\/rsxt/, ''),
+          // rewrite: path => path.replace(/^\/api/, ''),
         },
       },
     },

@@ -73,7 +73,7 @@ const getCode = async () => {
   // codeUrl.value = 'data:image/gif;base64,' + res.img;
   // form.uuid = res.uuid;
   form.code=''
-  codeUrl.value='/gateway/ManageUser/createCodeImage?t='+Math.random()
+  codeUrl.value='/api/ManageUser/createCodeImage?t='+Math.random()
 };
 
 const loginSubmit = async () => {
