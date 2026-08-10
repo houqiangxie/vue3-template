@@ -1,14 +1,19 @@
 <template>
-  <div class="logo">
+  <div v-if="showLogo" class="logo">
     <img :src="websiteConfig.logo" alt="logo" :class="{ 'mr-2': !collapsed }" />
     <h2 v-show="!collapsed" class="title">{{ websiteConfig.title }}</h2>
   </div>
 </template>
 
 <script lang="ts" setup>
+  import { computed } from 'vue';
   import { websiteConfig } from '@/config/website.config';
+  import { useProjectSettingStore } from '@/store/modules/projectSetting';
 
   defineProps<{ collapsed?: boolean }>();
+
+  const settingStore = useProjectSettingStore();
+  const showLogo = computed(() => settingStore.showLogo);
 </script>
 
 <style lang="scss" scoped>

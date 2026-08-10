@@ -5,19 +5,34 @@ const setting = {
   navTheme: 'dark',
   // 是否处于移动端模式
   isMobile: false,
+  // 是否显示 Logo
+  showLogo: true,
+  // 界面语言
+  locale: 'zh-CN' as 'zh-CN' | 'en-US',
   // 顶部设置
   headerSetting: {
-    bgColor: '#fff',
+    bgColor: '#ffffff',
     fixed: true,
     isReload: true,
+    showFullscreen: true,
+    showUserInfo: true,
+  },
+  // 弹窗
+  modalSetting: {
+    // 顶部背景色；默认白，深色主题下视为跟随主题
+    headerBgColor: '#ffffff',
   },
   // 页脚
   showFooter: false,
   // 多标签
   multiTabsSetting: {
-    bgColor: '#fff',
+    bgColor: '#ffffff',
     show: true,
     fixed: true,
+    // card 卡片 | simple 极简 | dot 圆点
+    style: 'card' as 'card' | 'simple' | 'dot',
+    showContextMenu: true,
+    persist: true,
   },
   // 菜单
   menuSetting: {
@@ -25,15 +40,31 @@ const setting = {
     menuWidth: 200,
     fixed: true,
     mixMenu: false,
-    mobileWidth: 800,
     collapsed: false,
+    // 手风琴：同时只展开一个子菜单
+    accordion: false,
+    // 触发移动端侧边栏的宽度
+    mobileWidth: 800,
+    // 折叠态展开方式 click | hover
+    trigger: 'click' as 'click' | 'hover',
   },
   // 面包屑
   crumbsSetting: {
     show: true,
     showIcon: false,
   },
-  // 权限模式
+  // 水印
+  watermark: {
+    show: false,
+    text: '',
+  },
+  // 锁屏
+  lockScreen: {
+    enabled: false,
+    // 空闲超时（分钟）
+    timeout: 30,
+  },
+  // 权限模式 FIXED | BACKEND
   permissionMode: 'FIXED',
   // 是否开启路由动画
   isPageAnimate: true,

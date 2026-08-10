@@ -1,27 +1,49 @@
-import type { RouteRecordRaw } from 'vue-router'
-
 /**
- * 后台返回的菜单数据结构（类似若依框架）
- * 只包含路由匹配信息，不包含组件路径
+ * 后台返回的菜单数据结构
+ * 对齐若依 / guanweb：
+ * - type 1/M 目录 → component 常用 ParentView，注册路由时扁平到 Layout
+ * - type 2/C 菜单 → 页面组件
+ * - type 3/F 按钮 → 只进 permissions，不进路由/侧栏
+ * - type 4   页面级菜单（Tab）→ 可注册，侧栏默认不展示时可 hidden
  */
 export interface MenuItem {
   /** 菜单ID */
   id: number
   /** 父菜单ID，0表示根菜单 */
   parentId: number
-  /** 路由名称（用于匹配文件路由） */
+  /** 路由名称（keep-alive / 侧栏 key） */
   name: string
   /** 路由路径 */
   path: string
-  /** 是否缓存 */
+  /**
+   * 组件路径（相对 views 目录）
+   * 特殊值：ParentView / Layout — 目录节点，注册路由时会扁平化到 Layout 下
+   */
+  component?: string
+  /** 重定向：子路由 name、path，或 'noRedirect' */
+  redirect?: string
+  /** 是否缓存（兼容 guanweb cacheFlag） */
   keepAlive?: boolean
-  /** 是否隐藏 */
+  /** 兼容 guanweb cacheFlag */
+  cacheFlag?: boolean
+  /** 兼容若依 isCache：'0' 缓存 / '1' 不缓存 */
+  isCache?: '0' | '1' | boolean
+  /** 是否在侧栏隐藏 */
   hidden?: boolean
+  /** 目录下仅一个子菜单时是否仍显示目录（guanweb alwaysShow） */
+  alwaysShow?: boolean
+  /** 排序号（越小越靠前） */
+  orderNum?: number
+  /**
+   * 菜单类型（可选，兼容扁平 menList）
+   * 1 / M = 目录，2 / C = 菜单，3 / F = 按钮，4 = Tab
+   */
+  type?: number | string
   /** 菜单元信息 */
   meta: {
     /** 菜单标题 */
     title: string
-    /** 图标 */
+    /** 图标（字符串名，如 HomeOutlined） */
     icon?: string
     /** 权限标识列表 */
     permissions?: string[]
@@ -29,27 +51,17 @@ export interface MenuItem {
     ignoreAuth?: boolean
     /** 是否固定在标签页 */
     affix?: boolean
+    /** 是否缓存（也可写在菜单根级 keepAlive） */
+    keepAlive?: boolean
+    /** 兼容若依 meta.noCache（true = 不缓存） */
+    noCache?: boolean
+    /** 高亮侧栏的菜单 name */
+    activeMenu?: string
+    /** 面包屑中是否显示（false 则隐藏） */
+    breadcrumb?: boolean
+    /** iframe 地址（component 为 iframe 页时） */
+    iFrameUrl?: string
   }
   /** 子菜单 */
   children?: MenuItem[]
-}
-
-/**
- * 路由匹配选项
- */
-export interface RouteMatchOptions {
-  /** 匹配优先级：name > path > filePath */
-  matchPriority?: ('name' | 'path' | 'filePath')[]
-  /** 是否严格匹配路径 */
-  strictPathMatch?: boolean
-}
-
-/**
- * 路由池项
- */
-export interface RoutePoolItem {
-  /** 原始文件路径 */
-  filePath: string
-  /** 生成的路由 */
-  route: RouteRecordRaw
 }

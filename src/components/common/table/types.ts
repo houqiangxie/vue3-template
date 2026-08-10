@@ -1,0 +1,87 @@
+/** TableAction 支持按行动态解析的字段值 */
+export type TableActionRowValue<T, V> = V | ((row: T) => V)
+
+/** TableAction Popconfirm 配置（按钮旁气泡确认） */
+export interface TableActionPopconfirmConfig {
+  title: string
+  positiveText?: string
+  negativeText?: string
+}
+
+/** TableAction Dialog 确认配置（居中弹窗确认） */
+export interface TableActionConfirmConfig {
+  /** 弹窗标题，默认「确认」 */
+  title?: string
+  /** 弹窗内容 */
+  content: string
+  positiveText?: string
+  negativeText?: string
+  /** dialog 类型，默认 warning */
+  type?: 'warning' | 'info' | 'success' | 'error'
+}
+
+/** 表格行操作项配置 */
+export interface TableActionItem<T = any> {
+  /** 唯一标识，label 为函数时建议必传 */
+  key?: string
+  /** 按钮文案，支持按行动态 */
+  label: TableActionRowValue<T, string>
+  /** 权限码，支持单个或多个（满足其一即可） */
+  permission?: string | string[]
+  icon?: import('vue').Component
+  /** 按钮类型，支持按行动态 */
+  type?: TableActionRowValue<T, import('naive-ui').ButtonProps['type']>
+  size?: import('naive-ui').ButtonProps['size']
+  /** 是否显示，支持按行动态 */
+  show?: boolean | ((row: T) => boolean)
+  /** 是否禁用，支持按行动态 */
+  disabled?: boolean | ((row: T) => boolean)
+  /** 加载态，可与 Promise 点击自动 loading 叠加 */
+  loading?: boolean | ((row: T) => boolean)
+  /** 提示文案，支持按行动态 */
+  tooltip?: string | ((row: T) => string)
+  /**
+   * 气泡二次确认（按钮旁提示）
+   * 与 confirm 互斥，同时配置时优先 popconfirm
+   */
+  popconfirm?: TableActionRowValue<T, string | TableActionPopconfirmConfig>
+  /** @deprecated 请使用 popconfirm */
+  popConfirm?: TableActionRowValue<T, string | TableActionPopconfirmConfig>
+  /**
+   * 弹窗二次确认（dialog.confirm / dialog.warning）
+   * 与 popconfirm 互斥，同时配置时优先 popconfirm
+   */
+  confirm?: TableActionRowValue<T, string | TableActionConfirmConfig>
+  /** 排序权重，越小越靠前 */
+  order?: number
+  /** 强制放入「更多」菜单 */
+  more?: boolean
+  /** 分割线（用于下拉菜单） */
+  divider?: boolean
+  /** 作为下拉菜单触发按钮（通常配合 children） */
+  dropdown?: boolean
+  /** 子菜单 */
+  children?: TableActionItem<T>[]
+  /** 自定义渲染，传入后忽略默认按钮渲染 */
+  render?: (row: T, ctx: TableActionRenderContext<T>) => import('vue').VNode | string
+  /** 点击回调，返回 Promise 时自动进入 loading */
+  onClick?: (row: T) => void | Promise<void>
+}
+
+/** TableAction 自定义 render 上下文 */
+export interface TableActionRenderContext<T = any> {
+  row: T
+  disabled: boolean
+  loading: boolean
+  onClick: () => void | Promise<void>
+}
+
+/** 操作列 actions 回调：按行返回按钮配置 */
+export type TableActionsResolver<T = any> = (row: T) => TableActionItem<T>[]
+
+/** 列设置持久化项 */
+export interface ColSettingItem {
+  key: string
+  label: string
+  isShow: boolean
+}

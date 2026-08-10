@@ -6,12 +6,9 @@
     "office-word-openxml",
     "office-word-binary",
     "open-document",
-    "spreadsheet-openxml",
-    "office-presentation-binary",
-    "office-presentation",
-    "ofd"
+    "spreadsheet-openxml"
   ],
-  "copiedAt": "2026-08-04T07:58:00.592Z",
+  "copiedAt": "2026-08-10T06:45:47.472Z",
   "assets": [
     {
       "rendererId": "pdf",
@@ -50,84 +47,6 @@
       "id": "pdf-cjk-font-fallback",
       "to": "F:\\workspace\\vue3-template\\public\\vendor\\pdf\\fonts",
       "copied": true
-    },
-    {
-      "rendererId": "office-presentation",
-      "id": "pptx-worker",
-      "to": "F:\\workspace\\vue3-template\\public\\vendor\\pptx\\pptx.worker.js",
-      "copied": true
-    },
-    {
-      "rendererId": "office-presentation-binary",
-      "id": "ppt-module",
-      "to": "F:\\workspace\\vue3-template\\public\\vendor\\ppt\\index.mjs",
-      "copied": true,
-      "sourcePackage": "@file-viewer/ppt",
-      "sourceVersion": "0.3.2"
-    },
-    {
-      "rendererId": "office-presentation-binary",
-      "id": "ppt-worker",
-      "to": "F:\\workspace\\vue3-template\\public\\vendor\\ppt\\worker.mjs",
-      "copied": true,
-      "sourcePackage": "@file-viewer/ppt",
-      "sourceVersion": "0.3.2"
-    },
-    {
-      "rendererId": "office-presentation-binary",
-      "id": "ppt-frame-cache",
-      "to": "F:\\workspace\\vue3-template\\public\\vendor\\ppt\\frame-cache.mjs",
-      "copied": true,
-      "sourcePackage": "@file-viewer/ppt",
-      "sourceVersion": "0.3.2"
-    },
-    {
-      "rendererId": "office-presentation-binary",
-      "id": "ppt-wasm",
-      "to": "F:\\workspace\\vue3-template\\public\\vendor\\ppt\\ppt-native.wasm",
-      "copied": true,
-      "sourcePackage": "@file-viewer/ppt",
-      "sourceVersion": "0.3.2"
-    },
-    {
-      "rendererId": "office-presentation-binary",
-      "id": "ppt-cjk-font",
-      "to": "F:\\workspace\\vue3-template\\public\\vendor\\ppt\\ppt-font-cjk.otf",
-      "copied": true,
-      "sourcePackage": "@file-viewer/ppt",
-      "sourceVersion": "0.3.2"
-    },
-    {
-      "rendererId": "office-presentation-binary",
-      "id": "ppt-manifest",
-      "to": "F:\\workspace\\vue3-template\\public\\vendor\\ppt\\manifest.json",
-      "copied": true,
-      "sourcePackage": "@file-viewer/ppt",
-      "sourceVersion": "0.3.2"
-    },
-    {
-      "rendererId": "office-presentation-binary",
-      "id": "ppt-package",
-      "to": "F:\\workspace\\vue3-template\\public\\vendor\\ppt\\package.json",
-      "copied": true,
-      "sourcePackage": "@file-viewer/ppt",
-      "sourceVersion": "0.3.2"
-    },
-    {
-      "rendererId": "office-presentation-binary",
-      "id": "ppt-license",
-      "to": "F:\\workspace\\vue3-template\\public\\vendor\\ppt\\LICENSE",
-      "copied": true,
-      "sourcePackage": "@file-viewer/ppt",
-      "sourceVersion": "0.3.2"
-    },
-    {
-      "rendererId": "office-presentation-binary",
-      "id": "ppt-notice",
-      "to": "F:\\workspace\\vue3-template\\public\\vendor\\ppt\\NOTICE",
-      "copied": true,
-      "sourcePackage": "@file-viewer/ppt",
-      "sourceVersion": "0.3.2"
     },
     {
       "rendererId": "office-word-openxml",

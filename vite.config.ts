@@ -12,9 +12,14 @@ import lightningcss from 'vite-plugin-lightningcss';
 import viteCompression from 'vite-plugin-compression';
 import electron from 'vite-plugin-electron/simple';
 import { defineConfig, loadEnv, type ConfigEnv } from 'vite';
+import { mockApiPlugin } from './mock/plugin';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const isElectron = process.env.ELECTRON === 'true';
+
+function resolveFlag(value: string | undefined) {
+  return value === 'true' || value === '1';
+}
 
 function copyElectronAssets() {
   const src = resolve(root, 'electron/assets');
@@ -39,11 +44,20 @@ function electronAssetsPlugin() {
 
 export default ({ command, mode }: ConfigEnv) => {
   const env = loadEnv(mode, process.cwd());
+  // 脚本 cross-env 优先于 .env 文件，便于 npm run dev:mock / dev:api 切换
+  const useMock = resolveFlag(process.env.VITE_USE_MOCK ?? env.VITE_USE_MOCK);
+  const apiProxyTarget = process.env.VITE_API_PROXY_TARGET
+    || env.VITE_API_PROXY_TARGET
+    || 'http://127.0.0.1:8080';
   const buildBase = isElectron
     ? (command === 'serve' ? '/' : './')
     : (env.VITE_BUILD_URL ? env.VITE_BUILD_URL.replace(/\/?$/, '/') : '/');
   const devBase = buildBase === '/' ? '' : buildBase.replace(/\/$/, '');
   const isDev = mode === 'dev';
+
+  if (command === 'serve') {
+    console.log(`[api] ${useMock ? 'MOCK' : 'PROXY → ' + apiProxyTarget}`);
+  }
 
   const plugins = [
     {
@@ -78,8 +92,12 @@ export default ({ command, mode }: ConfigEnv) => {
     },
     vue(),
     vueJsx(),
+    // 按需复制预览资源，排除 ppt（CJK 字体约 16MB），显著减小 public/vendor
+    // 资源路径已含 vendor/ 前缀；勿再设 baseDir: 'vendor'，否则会复制到 public/vendor/vendor
     fileViewerRenderers({
+      formats: ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv'],
       copyAssets: true,
+      chunkStrategy: 'renderer',
     }),
     Components({
       resolvers: [NaiveUiResolver()],
@@ -138,26 +156,33 @@ export default ({ command, mode }: ConfigEnv) => {
     );
   }
 
+  // Mock 开启时由中间件接管 /api，不再走代理
+  if (command === 'serve' && useMock) {
+    plugins.push(mockApiPlugin('/api'));
+  }
+
   return defineConfig({
     plugins,
     server: {
       open: false,
       cors: true,
-      port: 81,
+      port: 88,
       hmr: { overlay: false },
-      host: '0.0.0.0',
+      host: process.env.VITE_DEV_HOST || '0.0.0.0',
       watch: {
         // Windows EBUSY on large/locked files under public/vendor (fonts, pdf assets)
         ignored: ['**/public/vendor/**'],
       },
-      proxy: {
-        '/api': {
-          target: 'http://172.17.29.32',
-          changeOrigin: true,
-          secure: false,
-          // rewrite: path => path.replace(/^\/api/, ''),
-        },
-      },
+      proxy: useMock
+        ? undefined
+        : {
+            '/api': {
+              target: apiProxyTarget,
+              changeOrigin: true,
+              secure: false,
+              // rewrite: path => path.replace(/^\/api/, ''),
+            },
+          },
     },
     resolve: {
       alias: [
@@ -183,15 +208,36 @@ export default ({ command, mode }: ConfigEnv) => {
               main: resolve(root, 'index.html'),
               app: resolve(root, 'app/index.html'),
             },
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules'))
+              return
+            if (id.includes('naive-ui'))
+              return 'naive-ui'
+            if (id.includes('@file-viewer'))
+              return 'file-viewer'
+            if (id.includes('xlsx'))
+              return 'xlsx'
+            if (id.includes('/vant/') || id.includes('\\vant\\'))
+              return 'vant'
+            if (
+              id.includes('/vue/')
+              || id.includes('/vue-router/')
+              || id.includes('/pinia/')
+              || id.includes('\\vue\\')
+              || id.includes('\\vue-router\\')
+              || id.includes('\\pinia\\')
+            ) {
+              return 'vue-vendor'
+            }
+          },
+        },
       },
     },
     css: {
       preprocessorOptions: {
         scss: {
-          additionalData: `
-            @use "@/assets/scss/variables.scss" as *;
-            @use "@/assets/scss/common.scss" as *;
-          `,
+          additionalData: `@use "@/assets/scss/variables.scss" as *;`,
         },
       },
     },

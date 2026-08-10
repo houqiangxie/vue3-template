@@ -1,29 +1,13 @@
-import 'virtual:uno.css';
-import '@/styles/transition/index.css';
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
-import router from '@/router/app';
-import emitter from '@/utils/emitter';
-import App from './App.vue';
+import 'virtual:uno.css'
+import '@/assets/scss/main.scss'
+import '@/styles/transition/index.css'
+import router from '@/router/app'
+import App from './App.vue'
+import { createBootstrap } from './createBootstrap'
 
-async function bootstrap() {
-  const app = createApp(App);
-
-  app.config.globalProperties.$emitter = emitter;
-
-  app.use(createPinia());
-  app.use(router);
-
-  // 路由准备就绪后再挂载，避免首屏导航守卫未执行完就渲染
-  await router.isReady();
-
-  // 让 Naive UI 在 UnoCSS 样式之后注入，防止样式冲突
-  // https://www.naiveui.com/en-US/os-theme/docs/style-conflict
-  const meta = document.createElement('meta');
-  meta.name = 'naive-ui-style';
-  document.head.appendChild(meta);
-
-  app.mount('#appApp');
-}
-
-bootstrap();
+createBootstrap({
+  rootComponent: App,
+  router,
+  mountSelector: '#appApp',
+  injectNaiveStyleMeta: true,
+})

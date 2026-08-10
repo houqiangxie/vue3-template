@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { FileViewer } from '@file-viewer/vue3'
-import officePreset from '@file-viewer/preset-office'
-import '@file-viewer/vue3/dist/file-viewer3.css'
+/**
+ * file-viewer 体积较大：仅在弹窗打开且需要渲染时再动态加载
+ */
 import { NSpin } from 'naive-ui'
-import { computed, ref, watch } from 'vue'
-import CommonModal from './CommonModal.vue'
+import { computed, ref, shallowRef, watch, type Component } from 'vue'
+import CommonModal from './modal/CommonModal.vue'
 import { fetchPreviewFile } from '@/utils/file'
 
 const props = withDefaults(defineProps<{
@@ -21,15 +21,37 @@ const show = defineModel<boolean>('show', { default: false })
 const previewFile = ref<File | null>(null)
 const loading = ref(false)
 const error = ref('')
+const FileViewerComp = shallowRef<Component | null>(null)
+const officePreset = shallowRef<unknown>(null)
 
 const viewerOptions = computed(() => ({
-  preset: officePreset,
+  preset: officePreset.value,
   rendererMode: 'replace' as const,
   theme: 'light' as const,
   toolbar: { position: 'bottom-right' as const },
 }))
 
 let loadSeq = 0
+let viewerLoading: Promise<void> | null = null
+
+async function ensureViewer() {
+  if (FileViewerComp.value)
+    return
+  if (!viewerLoading) {
+    viewerLoading = (async () => {
+      const [viewerMod, presetMod] = await Promise.all([
+        import('@file-viewer/vue3'),
+        import('@file-viewer/preset-office'),
+      ])
+      await import('@file-viewer/vue3/dist/file-viewer3.css')
+      FileViewerComp.value = viewerMod.FileViewer
+      officePreset.value = presetMod.default
+    })().finally(() => {
+      viewerLoading = null
+    })
+  }
+  await viewerLoading
+}
 
 async function loadPreview(url: string, filename: string) {
   const seq = ++loadSeq
@@ -38,6 +60,7 @@ async function loadPreview(url: string, filename: string) {
   previewFile.value = null
 
   try {
+    await ensureViewer()
     const file = await fetchPreviewFile(url, filename)
     if (seq !== loadSeq)
       return
@@ -83,8 +106,9 @@ watch(
       <div v-if="error" class="file-preview-modal__error">
         {{ error }}
       </div>
-      <div v-else-if="show && previewFile" class="file-preview-modal__viewer">
-        <FileViewer
+      <div v-else-if="show && previewFile && FileViewerComp" class="file-preview-modal__viewer">
+        <component
+          :is="FileViewerComp"
           :file="previewFile"
           :filename="filename"
           :options="viewerOptions"

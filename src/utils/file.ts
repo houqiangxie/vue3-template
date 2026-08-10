@@ -4,14 +4,26 @@ const IMAGE_EXTENSIONS = new Set([
   'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'jfif', 'heic', 'heif', 'ico', 'dpg',
 ])
 
-const OFFICE_EXTENSIONS = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'] as const
+const OFFICE_EXTENSIONS = ['doc', 'docx', 'xls', 'xlsx'] as const
+const OFFICE_UPLOAD_EXTENSIONS = [...OFFICE_EXTENSIONS, 'ppt', 'pptx'] as const
 
 /** 文件类型预设：支持 img / office / pdf，也可单独传后缀如 png、docx */
 export const FILE_TYPE_PRESETS: Record<string, { extensions: readonly string[], label: string }> = {
   img: { extensions: [...IMAGE_EXTENSIONS], label: '图片' },
   image: { extensions: [...IMAGE_EXTENSIONS], label: '图片' },
+  /** 可预览的 office（不含 ppt，预览资源已剔除以减小体积） */
   office: { extensions: OFFICE_EXTENSIONS, label: 'Office办公文件' },
+  /** 允许上传含 ppt/pptx，预览时可能不支持 */
+  'office-all': { extensions: OFFICE_UPLOAD_EXTENSIONS, label: 'Office办公文件' },
   pdf: { extensions: ['pdf'], label: 'PDF' },
+}
+
+/** 与 fetch.ts 对齐的鉴权头（勿把 token 放进 URL query） */
+export function getAuthHeaders(): Record<string, string> {
+  const token = String((local as { token?: { token?: string } }).token?.token || '')
+  if (!token)
+    return {}
+  return { token, Authorization: token }
 }
 
 export function normalizeExtension(ext: string): string {
@@ -65,15 +77,23 @@ export function isImageFileName(name?: string | null): boolean {
   return ext ? isImageExtension(ext) : false
 }
 
-/** 将 fileId / 相对路径转为可访问 URL */
-export function formatFileUrl(url?: string | null, isVideo = false,isPublic:boolean=true): string {
+/**
+ * 将 fileId / 相对路径转为可访问 URL。
+ * 不附带 token（避免进日志 / Referer）；需鉴权时用 fetchPreviewFile 或带 getAuthHeaders 的请求。
+ */
+export function formatFileUrl(url?: string | null, isVideo = false, isPublic: boolean = true): string {
   if (!url)
     return ''
-  if (/^(https?:|blob:|data:)/i.test(url)||url.includes('sys'))
+  if (/^(https?:|blob:|data:)/i.test(url) || url.includes('sys'))
     return url
 
   const base = (import.meta.env.VITE_baseUrl || '').replace(/\/$/, '')
-  return `${base}/system/sys/file/${isVideo ? 'public/previewMinioVideo' : isPublic?'public/previewFile':'preview'}?fileId=${url}&token=${''}`
+  const action = isVideo
+    ? 'public/previewMinioVideo'
+    : isPublic
+      ? 'public/previewFile'
+      : 'preview'
+  return `${base}/system/sys/file/${action}?fileId=${encodeURIComponent(url)}`
 }
 
 export interface UploadedFileItem {
@@ -99,10 +119,11 @@ export function resolveFileName(item: UploadedFileItem): string {
 
 /** 接口返回 attachment 头时，先 fetch 成 File 再交给预览器 */
 export async function fetchPreviewFile(url: string, filename: string): Promise<File> {
-  const token = local.token?.token||'2fe639cba7dd443082d3de146703207e'
-  const response = await fetch(url, {
-    headers: token ? { Authorization: token, token, platformType: '1' } : {},
-  })
+  const headers = getAuthHeaders()
+  if (!headers.token)
+    throw new Error('未登录，无法加载文件')
+
+  const response = await fetch(url, { headers })
   if (!response.ok)
     throw new Error(`文件加载失败 (${response.status})`)
 

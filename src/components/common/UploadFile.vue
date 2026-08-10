@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
-import { local } from 'ux-web-storage'
 import {
   NButton,
   NImage,
@@ -8,11 +7,11 @@ import {
   NUploadDragger,
   useMessage,
 } from 'naive-ui'
-import { computed, nextTick, ref, watch } from 'vue'
-import FilePreviewModal from './FilePreviewModal.vue'
+import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
 import {
   formatFileTypeTip,
   formatFileUrl,
+  getAuthHeaders,
   isImageFileName,
   isImageOnlyTypes,
   resolveFileId,
@@ -21,6 +20,8 @@ import {
   resolveFileTypes,
   type UploadedFileItem,
 } from '@/utils/file'
+
+const FilePreviewModal = defineAsyncComponent(() => import('./FilePreviewModal.vue'))
 
 const props = withDefaults(defineProps<{
   value?: UploadedFileItem | UploadedFileItem[] | string | null
@@ -239,6 +240,13 @@ async function customRequest(options: UploadCustomRequestOptions) {
     return
   }
 
+  const authHeaders = getAuthHeaders()
+  if (!authHeaders.token) {
+    message.error('未登录，无法上传文件')
+    onError()
+    return
+  }
+
   const formData = new FormData()
   formData.append('file', rawFile)
   formData.append('uploadSource', String(props.uploadSource))
@@ -249,10 +257,7 @@ async function customRequest(options: UploadCustomRequestOptions) {
   try {
     const response = await fetch(uploadUrl, {
       method: 'POST',
-      headers: {
-        Authorization: local.token?.token ?? '2fe639cba7dd443082d3de146703207e',
-        platformType: '1',
-      },
+      headers: authHeaders,
       body: formData,
     })
 
@@ -264,7 +269,8 @@ async function customRequest(options: UploadCustomRequestOptions) {
       return
     }
 
-    if (res.code !== 200) {
+    // 业务成功码：模板统一为 0；兼容部分旧上传接口返回 200
+    if (res.code !== 0 && res.code !== 200) {
       message.error(res.msg || '上传文件失败')
       onError()
       return
@@ -431,6 +437,7 @@ async function handlePreview(
     />
 
     <FilePreviewModal
+      v-if="previewVisible"
       v-model:show="previewVisible"
       :title="previewTitle"
       :url="previewUrl"

@@ -1,45 +1,70 @@
 import { local } from 'ux-web-storage'
 import { useCommonStore } from '@/store/common'
 import { usePermissionStore } from '@/store/modules/permission'
+import type { ViewModules } from '@/router/utils/buildDynamicRoutes'
 import type { Router } from 'vue-router'
-import type { RoutePoolItem } from './utils/types'
 
 /**
  * 安装全局导航守卫：
  *  1. 保持 "isIframe" 标志同步
  *  2. 将未认证用户重定向到 /login
  *  3. 在第一次认证导航时，调用 `permissionStore.setupRoutes()`
- *     动态添加权限路由，然后重新触发导航以便新注册的路由能正确匹配
- *
- * @param router Vue Router 实例
- * @param routePool 路由池（所有文件生成的路由）
+ *     根据后台菜单动态添加路由，然后重新触发导航
  */
-export default (router: Router, routePool: RoutePoolItem[]): void => {
+export default (router: Router, viewModules: ViewModules, viewsBaseDir: string): void => {
   router.beforeEach(async (to) => {
-    const commonStore = useCommonStore()
-    commonStore.isIframe = !!(to.query.token || to.query.isIframe)
+    // 兼容旧版 /redirect/... 刷新地址（hash / history 均适用）
+    if (to.path === '/redirect' || to.path.startsWith('/redirect/')) {
+      let target = to.path.slice('/redirect'.length) || '/'
+      while (target.startsWith('/redirect/') || target === '/redirect') {
+        target = target === '/redirect' ? '/' : target.slice('/redirect'.length)
+      }
+      if (!target.startsWith('/')) target = '/' + target
+      return { path: target, query: to.query, hash: to.hash, replace: true }
+    }
 
-    const token = (local as any).token?.token||1
+    const commonStore = useCommonStore()
+    // iframe 嵌入只用显式标记；勿依赖 query.token（易进日志/Referer）
+    commonStore.isIframe = to.query.isIframe === '1' || to.query.isIframe === 'true' || to.query.isIframe === ''
+
+    // ?token= 仅 DEV 或显式 VITE_ALLOW_QUERY_TOKEN=true 时写入本地；生产默认忽略并剥离 query
+    // 新嵌入请用 postMessage / 首屏注入等方式传凭证，勿再依赖 URL 凭证
+    if (typeof to.query.token === 'string' && to.query.token) {
+      const allowQueryToken = import.meta.env.DEV
+        || import.meta.env.VITE_ALLOW_QUERY_TOKEN === 'true'
+        || import.meta.env.VITE_ALLOW_QUERY_TOKEN === '1'
+      const nextQuery = { ...to.query }
+      if (to.query.isIframe != null)
+        nextQuery.isIframe = to.query.isIframe || '1'
+      delete nextQuery.token
+
+      if (allowQueryToken) {
+        const storage = local as { token?: { token?: string } }
+        if (!storage.token?.token)
+          storage.token = { token: to.query.token }
+      }
+      else {
+        console.warn('[permission] 已忽略 URL query.token（生产默认关闭，需设 VITE_ALLOW_QUERY_TOKEN=true）')
+      }
+      return { path: to.path, query: nextQuery, hash: to.hash, replace: true }
+    }
+
+    const token = (local as any).token?.token as string | undefined
     const permissionStore = usePermissionStore()
 
-    // ── 已认证 — 首次导航：优先加载动态路由 ──────────────────────────────────────
     if (token && !permissionStore.routesLoaded && to.name !== 'Login') {
       try {
-        await permissionStore.setupRoutes(router, routePool)
-
-        // 如果当前匹配的是静态通配符，说明需要重新匹配动态路由
-        if (to.name === 'StaticCatchAll' || !to.name) {
-          // 必须通过 fullPath 字符串进行跳转，强制路由器重新进行路径匹配
-          // 否则如果携带 to.name，路由器会再次匹配到 StaticCatchAll
-          return {
-            path: to.path,
-            query: to.query,
-            hash: to.hash,
-            replace: true,
-          }
+        await permissionStore.setupRoutes(router, viewModules, viewsBaseDir)
+        // 动态路由刚注册完，必须重新匹配；访问根路径时直达默认首页
+        if (to.path === '/' && permissionStore.defaultRouteName) {
+          return { name: permissionStore.defaultRouteName, replace: true }
         }
-
-        return true
+        return {
+          path: to.path,
+          query: to.query,
+          hash: to.hash,
+          replace: true,
+        }
       }
       catch (error) {
         console.error('Failed to setup routes:', error)
@@ -47,24 +72,23 @@ export default (router: Router, routePool: RoutePoolItem[]): void => {
       }
     }
 
-    // ── /login ────────────────────────────────────────────────────────────────
     if (to.name === 'Login') {
       if (token) {
-        // 已认证且访问登录页：跳转到首页
-        if (!permissionStore.routesLoaded) {
-          await permissionStore.setupRoutes(router, routePool)
-        }
-        return { name: 'Index-Home-HomeIndex', replace: true }
+        if (!permissionStore.routesLoaded)
+          await permissionStore.setupRoutes(router, viewModules, viewsBaseDir)
+
+        const homeName = permissionStore.defaultRouteName
+        if (homeName)
+          return { name: homeName, replace: true }
+
+        return { path: '/', replace: true }
       }
       return true
     }
 
-    // ── 未认证 ────────────────────────────────────────────────────────────────
-    if (!token) {
+    if (!token)
       return `/login?returnUrl=${encodeURIComponent(to.fullPath)}`
-    }
 
-    // ── 正常导航 ──────────────────────────────────────────────────────────────
     return true
   })
 }

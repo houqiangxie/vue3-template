@@ -2,12 +2,11 @@
   <div
     class="tabs-view"
     :class="{
-      'tabs-view-fix': multiTabsSetting.fixed,
-      'tabs-view-fixed-header': isMultiHeaderFixed,
       'tabs-view-default-background': !getDarkTheme,
       'tabs-view-dark-background': getDarkTheme,
+      ['tabs-style-' + tabsStyle]: true,
     }"
-    :style="getChangeStyle"
+    :style="tabsViewStyle"
   >
     <div class="tabs-view-main">
       <!-- 标签卡片区 -->
@@ -52,7 +51,7 @@
       </div>
 
       <!-- 关闭下拉菜单 -->
-      <div class="tabs-close">
+      <div v-if="showTabsMenu" class="tabs-close">
         <n-dropdown
           trigger="hover"
           placement="bottom-end"
@@ -67,6 +66,7 @@
 
       <!-- 右键菜单 -->
       <n-dropdown
+        v-if="showTabsMenu"
         :show="showDropdown"
         :x="dropdownX"
         :y="dropdownY"
@@ -91,7 +91,6 @@
     onMounted,
     onUnmounted,
     nextTick,
-    unref,
   } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { storage } from '@/utils/Storage';
@@ -101,6 +100,7 @@
   import { useProjectSetting } from '@/hooks/setting/useProjectSetting';
   import { useDesignSetting } from '@/hooks/setting/useDesignSetting';
   import { useProjectSettingStore } from '@/store/modules/projectSetting';
+  import { usePageReload } from '@/hooks/usePageReload';
   import { useMessage, useThemeVars } from 'naive-ui';
   import Draggable from 'vuedraggable';
   import {
@@ -113,23 +113,21 @@
     RightOutlined,
   } from '@vicons/antd';
   import { renderIcon } from '@/utils/layout';
-  import elementResizeDetectorMaker from 'element-resize-detector';
-
   export default defineComponent({
     name: 'TabsView',
     components: { DownOutlined, CloseOutlined, LeftOutlined, RightOutlined, Draggable },
     props: {
       collapsed: { type: Boolean },
     },
-    setup(props) {
+    setup() {
       const { getDarkTheme, getAppTheme } = useDesignSetting();
-      const { navMode, headerSetting, menuSetting, multiTabsSetting, isMobile } = useProjectSetting();
+      const { multiTabsSetting } = useProjectSetting();
       const settingStore = useProjectSettingStore();
       const message = useMessage();
       const route = useRoute();
       const router = useRouter();
       const tabsViewStore = useTabsViewStore();
-      const whiteList = ['Login', 'Redirect', 'ErrorPage'];
+      const whiteList = ['Login', 'ErrorPage'];
 
       const navScroll = ref<HTMLElement | null>(null);
       const navWrap = ref<HTMLElement | null>(null);
@@ -145,7 +143,6 @@
         dropdownX: 0,
         dropdownY: 0,
         showDropdown: false,
-        isMultiHeaderFixed: false,
         multiTabsSetting,
       });
 
@@ -155,29 +152,15 @@
         return { fullPath, hash, meta, name, params, path, query };
       };
 
-      const isMixMenuNoneSub = computed(() => {
-        if (unref(navMode) !== 'horizontal-mix') return true;
-        const mixMenu = settingStore.menuSetting.mixMenu;
-        return !(mixMenu && (route.meta as any)?.isRoot);
-      });
+      const tabsStyle = computed(() => settingStore.multiTabsSetting.style || 'card');
+      const showTabsMenu = computed(() => settingStore.multiTabsSetting.showContextMenu !== false);
 
-      const getChangeStyle = computed(() => {
-        const { collapsed } = props;
-        const { minMenuWidth, menuWidth } = unref(menuSetting);
-        const { fixed } = unref(multiTabsSetting);
-        let lenNum =
-          unref(navMode) === 'horizontal' || !isMixMenuNoneSub.value
-            ? '0px'
-            : collapsed
-              ? `${minMenuWidth}px`
-              : `${menuWidth}px`;
-        if (isMobile.value) {
-          return { left: '0px', width: '100%' };
-        }
-        return {
-          left: lenNum,
-          width: `calc(100% - ${!fixed ? '0px' : lenNum})`,
-        };
+      const tabsViewStyle = computed(() => {
+        const bg = settingStore.multiTabsSetting.bgColor;
+        if (getDarkTheme.value || !bg) return undefined;
+        const normalized = bg.trim().toLowerCase();
+        if (normalized === '#fff' || normalized === '#ffffff') return undefined;
+        return { backgroundColor: bg };
       });
 
       const TabsMenuOptions = computed(() => {
@@ -194,8 +177,12 @@
       let cacheRoutes: RouteItem[] = [];
       const simpleRoute = getSimpleRoute(route);
       try {
-        const routesStr = storage.get(TABS_ROUTES) as string | null | undefined;
-        cacheRoutes = routesStr ? JSON.parse(routesStr) : [simpleRoute];
+        if (settingStore.multiTabsSetting.persist) {
+          const routesStr = storage.get(TABS_ROUTES) as string | null | undefined;
+          cacheRoutes = routesStr ? JSON.parse(routesStr) : [simpleRoute];
+        } else {
+          cacheRoutes = [simpleRoute];
+        }
       } catch {
         cacheRoutes = [simpleRoute];
       }
@@ -215,19 +202,6 @@
 
       tabsViewStore.initTabs(cacheRoutes);
 
-      // 滚动监听（用于固定多标签头部）
-      function onScroll(e: Event) {
-        const scrollTop =
-          (e.target as HTMLElement).scrollTop ||
-          document.documentElement.scrollTop ||
-          window.pageYOffset ||
-          document.body.scrollTop;
-        state.isMultiHeaderFixed = !!(
-          !headerSetting.value.fixed &&
-          multiTabsSetting.value.fixed &&
-          scrollTop >= 64
-        );
-      }
       const tabsList = computed(() => tabsViewStore.tabsList);
 
       // 路由变化时添加标签
@@ -253,13 +227,15 @@
 
       // 页面刷新前保存标签
       const saveTabsBeforeUnload = () => {
+        if (!settingStore.multiTabsSetting.persist) {
+          storage.remove(TABS_ROUTES);
+          return;
+        }
         storage.set(TABS_ROUTES, JSON.stringify(tabsList.value));
       };
 
       // ---- 关闭操作 ----
-      const reloadPage = () => {
-        router.push({ path: '/redirect' + route.fullPath });
-      };
+      const { reloadPage } = usePageReload();
       provide('reloadPage', reloadPage);
 
       const removeTab = (r: any) => {
@@ -289,7 +265,11 @@
 
       const closeAll = () => {
         tabsViewStore.closeAllTabs();
-        router.replace('/');
+        const first = tabsViewStore.tabsList[0];
+        if (first)
+          router.replace(first.fullPath);
+        else
+          router.replace('/');
         updateNavScroll();
       };
 
@@ -363,6 +343,7 @@
       const currentContextItem = ref<any>(null);
 
       function handleContextMenu(e: MouseEvent, item: any) {
+        if (!showTabsMenu.value) return;
         e.preventDefault();
         currentContextItem.value = item;
         isCurrent.value = item.path === '/' || !!(item.meta?.affix);
@@ -391,23 +372,20 @@
         if (routeInfo) removeTab(routeInfo);
       }
 
-      let erdObserver: any = null;
+      let resizeObserver: ResizeObserver | null = null;
 
       onMounted(() => {
-        erdObserver = elementResizeDetectorMaker();
-        if (navWrap.value) {
-          erdObserver.listenTo(navWrap.value, () => updateNavScroll(true));
+        if (navWrap.value && typeof ResizeObserver !== 'undefined') {
+          resizeObserver = new ResizeObserver(() => updateNavScroll(true));
+          resizeObserver.observe(navWrap.value);
         }
-        window.addEventListener('scroll', onScroll, true);
         window.addEventListener('beforeunload', saveTabsBeforeUnload);
       });
 
       onUnmounted(() => {
-        window.removeEventListener('scroll', onScroll, true);
         window.removeEventListener('beforeunload', saveTabsBeforeUnload);
-        if (erdObserver && navWrap.value) {
-          erdObserver.uninstall(navWrap.value);
-        }
+        resizeObserver?.disconnect();
+        resizeObserver = null;
       });
 
       return {
@@ -420,7 +398,9 @@
         closeTabItem,
         closeAll,
         reloadPage,
-        getChangeStyle,
+        tabsViewStyle,
+        tabsStyle,
+        showTabsMenu,
         TabsMenuOptions,
         closeHandleSelect,
         scrollNext,
@@ -439,9 +419,11 @@
 <style lang="scss" scoped>
   .tabs-view {
     width: 100%;
-    padding: 6px 0;
+    flex-shrink: 0;
+    padding: 6px 10px;
     display: flex;
     transition: all 0.2s ease-in-out;
+    box-sizing: border-box;
 
     &-main {
       height: 32px;
@@ -545,11 +527,39 @@
   .tabs-view-default-background { background: #f5f7f9; }
   .tabs-view-dark-background    { background: #101014; }
 
-  .tabs-view-fix {
-    position: fixed;
-    z-index: 5;
-    padding: 6px 10px;
+  .tabs-style-simple {
+    .tabs-card-scroll-item {
+      background: transparent !important;
+      border-radius: 0 !important;
+      border-bottom: 2px solid transparent;
+      margin-right: 2px;
+
+      &.active-item {
+        border-bottom-color: v-bind(getAppTheme);
+      }
+    }
   }
 
-  .tabs-view-fixed-header { top: 0; }
+  .tabs-style-dot {
+    .tabs-card-scroll-item {
+      background: transparent !important;
+      padding-left: 22px !important;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 50%;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        transform: translateY(-50%);
+        background: #c0c4cc;
+      }
+
+      &.active-item::before {
+        background: v-bind(getAppTheme);
+      }
+    }
+  }
 </style>

@@ -12,3 +12,13 @@ scripts/.pnpm-wrapper
 .history
 # package-lock.json
 /.vscode
+
+# 本地密钥与覆盖（AES、代理地址等）
+.env.local
+.env.*.local
+
+# 误配置 copyAssets.baseDir 时产生的嵌套目录，勿提交
+/public/vendor/vendor/
+
+# file-viewer 插件偶发写出的本机绝对路径清单，勿提交
+/public/flyfish-viewer-assets.json

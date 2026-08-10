@@ -1,281 +1,480 @@
-import { showFailToast } from "vant";
 import { db, local } from 'ux-web-storage'
-const commonStore = useCommonStore();
-window.addEventListener("unhandledrejection", e => {
-    e.preventDefault();
-});
-/**
- * config 自定义配置项
- * @param withoutCheck 不使用默认的接口状态校验，直接返回 response
- * @param returnOrigin 是否返回整个 response 对象，为 false 只返回 response.data
- * @param showError 全局错误时，是否使用统一的报错方式
- * @param canEmpty 传输参数是否可以为空
- * @param mock 是否使用 mock 服务
- * @param timeout 接口请求超时时间，默认10秒
- */
-let configDefault: any = {
-    showError: true,
-    canEmpty: false,
-    returnOrigin: false,
-    withoutCheck: false,
-    mock: false,
-    timeout: 10000,
-    mode: "cors",
-    cache: "no-cache",
-    cached: false,
-    catchExpires: null,
-    last: false,
-};
+import { useCommonStore } from '@/store/common'
+import { showRequestError } from '@/utils/toast'
+import { deepClone } from '@/utils/common'
 
-// 根据请求方式，url等生成请求key
-const generateReqKey = (config: any) => {
-    const { method, url, body, requestKey } = config;
-    return requestKey || [method, url, new URLSearchParams(body)].join("&");
+export interface RequestConfig {
+  withoutCheck?: boolean
+  returnOrigin?: boolean
+  showError?: boolean
+  canEmpty?: boolean
+  timeout?: number
+  mode?: RequestMode
+  cache?: RequestCache
+  cached?: boolean
+  catchExpires?: number | null
+  last?: boolean
+  hideLoading?: boolean
+  formData?: boolean
+  fileUpload?: boolean
+  joinUrl?: boolean
+  unwanted?: boolean
+  isNotAuth?: boolean
+  responseType?: 'json' | 'text' | 'blob' | 'arrayBuffer'
+  requestKey?: string
+  headers?: Record<string, string>
+  [key: string]: unknown
 }
 
-// 请求配置map
-const pendingRequest = new Map();
-const cacheRequestMap = new Map()
-// 添加请求map
-export const addPendingRequest = (config: any) => {
-    const requestKey = generateReqKey(config);
-    if (config.last && pendingRequest.has(requestKey)) {
-        removePendingRequest(config, requestKey);
-        cacheRequestMap.delete(requestKey);
-    }
-    if (!pendingRequest.has(requestKey)) {
-        pendingRequest.set(requestKey, config);
-    }
-}
-// 移除请求map
-export const removePendingRequest = (config: any, requestKey?: string) => {
-    if (!requestKey) requestKey = generateReqKey(config);
-    if (!config.requestKey) config.requestKey = requestKey;
-    if (pendingRequest.has(requestKey)) {
-        const cancelToken = config || pendingRequest.get(requestKey);
-        if (cancelToken) {
-            cancelToken.abortRequest = true;
-            cancelToken.controller.abort();
-        }
-        pendingRequest.delete(requestKey);
-        cacheRequestMap.delete(requestKey);
-    }
+export interface ApiResponse<T = unknown> {
+  data: T
+  code: number
+  message?: string
+  msg?: string
 }
 
-// 移除所有pending请求
+/** 业务/网络错误；shown=true 表示已弹过 toast，调用方勿重复提示 */
+export class ApiError extends Error {
+  code: number
+  shown: boolean
+  raw?: unknown
+
+  constructor(message: string, code = -1, shown = false, raw?: unknown) {
+    super(message)
+    this.name = 'ApiError'
+    this.code = code
+    this.shown = shown
+    this.raw = raw
+  }
+}
+
+window.addEventListener('unhandledrejection', (e) => {
+  // 仅吞掉已由 ApiError 提示过的业务拒绝，避免控制台噪音；其余仍抛出
+  const reason = e.reason
+  if (reason instanceof ApiError && reason.shown)
+    e.preventDefault()
+})
+
+type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface PendingConfig extends RequestConfig {
+  method: string
+  url: string
+  body: unknown
+  headers: Record<string, string>
+  controller: AbortController
+  abortRequest?: boolean
+  /** 主动取消 vs 超时，catch 里区分提示 */
+  abortReason?: 'cancel' | 'timeout'
+  timeoutId?: ReturnType<typeof setTimeout>
+  signal: AbortSignal
+}
+
+const configDefault: RequestConfig = {
+  showError: true,
+  canEmpty: false,
+  returnOrigin: false,
+  withoutCheck: false,
+  timeout: 10000,
+  mode: 'cors',
+  cache: 'no-cache',
+  cached: false,
+  catchExpires: null,
+  last: false,
+}
+
+function generateReqKey(config: { method?: string, url?: string, body?: unknown, requestKey?: string }) {
+  const { method, url, body, requestKey } = config
+  if (requestKey)
+    return requestKey
+  let bodyKey = ''
+  try {
+    bodyKey = body == null ? '' : typeof body === 'string' ? body : JSON.stringify(body)
+  }
+  catch {
+    bodyKey = String(body)
+  }
+  return [method, url, bodyKey].join('&')
+}
+
+const pendingRequest = new Map<string, PendingConfig>()
+const cacheRequestMap = new Map<string, Promise<ApiResponse>>()
+
+export const addPendingRequest = (config: PendingConfig) => {
+  const requestKey = generateReqKey(config)
+  if (config.last && pendingRequest.has(requestKey)) {
+    removePendingRequest(config, requestKey)
+    cacheRequestMap.delete(requestKey)
+  }
+  if (!pendingRequest.has(requestKey))
+    pendingRequest.set(requestKey, config)
+}
+
+function clearRequestTimeout(config: PendingConfig) {
+  if (config.timeoutId != null) {
+    clearTimeout(config.timeoutId)
+    config.timeoutId = undefined
+  }
+}
+
+export const removePendingRequest = (config: PendingConfig | RequestConfig, requestKey?: string) => {
+  if (!requestKey)
+    requestKey = generateReqKey(config as PendingConfig)
+  if (!(config as PendingConfig).requestKey)
+    (config as PendingConfig).requestKey = requestKey
+  if (pendingRequest.has(requestKey)) {
+    const cancelToken = (config as PendingConfig).controller
+      ? (config as PendingConfig)
+      : pendingRequest.get(requestKey)
+    if (cancelToken) {
+      clearRequestTimeout(cancelToken)
+      if (cancelToken.controller) {
+        if (!cancelToken.abortReason)
+          cancelToken.abortReason = 'cancel'
+        cancelToken.abortRequest = true
+        cancelToken.controller.abort()
+      }
+    }
+    pendingRequest.delete(requestKey)
+    cacheRequestMap.delete(requestKey)
+  }
+}
+
 export const removeAllPendingRequest = () => {
-    pendingRequest.forEach((source) => {
-        if (source) {
-            removePendingRequest(source)
+  pendingRequest.forEach((source) => {
+    removePendingRequest(source)
+  })
+  cacheRequestMap.clear()
+}
+
+async function resultReduction(response: Response, responseType = 'json') {
+  switch (responseType) {
+    case 'text':
+      return response.text()
+    case 'blob':
+      return response.blob()
+    case 'arrayBuffer':
+      return response.arrayBuffer()
+    case 'json':
+    default:
+      return response.json()
+  }
+}
+
+/** 将对象序列化为 query string（跳过 null / undefined） */
+export function toQueryString(data: Record<string, unknown>): string {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(data)) {
+    if (value === null || value === undefined)
+      continue
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item !== null && item !== undefined)
+          params.append(key, String(item))
+      })
+      continue
+    }
+    params.append(key, String(value))
+  }
+  return params.toString()
+}
+
+/** history 模式下构造登录地址，兼容 web（BASE/）与 app（BASE/app/）双入口 */
+function buildLoginRedirectUrl(): string | null {
+  const { pathname, search, hash } = location
+  if (/\/login\/?$/.test(pathname) || /(?:^|[?&])returnUrl=/.test(search))
+    return null
+
+  const base = String(import.meta.env.BASE_URL || '/').replace(/\/$/, '')
+  const appRoot = `${base}/app`
+  const isApp = pathname === appRoot || pathname.startsWith(`${appRoot}/`)
+  const routerBase = isApp ? `${appRoot}/` : `${base}/`
+
+  let relative = '/'
+  if (pathname.startsWith(routerBase))
+    relative = `/${pathname.slice(routerBase.length)}`.replace(/\/{2,}/g, '/') || '/'
+  else if (pathname === routerBase.replace(/\/$/, ''))
+    relative = '/'
+
+  const returnUrl = `${relative === '//' ? '/' : relative}${search}${hash}`
+  return `${routerBase}login?returnUrl=${encodeURIComponent(returnUrl)}`
+}
+
+function redirectToLogin() {
+  // 清掉本地凭证，否则守卫会因仍有 token 把 /login 再踢回首页
+  try {
+    delete (local as { token?: unknown }).token
+  }
+  catch {
+    // ignore
+  }
+
+  const loginUrl = buildLoginRedirectUrl()
+  if (!loginUrl)
+    return
+
+  const center = (window as Window & { eventCenterForAppEmergencyTeam?: unknown }).eventCenterForAppEmergencyTeam
+  if (center) {
+    const origin = location.ancestorOrigins?.[0] || ''
+    parent.location.replace(origin ? new URL(loginUrl, origin).href : loginUrl)
+  }
+  else {
+    location.href = loginUrl
+  }
+}
+
+function notifyError(config: RequestConfig, message: string) {
+  if (config.showError === false)
+    return false
+  showRequestError(message)
+  return true
+}
+
+/**
+ * 解包标准 ApiResponse：code===0 返回 data，否则抛 ApiError
+ * 若请求层已 toast（shown），调用方 catch 后勿再弹窗
+ */
+export function unwrapData<T = unknown>(res: ApiResponse<T>, fallbackMsg = '请求失败'): T {
+  if (res.code === 0)
+    return res.data
+  throw new ApiError(res.message || res.msg || fallbackMsg, res.code, false, res)
+}
+
+async function request<T = unknown>(
+  method: RequestMethod,
+  path: string,
+  data: Record<string, unknown> = {},
+  config: RequestConfig = {},
+): Promise<ApiResponse<T>> {
+  const commonStore = useCommonStore()
+  const token = local.token?.token as string | undefined
+  const controller = new AbortController()
+  const { signal } = controller
+  path = (config?.unwanted ? '' : import.meta.env.VITE_baseUrl) + path
+
+  const configTemp: PendingConfig = Object.assign(
+    {
+      responseType: 'json' as const,
+      method,
+      url: path,
+      body: data,
+      headers: {
+        'Content-Type': config.formData
+          ? 'application/x-www-form-urlencoded'
+          : config.fileUpload
+            ? 'multipart/form-data;'
+            : 'application/json;charset=utf-8',
+        ...(token ? { token, Authorization: token } : {}),
+      },
+    },
+    { signal, ...configDefault, ...config, controller, method, url: path, body: data },
+  )
+
+  if (config.isNotAuth) {
+    delete configTemp.headers.token
+    delete configTemp.headers.Authorization
+  }
+  if (config.fileUpload)
+    delete configTemp.headers['Content-Type']
+
+  const requestKey = generateReqKey(configTemp)
+  if (cacheRequestMap.has(requestKey))
+    return cacheRequestMap.get(requestKey)! as Promise<ApiResponse<T>>
+
+  if (!config.hideLoading)
+    commonStore.setLoading(true)
+  addPendingRequest(configTemp)
+
+  const timeoutMs = Number(configTemp.timeout)
+  if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+    configTemp.timeoutId = setTimeout(() => {
+      if (!pendingRequest.has(requestKey))
+        return
+      configTemp.abortReason = 'timeout'
+      configTemp.abortRequest = true
+      controller.abort()
+    }, timeoutMs)
+  }
+
+  if (config.cached) {
+    const res = await db.get(requestKey)
+    if (res) {
+      clearRequestTimeout(configTemp)
+      pendingRequest.delete(requestKey)
+      cacheRequestMap.delete(requestKey)
+      commonStore.setLoading(false)
+      return Promise.resolve({ cached: true, requestKey, res } as unknown as ApiResponse<T>)
+    }
+  }
+
+  let payload: Record<string, unknown> | FormData | URLSearchParams | BodyInit | undefined = data
+  if (!config.fileUpload) {
+    const paramsData = deepClone(data) as Record<string, unknown>
+    for (const key in paramsData) {
+      if (paramsData[key] === null)
+        delete paramsData[key]
+    }
+    payload = paramsData
+  }
+
+  const myInit: Record<string, unknown> = {
+    method,
+    ...configDefault,
+    ...config,
+    signal,
+    body: config.fileUpload
+      ? payload
+      : (config.formData
+          ? new URLSearchParams(payload as Record<string, string>)
+          : JSON.stringify(payload)),
+  }
+
+  if (method === 'GET')
+    delete myInit.body
+
+  const stripKeys = [
+    'controller', 'showError', 'canEmpty', 'returnOrigin', 'withoutCheck',
+    'timeout', 'cached', 'catchExpires', 'last', 'requestKey', 'hideLoading',
+    'formData', 'fileUpload', 'joinUrl', 'unwanted', 'isNotAuth', 'responseType',
+    'abortReason', 'timeoutId', 'abortRequest',
+  ]
+  for (const key of stripKeys)
+    delete myInit[key]
+
+  let params = ''
+  if (payload && typeof payload === 'object' && !Array.isArray(payload) && !(payload instanceof FormData)
+    && (method === 'GET' || config.joinUrl)) {
+    params = toQueryString(payload as Record<string, unknown>)
+  }
+
+  const fetchPromise = new Promise<ApiResponse<T>>((resolve, reject) => {
+    const url = params ? `${path}?${params}` : path
+    fetch(url, myInit as RequestInit).then(async (response) => {
+      clearRequestTimeout(configTemp)
+      if (!config.hideLoading)
+        commonStore.setLoading(false)
+      const res = await resultReduction(response, configTemp.responseType) as ApiResponse<T>
+      removePendingRequest(configTemp)
+      cacheRequestMap.delete(requestKey)
+
+      if ((response.status === 401 || res.code === 401) && !configTemp.withoutCheck) {
+        redirectToLogin()
+        return reject(new ApiError(res.message || res.msg || '未登录或登录已过期', 401, true, res))
+      }
+      if (res.code === 403)
+        window.history.go(-1)
+
+      if (configTemp.withoutCheck)
+        return resolve(res)
+
+      if (response.status >= 200 && response.status < 300) {
+        // 业务失败：只 toast 一次，再 reject，避免上层再弹
+        if (res.code !== 0) {
+          const msg = res.code === 500
+            ? '接口异常，请联系管理员!'
+            : (res.message || res.msg || '请求失败')
+          const shown = notifyError(configTemp, msg)
+          return reject(new ApiError(msg, res.code, shown, res))
         }
+        if (configTemp.cached) {
+          const key = generateReqKey(configTemp)
+          db.set(key, deepClone(res), configTemp.catchExpires ?? undefined)
+        }
+        return resolve(res)
+      }
+
+      const httpMsg = res.message || res.msg || `请求失败 (${response.status})`
+      const shown = notifyError(configTemp, httpMsg)
+      return reject(new ApiError(httpMsg, res.code ?? response.status, shown, res))
+    }).catch((error) => {
+      clearRequestTimeout(configTemp)
+      if (!config.hideLoading)
+        commonStore.setLoading(false)
+      removePendingRequest(configTemp || {})
+      cacheRequestMap.delete(requestKey)
+      if (error instanceof ApiError)
+        return reject(error)
+      if (configTemp.abortRequest) {
+        if (configTemp.abortReason === 'timeout') {
+          const shown = notifyError(configTemp, '请求超时，请稍后再试')
+          return reject(new ApiError('请求超时，请稍后再试', -1, shown, error))
+        }
+        return reject(error)
+      }
+      const shown = notifyError(configTemp, '服务器异常，请稍后再试')
+      return reject(new ApiError('服务器异常，请稍后再试', -1, shown, error))
     })
-    cacheRequestMap.clear();
+  })
+
+  cacheRequestMap.set(requestKey, fetchPromise as Promise<ApiResponse>)
+  return fetchPromise
 }
 
-// 结果处理，fetch请求响应结果是promise，还得处理
-async function resultReduction(response: any) {
-    let res = '';
-    switch (response.requestConfig.responseType) {
-        case "json":
-            res = await response.json();
-            break;
-        case "text":
-            res = await response.text();
-            break;
-        case "blob":
-            res = await response.blob();
-            break;
-        case "arrayBuffer":
-            res = await response.arrayBuffer();
-            break;
-        default:
-            res = await response?.json();
-            break;
-    }
-    return await res;
+export async function get<T = unknown>(path = '', data: Record<string, unknown> = {}, config: RequestConfig = {}) {
+  return await request<T>('GET', path, data, config)
 }
 
-async function request(method: string, path: string, data: { [prop: string]: any }, config: any = {}): Promise<{ data: any, code: number }> {
+export async function post<T = unknown>(path = '', data: Record<string, unknown> = {}, config: RequestConfig = {}) {
+  return await request<T>('POST', path, data, config)
+}
 
-    // 请求处理前的操作
-    if (!config.hideLoading) commonStore.setLoading(true);
-    const token = local.token?.token;
-    const controller = new AbortController();
-    const { signal } = controller;
-    let configTemp = Object.assign(
-        {
-            responseType: "json",
-            headers: {
-                "Content-Type": config.formData
-                    ? "application/x-www-form-urlencoded" :
-                    config.fileUpload ? 'multipart/form-data;'
-                        : "application/json;charset=utf-8",
-                token
-            },
-        },
-        { signal, ...configDefault, ...config, controller }
-    );
-    if (config.isNotAuth) delete configTemp.headers['token'];
-    if (config.fileUpload) delete configTemp.headers["Content-Type"];
-    // removePendingRequest(configTemp); // 检查是否存在重复请求，若存在则取消已发的请求
-    addPendingRequest(configTemp); // 把当前请求信息添加到pendingRequest对象中
-    const requestKey = generateReqKey(configTemp)
-    // 共享promise
-    if (cacheRequestMap.has(requestKey)) return cacheRequestMap.get(requestKey)
-    if (config.cached) {//缓存数据
-        const res = await db.get(requestKey)
-        if (res) {
-            commonStore.setLoading(false);
-            return Promise.resolve({ cached: true, requestKey, res }) as any;
+export async function put<T = unknown>(path = '', data: Record<string, unknown> = {}, config: RequestConfig = {}) {
+  return await request<T>('PUT', path, data, config)
+}
+
+export async function del<T = unknown>(path = '', data: Record<string, unknown> = {}, config: RequestConfig = {}) {
+  return await request<T>('DELETE', path, data, config)
+}
+
+interface FetchStreamOptions {
+  url?: string
+  requestInit?: RequestInit
+  onmessage?: (data: string[], index: number) => void
+  ondone?: () => void
+  onerror?: (response: unknown) => void
+}
+
+export class FetchStream {
+  url = ''
+  requestInit: RequestInit = {}
+  onmessage: (data: string[], index: number) => void = () => {}
+  ondone: () => void = () => {}
+  onerror: (response: unknown) => void = () => {}
+
+  constructor(options: FetchStreamOptions = {}) {
+    this.url = options.url || ''
+    this.requestInit = options.requestInit || {}
+    this.onmessage = options.onmessage || (() => {})
+    this.ondone = options.ondone || (() => {})
+    this.onerror = options.onerror || (() => {})
+    this.createFetchRequest()
+  }
+
+  createFetchRequest() {
+    fetch(this.url, {
+      method: 'POST',
+      ...this.requestInit,
+    }).then((response) => {
+      if (response.status === 200)
+        return response.body
+      return Promise.reject(response)
+    }).then(async (readableStream) => {
+      if (!readableStream)
+        return
+      const reader = readableStream.getReader()
+      let index = 0
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) {
+          this.ondone?.()
+          break
         }
-    }
-
-
-    if (!config.fileUpload) {
-        const paramsData = deepClone(data);
-        for (const key in paramsData) {
-            if (paramsData[key] === null) {
-                delete paramsData[key];
-            }
-        }
-        data = paramsData;
-    }
-    path = (config?.unwanted ? '' : import.meta.env.VITE_baseUrl) + path;
-    let myInit = {
-        method,
-        ...configDefault,
-        ...config,
-        body: config.fileUpload ? data : (config.formData ? new URLSearchParams(data) : JSON.stringify(data))
-    };
-    if (method === 'GET') delete myInit.body
-    let params = '';
-    if (data && (method === 'GET' || config.joinUrl)) {
-        // 对象转url参数
-        params = (JSON.stringify(data) as any)?.replace(/:/g, '=')?.replace(/"/g, '')?.replace(/,/g, '&')?.match(/\{([^)]*)\}/)[1];
-    }
-
-    const fetchPromise :any= new Promise((resolve, reject) => {
-        fetch(params ? `${path}${params ? "?" : ""}${params}` : path, myInit).then(async response => {
-            // TODO: 这里是复制一份结果处理，在这里可以做一些操作
-            commonStore.setLoading(false);
-            const res: any = await resultReduction(response);
-            removePendingRequest(configTemp); // 从pendingRequest对象中移除请求
-            cacheRequestMap.delete(requestKey)
-            if ((response.status == 401 || res.code == 401) && !configTemp.withoutCheck) {
-                const { hash, pathname } = location;
-                if (!hash.includes('returnUrl')) {
-                    if (window.eventCenterForAppEmergencyTeam) parent.location.replace((location.ancestorOrigins[0] || '') + '#/login')
-                    else location.href = pathname + '#/login?returnUrl=' + encodeURIComponent(hash);;
-                }
-                return resolve(res);
-            }
-            if (res.code == 403) window.history.go(-1);
-            // HTTP 状态码 2xx 状态入口，data.code 为 200 表示数据正确，无任何错误
-            if (response.status >= 200 && response.status < 300 && res.code != 401) {
-                if (res.code !== 0 && res.message && !configTemp.withoutCheck) {
-                    if (location.pathname.includes('app')) showFailToast(res.code !== 500 ? res.message : '接口异常，请联系管理员!');
-                    else window.$message.error(res.code !== 500 ? res.message : '接口异常，请联系管理员!');
-                }
-                if (configTemp.cached) {
-                    const requestKey = generateReqKey(configTemp)
-                    db.set(requestKey, deepClone(res), configTemp.catchExpires)
-                }
-                return resolve(res);
-            } else {
-                // 非 2xx 状态入口 // 不进行状态状态检测
-                if (configDefault.withoutCheck) return resolve(response as any);
-                if (res.code !== 0 && res.code !== 500 && res.message) {
-                    if (location.pathname.includes('app')) showFailToast(res.message);
-                    else window.$message.error(res.message);
-                }
-            }
-        }).catch(error => {
-            // 响应拦截进来隐藏loading效果，此处采用延时处理是合并loading请求效果，避免多次请求loading关闭又开启
-            commonStore.setLoading(false);
-            if (!configTemp.abortRequest) window.$message.error("服务器异常，请稍后再试"); //非手动阻止请求抛出异常
-            removePendingRequest(configTemp || {}); // 从pendingRequest对象中移除请求
-            cacheRequestMap.delete(requestKey)
-        })
+        const dataText = new TextDecoder('utf-8').decode(value)
+        const data = dataText.split('\n\n').filter(Boolean)
+        this.onmessage(data, index++)
+      }
+    }).catch((response) => {
+      this.onerror?.(response)
     })
-    cacheRequestMap.set(requestKey, fetchPromise)
-    return fetchPromise
-
-}
-// get请求方法使用封装
-export async function get(path = '', data = {}, config = {}) {
-    return await request('GET', path, data, config);
-}
-
-// post请求方法使用封装
-export async function post(path = '', data = {}, config = {}) {
-    return await request('POST', path, data, config);
-}
-
-// put请求方法使用封装
-export async function put(path = '', data = {}, config = {}) {
-    return await request('PUT', path, data, config);
-}
-
-// delete请求方法使用封装
-export async function del(path = '', data = {}, config = {}) {
-    return await request('DELETE', path, data, config);
-}
-
-
-// fetch stream 封装
-class FetchStream {
-    url = '';
-    requestInit = null;
-    onmessage = null;
-    ondone = null;
-    onerror = null;
-
-    constructor(options = {}) {
-        this.url = options.url;
-        this.requestInit = options.requestInit || {};
-        this.onmessage = options.onmessage || (() => { });
-        this.ondone = options.ondone || (() => { });
-        this.onerror = options.onerror || (() => { });
-        this.createFetchRequest();
-    }
-
-    createFetchRequest() {
-        fetch(this.url, {
-            method: 'POST',
-            ...this.requestInit
-        }).then(response => {
-            if (response.status === 200) {
-                return response.body;
-            } else {
-                // fetch() 返回的 Promise 不会被标记为 reject，即使响应的 HTTP 状态码是 404 或 500
-                return Promise.reject(response);
-            }
-        }).then(async (readableStream) => {
-            // 1. 创建 reader 读取流队列
-            const reader = readableStream.getReader();
-            // 2. 记录流队列中分块的索引
-            let index = 0;
-            while (true) {
-                // 3. 读取分块数据，返回一个 Promise
-                // （如果分块可用，Promise 返回 { value: theChunk, done: false } 形式）
-                // （如果流已关闭，Promise 返回 { value: undefined, done: true } 形式）
-                const { value, done } = await reader.read();
-                if (done) { // 响应流处理完成
-                    // 5. 流已关闭，执行外部结束逻辑
-                    this.ondone?.();
-                    break;
-                } else {
-                    // 4. 将分块数据转换为 string 交给外部处理函数使用
-                    const dataText = new TextDecoder('utf-8').decode(value);
-                    const data = dataText.split('\n\n').filter(Boolean); // response 响应的消息可能存在多个，以 \n\n 分割
-                    this.onmessage(data, index++);
-                }
-            }
-        }).catch(response => {
-            // ... error 处理
-            this.onerror?.(response);
-        });
-    }
-
-
+  }
 }

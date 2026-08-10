@@ -8,11 +8,14 @@ import {
   NFormItem,
   NFormItemGi,
   NGrid,
+  NIcon,
   NInput,
   NSelect,
   NTreeSelect,
+  useThemeVars,
 } from 'naive-ui'
-import { toSearchConfig, type FieldBind, type FieldRenderFn, type SearchConfigItem, type UnifiedFieldConfig } from './fieldSchema'
+import { ChevronDownOutline, ChevronUpOutline, RefreshOutline, SearchOutline } from '@vicons/ionicons5'
+import { toSearchConfig, type FieldBind, type FieldRenderFn, type SearchConfigItem, type UnifiedFieldConfig } from './table/fieldSchema'
 
 const SEARCH_COMPONENTS: Record<string, Component> = {
   NInput,
@@ -29,27 +32,37 @@ const COMPONENTS_WITH_CLEARABLE = new Set([
 const warnedComponents = new Set<string>()
 
 const props = withDefaults(defineProps<{
+  /**
+   * @deprecated 请改用 fields
+   */
   config?: SearchConfigItem[]
   fields?: UnifiedFieldConfig[]
   showAllSearchField?: boolean
   showSearchButton?: boolean
+  /** 栅格总列数，默认 24 */
   cols?: number
+  /** 每个搜索项默认占用列数，默认 4 */
+  col?: number
   columnGap?: string
   rowGap?: string
   bindSearch?: Record<string, unknown>
   bindSlot?: Record<string, unknown>
   components?: Record<string, Component>
+  /** 始终展开，不显示「更多」 */
+  alwaysExpanded?: boolean
 }>(), {
   config: () => [],
   fields: () => [],
   showAllSearchField: false,
   showSearchButton: true,
-  cols: 7,
-  columnGap: '1.25rem',
-  rowGap: '0.75rem',
+  cols: 24,
+  col: 4,
+  columnGap: '1rem',
+  rowGap: '0',
   bindSearch: () => ({}),
   bindSlot: () => ({}),
   components: () => ({}),
+  alwaysExpanded: false,
 })
 
 const searchModel = defineModel<Record<string, unknown>>('searchModel', { required: true })
@@ -59,8 +72,14 @@ const emit = defineEmits<{
   resetForm: []
 }>()
 
+const themeVars = useThemeVars()
+const panelBgStyle = computed(() => ({
+  backgroundColor: themeVars.value.cardColor,
+}))
+
 const slots = useSlots()
 const searchFormRef = ref<InstanceType<typeof NForm>>()
+const fieldsRef = ref<HTMLElement>()
 
 const resolvedConfig = computed(() => {
   if (props.fields.length)
@@ -68,17 +87,107 @@ const resolvedConfig = computed(() => {
   return props.config
 })
 
+const visibleFields = computed(() =>
+  resolvedConfig.value.filter(item => props.showAllSearchField || item.isSearch),
+)
+
 const componentMap = computed(() => ({
   ...SEARCH_COMPONENTS,
   ...props.components,
 }))
 
-const gridStyle = computed(() => ({
-  display: 'grid',
-  gridTemplateColumns: `repeat(${props.cols}, minmax(0, 1fr))`,
+function getFieldSpan(item: SearchConfigItem): number {
+  const span = item.span ?? item.col ?? props.col
+  return Math.min(Math.max(1, span), props.cols)
+}
+
+/** 字段按栅格是否超过一行（超过才显示「更多」） */
+const showToggle = computed(() => {
+  if (props.alwaysExpanded)
+    return false
+  let used = 0
+  for (const item of visibleFields.value) {
+    const span = getFieldSpan(item)
+    if (used > 0 && used + span > props.cols)
+      return true
+    used += span
+    if (used > props.cols)
+      return true
+  }
+  return false
+})
+
+const {
+  expanded,
+  oneRowHeight,
+  isMeasuring,
+  isCollapsedLayout,
+  measureRowHeight,
+  toggleExpand,
+} = useSearchPanelCollapse({
+  fieldsRef,
+  fieldCount: () => visibleFields.value.length,
+  alwaysExpanded: () => props.alwaysExpanded,
+  showToggle: () => showToggle.value,
+})
+
+function fieldItemStyle(item: SearchConfigItem) {
+  const span = getFieldSpan(item)
+  const gap = props.columnGap
+  return {
+    flex: `0 0 calc(${(span / props.cols) * 100}% - ${gap} * ${(props.cols - span) / props.cols})`,
+    maxWidth: `calc(${(span / props.cols) * 100}% - ${gap} * ${(props.cols - span) / props.cols})`,
+  }
+}
+
+const fieldsGridStyle = computed(() => ({
+  display: 'flex',
+  flexWrap: 'wrap' as const,
   columnGap: props.columnGap,
   rowGap: props.rowGap,
+  alignItems: 'flex-start',
+  width: '100%',
 }))
+
+const collapsedOuterStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'flex-start',
+  columnGap: props.columnGap,
+  width: '100%',
+}))
+
+const collapsedFieldsStyle = computed(() => {
+  const clip = !isMeasuring.value && showToggle.value && !expanded.value
+  return {
+    flex: '1 1 0%',
+    minWidth: 0,
+    overflow: clip ? 'hidden' : 'visible',
+    maxHeight: clip ? `${oneRowHeight.value}px` : 'none',
+  }
+})
+
+const expandedOuterStyle = computed(() => ({
+  display: 'flex',
+  flexWrap: 'wrap' as const,
+  columnGap: props.columnGap,
+  rowGap: props.rowGap,
+  alignItems: 'flex-start',
+  width: '100%',
+}))
+
+const actionsStyle = {
+  display: 'flex',
+  flexWrap: 'nowrap' as const,
+  alignItems: 'center',
+  gap: '8px',
+  flexShrink: 0,
+  marginBottom: '12px',
+}
+
+const expandedActionsStyle = {
+  ...actionsStyle,
+  marginLeft: 'auto',
+}
 
 function resolveArrayValue<T>(value: T | T[] | undefined, index?: number, fallback?: T): T | undefined {
   if (index !== undefined && Array.isArray(value))
@@ -101,15 +210,21 @@ function resolveType(item: SearchConfigItem, index?: number): string {
 }
 
 function resolveOptions(item: SearchConfigItem, index?: number) {
-  return resolveArrayValue(item.options, index)
+  const options = item.options
+  // 多字段场景才是「选项数组的数组」；普通字段的 options 本身就是选项列表，不能取 [0]
+  if (
+    index !== undefined
+    && Array.isArray(options)
+    && options.length > 0
+    && Array.isArray(options[0])
+  ) {
+    return options[index]
+  }
+  return options
 }
 
 function resolveEvents(item: SearchConfigItem, index?: number): Record<string, (...args: unknown[]) => void> {
   return resolveArrayValue(item.on, index, {})!
-}
-
-function isFieldVisible(item: SearchConfigItem) {
-  return props.showAllSearchField || item.isSearch
 }
 
 const BIND_META_KEYS = new Set([
@@ -216,15 +331,14 @@ function safeRenderCustom(item: SearchConfigItem, bind: FieldBind) {
 
 function renderSearchField(item: SearchConfigItem, index: number) {
   const bind = resolveBind(item)
-  const visible = isFieldVisible(item)
 
   if (typeof item.key === 'string') {
     const custom = hasCustomRender(item, bind)
     return (
       <NFormItem
         key={`search-${index}-${item.key}`}
+        class="search-field-item"
         label={item.label ?? item.title}
-        style={{ display: visible ? undefined : 'none' }}
         {...item.bindItem}
       >
         {custom ? safeRenderCustom(item, bind) : renderFieldControl(item)}
@@ -235,8 +349,8 @@ function renderSearchField(item: SearchConfigItem, index: number) {
   return (
     <NFormItem
       key={`search-${index}-${item.key.join('_')}`}
+      class="search-field-item"
       label={item.label ?? item.title}
-      style={{ display: visible ? undefined : 'none' }}
       {...item.bindItem}
     >
       <NGrid xGap={12} cols={item.key.length}>
@@ -281,34 +395,117 @@ watch(
   { deep: true },
 )
 
-function RenderRoot() {
+watch(
+  () => [visibleFields.value.length, props.cols, props.col, props.alwaysExpanded, props.columnGap] as const,
+  () => {
+    if (props.alwaysExpanded)
+      expanded.value = true
+    measureRowHeight()
+  },
+)
+
+onMounted(() => {
+  if (props.alwaysExpanded)
+    expanded.value = true
+  measureRowHeight()
+  window.addEventListener('resize', measureRowHeight)
+})
+
+onActivated(() => {
+  measureRowHeight()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', measureRowHeight)
+})
+
+function renderActions(style: Record<string, unknown>) {
   return (
-    <div class="search-box relative w-full rounded-t-lg bg-white p-5">
-      <NForm ref={searchFormRef} labelPlacement="left" model={searchModel.value}>
-        <div class="box w-full" style={gridStyle.value}>
-          {resolvedConfig.value.map((item, index) => renderSearchField(item, index))}
+    <div class="search-actions" {...props.bindSearch} style={style}>
+      {showToggle.value && (
+        <NButton text type="primary" onClick={toggleExpand}>
+          {{
+            icon: () => (
+              <NIcon size={14}>
+                {expanded.value ? <ChevronUpOutline /> : <ChevronDownOutline />}
+              </NIcon>
+            ),
+            default: () => (expanded.value ? '收起' : '展开'),
+          }}
+        </NButton>
+      )}
 
-          {props.showSearchButton && (
-            <NFormItem class="search-btn" {...props.bindSearch}>
-              <NButton class="mr-2" type="info" onClick={getList}>
-                <svg class="icon mr-1 text-xs text-white" aria-hidden="true">
-                  <use xlink:href="#icon-search"></use>
-                </svg>
-                查询
-              </NButton>
-              <NButton class="mr-2" type="info" ghost onClick={resetForm}>
-                <svg class="icon mr-1 text-xs text-[#2080f0]" aria-hidden="true">
-                  <use xlink:href="#icon-reset"></use>
-                </svg>
-                重置
-              </NButton>
-              {slots.searchSlot?.()}
-            </NFormItem>
-          )}
+      {props.showSearchButton && (
+        <>
+          <NButton type="primary" onClick={getList}>
+            {{
+              icon: () => (
+                <NIcon size={14}>
+                  <SearchOutline />
+                </NIcon>
+              ),
+              default: () => '查询',
+            }}
+          </NButton>
+          <NButton type="primary" ghost onClick={resetForm}>
+            {{
+              icon: () => (
+                <NIcon size={14}>
+                  <RefreshOutline />
+                </NIcon>
+              ),
+              default: () => '重置',
+            }}
+          </NButton>
+        </>
+      )}
 
-          <NFormItem style={{ marginLeft: 'auto' }} {...props.bindSlot}>
-            {slots.default?.()}
-          </NFormItem>
+      {slots.searchSlot?.()}
+      <div class="search-actions__extra" {...props.bindSlot} style={{ display: 'contents' }}>
+        {slots.default?.()}
+      </div>
+    </div>
+  )
+}
+
+function renderFieldNodes() {
+  return visibleFields.value.map((item, index) => (
+    <div
+      key={typeof item.key === 'string' ? item.key : item.key.join('_')}
+      class="search-field-wrap"
+      style={fieldItemStyle(item)}
+    >
+      {renderSearchField(item, index)}
+    </div>
+  ))
+}
+
+function RenderRoot() {
+  // 折叠：字段区只露一行，操作区并排贴在第一行右侧
+  // 展开：字段与操作区同一流式布局，操作区在最后一行右侧
+  if (isCollapsedLayout.value) {
+    return (
+      <div class="search-panel relative w-full rounded-t-lg p-3 pb-0" style={panelBgStyle.value}>
+        <NForm ref={searchFormRef} labelPlacement="left" labelWidth="auto" model={searchModel.value}>
+          <div class="search-row" style={collapsedOuterStyle.value}>
+            <div ref={fieldsRef} class="search-fields" style={collapsedFieldsStyle.value}>
+              <div style={fieldsGridStyle.value}>
+                {renderFieldNodes()}
+              </div>
+            </div>
+            {renderActions(actionsStyle)}
+          </div>
+        </NForm>
+      </div>
+    )
+  }
+
+  return (
+    <div class="search-panel relative w-full rounded-t-lg p-3 pb-0" style={panelBgStyle.value}>
+      <NForm ref={searchFormRef} labelPlacement="left" labelWidth="auto" model={searchModel.value}>
+        <div ref={fieldsRef} class="search-row" style={expandedOuterStyle.value}>
+          {renderFieldNodes()}
+          {renderActions(expandedActionsStyle)}
         </div>
       </NForm>
     </div>
@@ -318,6 +515,7 @@ function RenderRoot() {
 defineExpose({
   getList,
   resetForm,
+  measure: measureRowHeight,
   searchFormRef,
 })
 </script>
@@ -327,7 +525,32 @@ defineExpose({
 </template>
 
 <style scoped>
-.search-box :deep(.n-form-item-feedback-wrapper) {
+/* RenderRoot 为子组件，内部节点拿不到本组件 scoped 属性，布局相关样式须用 :deep 或内联 */
+.search-panel :deep(.n-form-item-feedback-wrapper) {
   display: none !important;
+}
+
+.search-panel :deep(.search-field-wrap) {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.search-panel :deep(.search-field-item) {
+  margin-bottom: 12px;
+}
+
+.search-panel :deep(.search-field-item .n-form-item-blank) {
+  min-width: 0;
+}
+
+.search-panel :deep(.search-actions .n-button .n-icon),
+.search-panel :deep(.search-actions__extra .n-button .n-icon) {
+  font-size: 14px !important;
+}
+
+.search-panel :deep(.search-actions .n-button .n-icon svg),
+.search-panel :deep(.search-actions__extra .n-button .n-icon svg) {
+  width: 1em;
+  height: 1em;
 }
 </style>

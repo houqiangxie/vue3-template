@@ -6,13 +6,16 @@
       v-if="showSider"
       :collapsed="collapsed"
       collapse-mode="width"
-      :collapsed-width="64"
+      :collapsed-width="settingStore.menuSetting.minMenuWidth"
       :width="leftMenuWidth"
       :native-scrollbar="false"
       :inverted="inverted"
       class="layout-sider"
+      :class="{ 'layout-sider-fixed': settingStore.menuSetting.fixed }"
       @collapse="collapsed = true"
       @expand="collapsed = false"
+      @mouseenter="onSiderEnter"
+      @mouseleave="onSiderLeave"
     >
       <Logo :collapsed="collapsed" />
       <AsideMenu v-model:collapsed="collapsed" />
@@ -21,12 +24,12 @@
     <!-- 移动端抽屉侧边栏 -->
     <n-drawer
       v-model:show="showSideDrawer"
-      :width="menuSetting.menuWidth"
+      :width="settingStore.menuSetting.menuWidth"
       placement="left"
     >
       <n-layout-sider
         :collapsed="false"
-        :width="menuSetting.menuWidth"
+        :width="settingStore.menuSetting.menuWidth"
         :native-scrollbar="false"
         :inverted="inverted"
         class="layout-sider"
@@ -37,7 +40,7 @@
     </n-drawer>
 
     <!-- 右侧主区域 -->
-    <n-layout :inverted="inverted">
+    <n-layout class="layout-main" :inverted="inverted">
       <n-layout-header :inverted="getHeaderInverted" :position="fixedHeader">
         <PageHeader v-model:collapsed="collapsed" :inverted="inverted" />
       </n-layout-header>
@@ -49,23 +52,21 @@
         <div
           class="layout-content-main"
           :class="{
-            'layout-content-main-fix': fixedMulti,
             'fluid-header': fixedHeader === 'static',
           }"
         >
           <TabsView v-if="isMultiTabs" v-model:collapsed="collapsed" />
-          <div
-            class="main-view"
-            :class="{
-              'main-view-fix': fixedMulti,
-              'no-multi-tabs': !isMultiTabs,
-              'mt-3': !isMultiTabs,
-            }"
-          >
-            <MainView />
+          <div class="main-view">
+            <div class="main-view-inner">
+              <MainView />
+            </div>
           </div>
         </div>
       </n-layout-content>
+
+      <n-layout-footer v-if="showFooter" class="layout-footer" bordered>
+        Copyright © {{ currentYear }} {{ websiteConfig.title }}
+      </n-layout-footer>
 
       <n-back-top :right="100" />
     </n-layout>
@@ -73,7 +74,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, unref, computed, onMounted, onUnmounted } from 'vue';
+  import { ref, unref, computed, watch, onMounted, onUnmounted } from 'vue';
   import { useRoute } from 'vue-router';
   import { Logo } from './components/Logo';
   import { TabsView } from './components/TagsView';
@@ -83,14 +84,31 @@
   import { useProjectSetting } from '@/hooks/setting/useProjectSetting';
   import { useDesignSetting } from '@/hooks/setting/useDesignSetting';
   import { useProjectSettingStore } from '@/store/modules/projectSetting';
+  import { websiteConfig } from '@/config/website.config';
 
   const { getDarkTheme } = useDesignSetting();
-  const { navMode, navTheme, headerSetting, menuSetting, multiTabsSetting } = useProjectSetting();
+  const { navMode, navTheme } = useProjectSetting();
   const settingStore = useProjectSettingStore();
 
   const route = useRoute();
+  const currentYear = new Date().getFullYear();
 
-  const collapsed = ref(false);
+  const collapsed = ref(settingStore.menuSetting.collapsed);
+  let hoverExpanded = false;
+
+  function onSiderEnter() {
+    if (settingStore.menuSetting.trigger !== 'hover') return;
+    if (!collapsed.value) return;
+    hoverExpanded = true;
+    collapsed.value = false;
+  }
+
+  function onSiderLeave() {
+    if (settingStore.menuSetting.trigger !== 'hover') return;
+    if (!hoverExpanded) return;
+    hoverExpanded = false;
+    collapsed.value = true;
+  }
 
   // ---- 计算属性 ----
   const isMobile = computed<boolean>({
@@ -98,12 +116,19 @@
     set: (val) => settingStore.setIsMobile(val),
   });
 
-  const fixedHeader = computed(() =>
-    unref(headerSetting).fixed ? 'absolute' : 'static',
+  watch(
+    () => settingStore.menuSetting.collapsed,
+    (val) => {
+      if (!isMobile.value) collapsed.value = val;
+    },
   );
 
-  const isMultiTabs = computed(() => unref(multiTabsSetting).show);
-  const fixedMulti = computed(() => unref(multiTabsSetting).fixed);
+  const fixedHeader = computed(() =>
+    settingStore.headerSetting.fixed ? 'absolute' : 'static',
+  );
+
+  const isMultiTabs = computed(() => settingStore.multiTabsSetting.show);
+  const showFooter = computed(() => settingStore.showFooter);
 
   const inverted = computed(() =>
     ['dark', 'header-dark'].includes(unref(navTheme)),
@@ -114,7 +139,7 @@
   );
 
   const leftMenuWidth = computed(() => {
-    const { minMenuWidth, menuWidth } = unref(menuSetting);
+    const { minMenuWidth, menuWidth } = settingStore.menuSetting;
     return collapsed.value ? minMenuWidth : menuWidth;
   });
 
@@ -123,8 +148,10 @@
     if (isMobile.value) return false;
     const mode = unref(navMode);
     if (mode === 'horizontal') return false;
-    if (mode === 'horizontal-mix') {
-      return !(unref(menuSetting).mixMenu && (route.meta as any)?.isRoot);
+    if (mode === 'horizontal-mix' && settingStore.menuSetting.mixMenu) {
+      const top = route.matched.find((r) => r.name && r.name !== 'Layout');
+      const hasChildren = (top?.children?.length ?? 0) > 0;
+      return hasChildren;
     }
     return true;
   });
@@ -137,7 +164,7 @@
 
   // ---- 响应式宽度 ----
   const checkMobileMode = () => {
-    const shouldBeMobile = document.body.clientWidth <= unref(menuSetting).mobileWidth;
+    const shouldBeMobile = document.body.clientWidth <= settingStore.menuSetting.mobileWidth;
     if (isMobile.value !== shouldBeMobile) {
       isMobile.value = shouldBeMobile;
       collapsed.value = false;
@@ -146,7 +173,7 @@
 
   const watchWidth = () => {
     const width = document.body.clientWidth;
-    collapsed.value = width <= unref(menuSetting).mobileWidth;
+    collapsed.value = width <= settingStore.menuSetting.mobileWidth;
     isMobile.value = collapsed.value;
   };
 
@@ -172,17 +199,22 @@
       background: #f5f7f9;
     }
 
+    :global(html.dark) &-default-background {
+      background: transparent;
+    }
+
     .layout-sider {
       min-height: 100vh;
       box-shadow: 2px 0 8px 0 rgb(29 35 41 / 5%);
       position: relative;
       z-index: 13;
       transition: all 0.2s ease-in-out;
-    }
 
-    .layout-content {
-      flex: auto;
-      overflow: auto; /* Naive UI scroll container */
+      &.layout-sider-fixed {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
     }
 
     .n-layout-header.n-layout-header--absolute-positioned {
@@ -190,16 +222,51 @@
     }
   }
 
+  /*
+   * Naive UI 的 n-layout 会把子节点包进 .n-layout-scroll-container，
+   * flex 必须作用在该容器上，content 才能真正撑满剩余高度。
+   */
+  .layout-main {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+
+    :deep(> .n-layout-scroll-container) {
+      height: 100% !important;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    :deep(.n-layout-header),
+    :deep(.n-layout-footer) {
+      flex-shrink: 0;
+    }
+  }
+
+  .layout-content {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: hidden;
+
+    :deep(> .n-layout-scroll-container) {
+      height: 100% !important;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+  }
+
   .layout-content-main {
-    min-height: 100%;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
     display: flex;
     flex-direction: column;
     padding-top: 64px; /* 为 fixed header 空出 */
     box-sizing: border-box;
-  }
-
-  .layout-content-main-fix {
-    padding-top: 64px;
   }
 
   .fluid-header {
@@ -208,18 +275,28 @@
 
   .main-view {
     flex: 1;
-    min-height: 0; /* 关键：允许 flex 子项在溢出时收缩 */
-    overflow-y: auto;
-    overflow-x: hidden;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     padding: 10px;
     box-sizing: border-box;
   }
 
-  .main-view-fix {
-    padding-top: 54px; /* 44px tabs + 10px 内边距 */
+  .main-view-inner {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
   }
 
-  .no-multi-tabs {
-    padding-top: 10px;
+  .layout-footer {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 12px 0;
+    font-size: 13px;
+    opacity: 0.75;
   }
 </style>

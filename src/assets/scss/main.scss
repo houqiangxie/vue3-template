@@ -1,7 +1,7 @@
 // 公共 scss 样式文件
-@import './common.scss';
+@use './common.scss';
 // @import '../fonts/index.css'; // 全局引入字体
-@import 'https://at.alicdn.com/t/font_3246181_uzd7b9ebw4.css';
+@import url('https://at.alicdn.com/t/font_3246181_uzd7b9ebw4.css');
 
 @font-face {
   font-family: 'zi-hun';
@@ -467,44 +467,44 @@ $--rdapp-button-h: 26px !default;
 
 .rdapp-btn-warn-plain {
   @include rdapp-btn;
-  background: $--warn-bg-color;
-  border: 1px solid $--warn-color;
-  color: $--warn-color;
+  background: $warn-bg-color;
+  border: 1px solid $warn-color;
+  color: $warn-color;
   // opacity: 1;
   &:hover {
-    background: $--warn-hover-color;
+    background: $warn-hover-color;
     color: #fff;
   }
   &:active {
-    background: $--warn-active-color;
+    background: $warn-active-color;
     color: #fff;
   }
 }
 
 .rdapp-btn-success {
   @include rdapp-btn;
-  background: $--success-color;
+  background: $success-color;
   color: #fff;
   &:hover {
-    background: $--success-hover-color;
+    background: $success-hover-color;
   }
   &:active {
-    background: $--success-active-color;
+    background: $success-active-color;
   }
 }
 
 .rdapp-btn-success-plain {
   @include rdapp-btn;
-  background: $--success-bg-color;
-  border: 1px solid $--success-color;
-  color: $--success-color;
+  background: $success-bg-color;
+  border: 1px solid $success-color;
+  color: $success-color;
   // opacity: 1;
   &:hover {
-    background: $--success-hover-color;
+    background: $success-hover-color;
     color: #fff;
   }
   &:active {
-    background: $--success-active-color;
+    background: $success-active-color;
     color: #fff;
   }
 }

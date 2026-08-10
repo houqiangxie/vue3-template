@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import type { Component, VNode } from 'vue'
 import type { FormItemRule } from 'naive-ui'
-import { toFormConfig, type FieldRenderFn, type UnifiedFieldConfig } from './fieldSchema'
+import { toFormConfig, type FieldRenderFn, type UnifiedFieldConfig } from './table/fieldSchema'
 import {
   NCheckbox,
   NCheckboxGroup,
@@ -26,6 +26,7 @@ import {
   NTransfer,
   NTreeSelect,
   NUpload,
+  useThemeVars,
 } from 'naive-ui'
 
 const VALIDATE_REG = {
@@ -112,7 +113,10 @@ export interface ConfigItem {
 }
 
 const props = withDefaults(defineProps<{
-  /** 直接传表单 config（与 fields 二选一，fields 优先） */
+  /**
+   * @deprecated 请改用 fields（统一字段模型）
+   * 直接传表单 config（与 fields 二选一，fields 优先）
+   */
   config?: ConfigItem[]
   /** 统一字段配置，自动转换为表单 config */
   fields?: UnifiedFieldConfig[]
@@ -219,6 +223,13 @@ const validateRegMap = computed(() => ({
 }))
 
 const themeOverrides = computed(() => (props.disabledHideBorder ? THEME_OVERRIDES : {}))
+const themeVars = useThemeVars()
+
+const formShellStyle = computed(() => ({
+  // compact（弹窗内）透底，避免叠一层卡片色；独立表单用 cardColor
+  backgroundColor: props.compact ? 'transparent' : themeVars.value.cardColor,
+  color: themeVars.value.textColor1,
+}))
 
 const gridStyle = computed(() => ({
   display: 'grid',
@@ -271,7 +282,17 @@ function resolveFieldKey(item: ConfigItem, index?: number): string {
 }
 
 function resolveOptions(item: ConfigItem, index?: number) {
-  return resolveArrayValue(item.options, index)
+  const options = item.options
+  // 多字段场景才是「选项数组的数组」；普通字段的 options 本身就是选项列表，不能取 [0]
+  if (
+    index !== undefined
+    && Array.isArray(options)
+    && options.length > 0
+    && Array.isArray(options[0])
+  ) {
+    return options[index]
+  }
+  return options
 }
 
 function resolveType(item: ConfigItem, index?: number): string {
@@ -552,10 +573,13 @@ function renderGroupControl(
   bind: FieldBind,
   groupType: 'Checkbox' | 'Radio' | 'RadioButton',
   fieldKey: string,
+  index?: number,
 ) {
   const GroupComponent = groupType === 'Checkbox' ? NCheckboxGroup : NRadioGroup
   const ItemComponent = groupType === 'RadioButton' ? NRadioButton : groupType === 'Checkbox' ? NCheckbox : NRadio
-  const options = bind.options ?? []
+  const options = (resolveOptions(item, index) as Array<{ label: string; value: string | number | boolean; disabled?: boolean }> | undefined)
+    ?? bind.options
+    ?? []
   const controlBind = pickControlBind(bind)
   const model = formModel.value
 
@@ -580,11 +604,11 @@ function renderGroupControl(
 }
 
 function resolveGroupType(componentName: string, bind: FieldBind): 'Checkbox' | 'Radio' | 'RadioButton' | null {
-  if (componentName === 'Checkbox')
+  if (componentName === 'Checkbox' || componentName === 'NCheckboxGroup')
     return 'Checkbox'
   if (componentName === 'RadioButton' || bind.button)
     return 'RadioButton'
-  if (componentName === 'Radio')
+  if (componentName === 'Radio' || componentName === 'NRadioGroup')
     return 'Radio'
   return null
 }
@@ -602,7 +626,7 @@ function renderFieldControl(item: ConfigItem, index?: number) {
 
   const groupType = resolveGroupType(componentName, bind)
   if (groupType)
-    return renderGroupControl(item, bind, groupType, fieldKey)
+    return renderGroupControl(item, bind, groupType, fieldKey, index)
 
   const Component = resolveComponent(componentName)
   const controlSlots = renderControlSlots(slotDef, item, fieldKey)
@@ -765,17 +789,27 @@ function RenderRoot() {
     warnedPaths.clear()
 
   return (
-    <div class={[
-      'w-full bg-white common-form',
-      props.compact ? 'p-2' : 'p-5',
-      props.disabledHideBorder ? 'hide-border' : '',
-    ]}
+    <div
+      class={[
+        'w-full common-form',
+        props.compact ? 'p-2' : 'p-5',
+        props.disabledHideBorder ? 'hide-border' : '',
+      ]}
+      style={formShellStyle.value}
     >
       <NConfigProvider theme-overrides={themeOverrides.value}>
         {(props.title || props.description) && (
           <div class="mb-4">
-            {props.title && <div class="text-base font-medium text-[#333]">{props.title}</div>}
-            {props.description && <div class="mt-1 text-sm text-[#999]">{props.description}</div>}
+            {props.title && (
+              <div class="text-base font-medium" style={{ color: themeVars.value.textColor1 }}>
+                {props.title}
+              </div>
+            )}
+            {props.description && (
+              <div class="mt-1 text-sm" style={{ color: themeVars.value.textColor3 }}>
+                {props.description}
+              </div>
+            )}
           </div>
         )}
         <div class="form_box w-full" style={gridStyle.value}>

@@ -3,7 +3,7 @@
     "target": "esnext",
     "useDefineForClassFields": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strict": true,
     "jsx": "preserve",
     "sourceMap": true,
@@ -11,12 +11,12 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "lib": ["esnext", "dom"],
-    "baseUrl": ".", // 用于设置解析非相对模块名称的基本目录，相对模块不会受到baseUrl的影响
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
     "paths": {
-      // 用于设置模块名到基于baseUrl的路径映射
       "@/*": ["src/*"]
     },
-    "types": ["vite/client", "unplugin-vue-define-options", "node"]
+    "types": ["vite/client", "node"]
   },
   "include": [
     "src/**/*.ts",
