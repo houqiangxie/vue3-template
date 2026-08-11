@@ -55,11 +55,6 @@
 import { AddOutline } from '@vicons/ionicons5'
 import { NButton } from 'naive-ui'
 import { useRouter } from 'vue-router'
-import SearchPanel from '@/components/common/SearchPanel.vue'
-import CommonTable from '@/components/common/table/CommonTable.vue'
-import CommonModal from '@/components/common/modal/CommonModal.vue'
-import { defineFields, extractFormDefaults, extractSearchDefaults } from '@/components/common/table/fieldSchema'
-import { defineModal } from '@/components/common/modal/modalSchema'
 import {
   addDictType,
   deleteDictType,
@@ -68,6 +63,7 @@ import {
 } from '@/api/system/dict'
 import type { SysDictType } from '@/api/system/types'
 import { statusOptions } from './constants'
+import { usePermission } from '@/hooks/usePermission'
 
 const router = useRouter()
 const { hasPermission } = usePermission()
@@ -93,7 +89,7 @@ const searchFields = defineFields([
   },
   {
     key: 'status',
-    label: '状�?,
+    label: '状态',
     component: 'NSelect',
     options: statusOptions,
     search: { enabled: true, defaultValue: null },
@@ -145,7 +141,7 @@ const dictFields = defineFields([
   },
   {
     key: 'status',
-    label: '状�?,
+    label: '状态',
     component: 'NRadioGroup',
     options: statusOptions,
     form: { required: true, defaultValue: '1' },
@@ -205,7 +201,7 @@ const tableFields = computed(() => [
           label: '删除',
           type: 'error',
           permission: 'system:dict:remove',
-          popconfirm: (r) => `是否确认删除字典�?{(r as unknown as SysDictType).dictName}」？`,
+          popconfirm: (r) => `是否确认删除字典「${(r as unknown as SysDictType).dictName}」？`,
           onClick: async (r) => {
             await removeAndRefresh(() => deleteDictType([(r as unknown as SysDictType).dictId]))
           },

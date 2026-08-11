@@ -68,11 +68,6 @@
 <script setup lang="tsx">
 import { AddOutline, ArrowBackOutline } from '@vicons/ionicons5'
 import { useRoute, useRouter } from 'vue-router'
-import SearchPanel from '@/components/common/SearchPanel.vue'
-import CommonTable from '@/components/common/table/CommonTable.vue'
-import CommonModal from '@/components/common/modal/CommonModal.vue'
-import { defineFields, extractFormDefaults } from '@/components/common/table/fieldSchema'
-import { defineModal } from '@/components/common/modal/modalSchema'
 import {
   addDictData,
   deleteDictData,
@@ -83,6 +78,7 @@ import {
 } from '@/api/system/dict'
 import type { SysDictData, SysDictType } from '@/api/system/types'
 import { statusOptions } from './constants'
+import { usePermission } from '@/hooks/usePermission'
 
 const route = useRoute()
 const router = useRouter()
@@ -115,7 +111,7 @@ const searchFields = computed(() => defineFields([
   },
   {
     key: 'status',
-    label: '状�?,
+    label: '状态',
     component: 'NSelect',
     options: statusOptions,
     search: { enabled: true, defaultValue: null },
@@ -135,7 +131,7 @@ const dataFields = defineFields([
   },
   {
     key: 'dictValue',
-    label: '数据键�?,
+    label: '数据键值',
     component: 'NInput',
     form: { required: true },
     search: false,
@@ -151,7 +147,7 @@ const dataFields = defineFields([
   },
   {
     key: 'status',
-    label: '状�?,
+    label: '状态',
     component: 'NRadioGroup',
     options: statusOptions,
     form: { required: true, defaultValue: '1' },
@@ -204,7 +200,7 @@ const tableFields = computed(() => [
           label: '删除',
           type: 'error',
           permission: 'system:dict:remove',
-          popconfirm: (r) => `是否确认删除字典数据�?{(r as unknown as SysDictData).dictLabel}」？`,
+          popconfirm: (r) => `是否确认删除字典数据「${(r as unknown as SysDictData).dictLabel}」？`,
           onClick: async (r) => {
             await removeAndRefresh(() => deleteDictData([(r as unknown as SysDictData).dictCode]))
           },

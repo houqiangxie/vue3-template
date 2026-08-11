@@ -1,12 +1,12 @@
 <template>
   <div class="system-page system-page--split">
-    <!-- 左侧部门�?-->
+    <!-- 左侧部门树 -->
     <aside class="system-page__aside">
       <div class="system-page__aside-title">组织机构</div>
       <n-input
         v-model:value="deptFilter"
         clearable
-        placeholder="请输入部门名�?
+        placeholder="请输入部门名称"
         size="small"
         class="system-page__aside-search"
       >
@@ -96,11 +96,6 @@
 <script setup lang="tsx">
 import { AddOutline, SearchOutline } from '@vicons/ionicons5'
 import { NSwitch } from 'naive-ui'
-import SearchPanel from '@/components/common/SearchPanel.vue'
-import CommonTable from '@/components/common/table/CommonTable.vue'
-import CommonModal from '@/components/common/modal/CommonModal.vue'
-import { defineFields, extractFormDefaults, extractSearchDefaults } from '@/components/common/table/fieldSchema'
-import { defineModal } from '@/components/common/modal/modalSchema'
 import {
   addUser,
   changeUserStatus,
@@ -114,6 +109,7 @@ import {
 import { deptToTreeSelectData, listDept } from '@/api/system/dept'
 import type { SysUser } from '@/api/system/types'
 import { sexOptions, statusOptions } from './constants'
+import { usePermission } from '@/hooks/usePermission'
 
 const { message, confirmBatchDelete, confirmDanger } = useConfirm()
 const { hasPermission } = usePermission()
@@ -147,7 +143,7 @@ const searchFields = defineFields([
   },
   {
     key: 'status',
-    label: '状�?,
+    label: '状态',
     component: 'NSelect',
     options: statusOptions,
     search: { enabled: true, defaultValue: null },
@@ -283,7 +279,7 @@ const userFields = computed(() => defineFields([
   },
   {
     key: 'status',
-    label: '状�?,
+    label: '状态',
     component: 'NRadioGroup',
     options: statusOptions,
     form: { required: true, defaultValue: '1' },
@@ -392,7 +388,7 @@ const tableFields = computed(() => [
           type: 'error',
           permission: 'system:user:remove',
           show: (r) => (r as unknown as SysUser).userId !== 1,
-          popconfirm: (r) => `是否确认删除用户�?{(r as unknown as SysUser).userName}」？`,
+          popconfirm: (r) => `是否确认删除用户「${(r as unknown as SysUser).userName}」？`,
           onClick: async (r) => {
             await deleteUser([(r as unknown as SysUser).userId])
             message.success('删除成功')
@@ -425,7 +421,7 @@ const pwdModalConfig = defineModal({
     fields: defineFields([
       {
         key: 'password',
-        label: '新密�?,
+        label: '新密码',
         component: 'NInput',
         bind: { type: 'password', showPasswordOn: 'click' },
         form: { required: true },
@@ -492,7 +488,7 @@ function handleStatusChange(user: SysUser, status: '0' | '1') {
   const text = status === '1' ? '启用' : '停用'
   confirmDanger({
     title: '确认操作',
-    content: `确认${text}用户�?{user.userName}」吗？`,
+    content: `确认${text}用户「${user.userName}」吗？`,
     successMessage: `${text}成功`,
     action: async () => {
       await changeUserStatus(user.userId, status)
@@ -515,7 +511,7 @@ async function handleSubmit() {
 
 async function handleResetPwd() {
   if (pwdForm.value.password !== pwdForm.value.confirmPassword) {
-    message.error('两次输入的密码不一�?)
+    message.error('两次输入的密码不一致')
     return
   }
   submitting.value = true

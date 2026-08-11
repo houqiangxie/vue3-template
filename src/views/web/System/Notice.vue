@@ -53,14 +53,10 @@
 
 <script setup lang="tsx">
 import { AddOutline } from '@vicons/ionicons5'
-import SearchPanel from '@/components/common/SearchPanel.vue'
-import CommonTable from '@/components/common/table/CommonTable.vue'
-import CommonModal from '@/components/common/modal/CommonModal.vue'
-import { defineFields, extractFormDefaults, extractSearchDefaults } from '@/components/common/table/fieldSchema'
-import { defineModal } from '@/components/common/modal/modalSchema'
 import { addNotice, deleteNotice, listNotice, updateNotice } from '@/api/system/notice'
 import type { SysNotice } from '@/api/system/types'
 import { noticeTypeOptions, statusOptions } from './constants'
+import { usePermission } from '@/hooks/usePermission'
 
 const { hasPermission } = usePermission()
 const { confirmBatchDelete } = useConfirm()
@@ -90,7 +86,7 @@ const noticeFields = defineFields([
   },
   {
     key: 'status',
-    label: '状�?,
+    label: '状态',
     component: 'NSelect',
     options: statusOptions,
     form: { required: true, defaultValue: '1' },
@@ -103,7 +99,7 @@ const noticeFields = defineFields([
   },
   {
     key: 'createBy',
-    label: '创建�?,
+    label: '创建者',
     component: 'NInput',
     search: { enabled: true },
     form: false,
@@ -120,8 +116,8 @@ const noticeFields = defineFields([
   {
     key: 'noticeContent',
     label: '内容',
-    component: 'NInput',
-    bind: { type: 'textarea', rows: 5 },
+    component: 'Editor',
+    bind: { height: 280, placeholder: '请输入公告内容' },
     form: { span: 2 },
     search: false,
     table: false,
@@ -174,7 +170,7 @@ const tableFields = computed(() => [
           label: '删除',
           type: 'error',
           permission: 'system:notice:remove',
-          popconfirm: (r) => `是否确认删除公告�?{(r as unknown as SysNotice).noticeTitle}」？`,
+          popconfirm: (r) => `是否确认删除公告「${(r as unknown as SysNotice).noticeTitle}」？`,
           onClick: async (r) => {
             await removeAndRefresh(() => deleteNotice([(r as unknown as SysNotice).noticeId]))
           },
@@ -186,7 +182,7 @@ const tableFields = computed(() => [
 
 const formModalConfig = computed(() => defineModal({
   title: isEdit.value ? '修改通知公告' : '新增通知公告',
-  width: 640,
+  width: 860,
   sections: [{
     type: 'form',
     key: 'main',

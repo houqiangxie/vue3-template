@@ -56,14 +56,10 @@
 
 <script setup lang="tsx">
 import { AddOutline } from '@vicons/ionicons5'
-import SearchPanel from '@/components/common/SearchPanel.vue'
-import CommonTable from '@/components/common/table/CommonTable.vue'
-import CommonModal from '@/components/common/modal/CommonModal.vue'
-import { defineFields, extractFormDefaults, extractSearchDefaults } from '@/components/common/table/fieldSchema'
-import { defineModal } from '@/components/common/modal/modalSchema'
 import { addConfig, deleteConfig, listConfig, refreshConfigCache, updateConfig } from '@/api/system/config'
 import type { SysConfig } from '@/api/system/types'
 import { configTypeOptions } from './constants'
+import { usePermission } from '@/hooks/usePermission'
 
 const { hasPermission } = usePermission()
 const { message, confirmBatchDelete } = useConfirm()
@@ -129,7 +125,7 @@ const configFields = defineFields([
   },
   {
     key: 'configValue',
-    label: '参数键�?,
+    label: '参数键值',
     component: 'NInput',
     form: { required: true, span: 2 },
     search: false,
@@ -214,7 +210,7 @@ const tableFields = computed(() => [
           label: '删除',
           type: 'error',
           permission: 'system:config:remove',
-          popconfirm: (r) => `是否确认删除参数�?{(r as unknown as SysConfig).configName}」？`,
+          popconfirm: (r) => `是否确认删除参数「${(r as unknown as SysConfig).configName}」？`,
           onClick: async (r) => {
             await removeAndRefresh(() => deleteConfig([(r as unknown as SysConfig).configId]))
           },

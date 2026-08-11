@@ -37,11 +37,9 @@
 </template>
 
 <script setup lang="tsx">
-import SearchPanel from '@/components/common/SearchPanel.vue'
-import CommonTable from '@/components/common/table/CommonTable.vue'
-import { defineFields, extractSearchDefaults } from '@/components/common/table/fieldSchema'
 import { forceLogout, listOnline } from '@/api/system/online'
 import type { SysUserOnline } from '@/api/system/types'
+import { usePermission } from '@/hooks/usePermission'
 
 const { confirmDanger } = useConfirm()
 const { hasPermission } = usePermission()
@@ -89,7 +87,7 @@ const onlineFields = defineFields([
   },
   {
     key: 'browser',
-    label: '浏览�?,
+    label: '浏览器',
     component: 'NInput',
     form: false,
     search: false,
@@ -155,7 +153,7 @@ const tableFields = computed(() => [
 function handleForceLogout(row: SysUserOnline) {
   confirmDanger({
     title: '确认强退',
-    content: `是否确认强退用户�?{row.userName}」？`,
+    content: `是否确认强退用户「${row.userName}」？`,
     successMessage: '强退成功',
     action: async () => {
       await forceLogout(row.tokenId)
@@ -169,7 +167,7 @@ function handleForceLogoutBatch() {
     return
   confirmDanger({
     title: '确认强退',
-    content: `是否确认强退选中�?${checkedTokenIds.value.length} 个会话？`,
+    content: `是否确认强退选中的 ${checkedTokenIds.value.length} 个会话？`,
     successMessage: '强退成功',
     action: async () => {
       for (const tokenId of checkedTokenIds.value)

@@ -3,6 +3,7 @@ allowBuilds:
   electron-winstaller: true
   '@parcel/watcher': false
   protobufjs: false
+  es5-ext: set this to true or false
 
 # pnpm v11：overrides 须写在此处（package.json#pnpm 已失效）
 overrides:

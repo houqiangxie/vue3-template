@@ -53,14 +53,10 @@
 
 <script setup lang="tsx">
 import { AddOutline } from '@vicons/ionicons5'
-import SearchPanel from '@/components/common/SearchPanel.vue'
-import CommonTable from '@/components/common/table/CommonTable.vue'
-import CommonModal from '@/components/common/modal/CommonModal.vue'
-import { defineFields, extractFormDefaults, extractSearchDefaults } from '@/components/common/table/fieldSchema'
-import { defineModal } from '@/components/common/modal/modalSchema'
 import { addPost, deletePost, listPost, updatePost } from '@/api/system/post'
 import type { SysPost } from '@/api/system/types'
 import { statusOptions } from './constants'
+import { usePermission } from '@/hooks/usePermission'
 
 const { hasPermission } = usePermission()
 const { confirmBatchDelete } = useConfirm()
@@ -94,7 +90,7 @@ const postFields = defineFields([
   },
   {
     key: 'status',
-    label: '状�?,
+    label: '状态',
     component: 'NSelect',
     options: statusOptions,
     form: { required: true, defaultValue: '1' },
@@ -170,7 +166,7 @@ const tableFields = computed(() => [
           label: '删除',
           type: 'error',
           permission: 'system:post:remove',
-          popconfirm: (r) => `是否确认删除岗位�?{(r as unknown as SysPost).postName}」？`,
+          popconfirm: (r) => `是否确认删除岗位「${(r as unknown as SysPost).postName}」？`,
           onClick: async (r) => {
             await removeAndRefresh(() => deletePost([(r as unknown as SysPost).postId]))
           },

@@ -24,6 +24,8 @@
     "@file-viewer/vue3": "^2.2.3",
     "@vicons/antd": "^0.13.0",
     "@vicons/ionicons5": "^0.13.0",
+    "@wangeditor/editor": "^5.1.23",
+    "@wangeditor/editor-for-vue": "^5.1.12",
     "crypto-js": "^4.2.0",
     "electron-updater": "^6.6.2",
     "file-saver": "^2.0.5",

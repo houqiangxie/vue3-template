@@ -39,11 +39,7 @@
 <script setup lang="tsx">
 import { AddOutline } from '@vicons/ionicons5'
 import { useMessage } from 'naive-ui'
-import SearchPanel from '@/components/common/SearchPanel.vue'
-import CommonTable from '@/components/common/table/CommonTable.vue'
-import CommonModal from '@/components/common/modal/CommonModal.vue'
-import { defineFields, extractFormDefaults, extractSearchDefaults } from '@/components/common/table/fieldSchema'
-import { defineModal } from '@/components/common/modal/modalSchema'
+import { ApiError } from '@/utils/fetch'
 import {
   addDept,
   deleteDept,
@@ -54,6 +50,7 @@ import {
 } from '@/api/system/dept'
 import type { SysDept } from '@/api/system/types'
 import { statusOptions } from './constants'
+import { usePermission } from '@/hooks/usePermission'
 
 const message = useMessage()
 const { hasPermission } = usePermission()

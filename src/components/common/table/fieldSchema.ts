@@ -11,17 +11,22 @@ export type FieldScene = 'form' | 'search' | 'table'
 
 export type HiddenValue = boolean | ((model: Record<string, unknown>) => boolean)
 
+/** visible 与 hidden 等价，visible: false 即隐藏 */
+export type VisibleValue = HiddenValue
+
 export type NaiveComponentName =
   | 'NInput' | 'NSelect' | 'NDatePicker' | 'NUpload' | 'NInputNumber'
   | 'NDynamicInput' | 'NSwitch' | 'NCheckboxGroup' | 'NRadioGroup'
   | 'NRadio' | 'NRadioButton' | 'NCheckbox' | 'NTransfer' | 'NCascader'
   | 'NTreeSelect' | 'NSlider' | 'NColorPicker' | 'NRate'
   | 'Checkbox' | 'Radio' | 'RadioButton'
+  | 'Editor' | 'IconSelect' | 'UserSelect' | 'CronInput' | 'UploadFile' | 'file'
 
 export interface FieldOption {
   label: string
   value: string | number | boolean
   disabled?: boolean
+  listClass?: string
 }
 
 /** 表单 / 搜索自定义渲染：(item, model, curValue) */
@@ -30,6 +35,13 @@ export type FieldRenderFn = (
   model: Record<string, unknown>,
   curData: unknown,
 ) => VNode | VNode[] | string
+
+/** 控件具名插槽渲染 */
+export type FieldSlotFn = (
+  item: unknown,
+  model: Record<string, unknown>,
+  curData: unknown,
+) => VNode | string
 
 /** 表格单元格渲染：(row, rowIndex) */
 export type TableRenderFn = (
@@ -40,11 +52,14 @@ export type TableRenderFn = (
 export interface FieldBind {
   required?: boolean
   hidden?: HiddenValue
+  /** 与 hidden 等价，visible: false 即隐藏 */
   visible?: HiddenValue
   hiddenClear?: boolean
   notValidate?: boolean
   defaultValue?: unknown
   message?: string
+  label?: string
+  title?: string
   pattern?: RegExp
   patternType?: string
   fileType?: FormItemRule['type']
@@ -59,6 +74,7 @@ export interface FieldBind {
   disabled?: boolean
   readonly?: boolean
   button?: boolean
+  /** NDatePicker 时间戳字段后缀，默认 `value` → `{key}value` */
   dateValueSuffix?: string
   [key: string]: unknown
 }
@@ -77,7 +93,7 @@ export interface FormFieldConfig {
   cols?: number
   bind?: FieldBind | FieldBind[]
   bindItem?: Record<string, unknown> | Array<Record<string, unknown>>
-  slot?: Record<string, (...args: unknown[]) => unknown> | Array<Record<string, (...args: unknown[]) => unknown>>
+  slot?: Record<string, FieldSlotFn> | Array<Record<string, FieldSlotFn>>
   on?: Record<string, (...args: unknown[]) => void> | Array<Record<string, (...args: unknown[]) => void>>
   render?: FieldRenderFn
 }
@@ -87,9 +103,13 @@ export interface SearchFieldConfig {
   /** 是否作为搜索项，默认 true（出现在 search 场景时） */
   enabled?: boolean
   defaultValue?: unknown
+  /** 占用栅格列数（与 col 等价） */
+  span?: number
+  /** 占用栅格列数（与 span 等价） */
+  col?: number
   bind?: FieldBind | FieldBind[]
   bindItem?: Record<string, unknown>
-  slot?: Record<string, (...args: unknown[]) => unknown>
+  slot?: Record<string, FieldSlotFn>
   on?: Record<string, (...args: unknown[]) => void>
   render?: FieldRenderFn
 }
@@ -140,6 +160,7 @@ export interface UnifiedFieldConfig {
   table?: false | TableFieldConfig
 }
 
+/** CommonForm 直接传入的表单 config 项（与 toFormConfig 输出一致） */
 export type FormConfigItem = {
   id?: string
   label?: string
@@ -147,7 +168,7 @@ export type FormConfigItem = {
   key: string | string[]
   required?: boolean | boolean[]
   hidden?: HiddenValue
-  visible?: HiddenValue
+  visible?: VisibleValue
   hiddenClear?: boolean
   notValidate?: boolean
   defaultValue?: unknown
@@ -156,28 +177,37 @@ export type FormConfigItem = {
   type?: string | string[]
   on?: Record<string, (...args: unknown[]) => void> | Array<Record<string, (...args: unknown[]) => void>>
   bind?: FieldBind | FieldBind[]
-  slot?: Record<string, (...args: unknown[]) => unknown> | Array<Record<string, (...args: unknown[]) => unknown>>
+  slot?: Record<string, FieldSlotFn> | Array<Record<string, FieldSlotFn>>
   bindItem?: Record<string, unknown> | Array<Record<string, unknown>>
   render?: FieldRenderFn
   cols?: number
   class?: string
   showFeedback?: boolean
+  /** 占几列，如 2 表示跨两列 */
   span?: number
 }
 
+/** @deprecated 请使用 FormConfigItem */
+export type ConfigItem = FormConfigItem
+
+/** SearchPanel 直接传入的搜索 config 项（与 toSearchConfig 输出一致） */
 export type SearchConfigItem = {
   label?: string
   title?: string
   key: string | string[]
   isSearch?: boolean
-  component?: string | string[]
+  component?: NaiveComponentName | string | Array<NaiveComponentName | string>
   options?: unknown | unknown[]
   type?: string | string[]
   bind?: FieldBind | FieldBind[]
   bindItem?: Record<string, unknown>
-  slot?: Record<string, (...args: unknown[]) => unknown>
+  slot?: Record<string, FieldSlotFn>
   on?: Record<string, (...args: unknown[]) => void>
   render?: FieldRenderFn
+  /** 占用栅格列数（与 col 等价） */
+  span?: number
+  /** 占用栅格列数（与 span 等价） */
+  col?: number
 }
 
 function isSceneEnabled(sceneConfig: false | object | undefined, defaultEnabled = true) {
@@ -259,6 +289,8 @@ export function toSearchConfig(fields: UnifiedFieldConfig[]): SearchConfigItem[]
         component: field.component,
         options: field.options,
         type: field.type,
+        span: search.span,
+        col: search.col,
         bind: mergeBind(field.bind, search.bind),
         bindItem: search.bindItem,
         slot: search.slot,
@@ -266,6 +298,23 @@ export function toSearchConfig(fields: UnifiedFieldConfig[]): SearchConfigItem[]
         render: search.render,
       }
     })
+}
+
+function resolveListClassTagType(
+  listClass?: string,
+): 'default' | 'error' | 'primary' | 'info' | 'success' | 'warning' | undefined {
+  if (!listClass)
+    return undefined
+  const map: Record<string, 'default' | 'error' | 'primary' | 'info' | 'success' | 'warning'> = {
+    default: 'default',
+    primary: 'primary',
+    success: 'success',
+    info: 'info',
+    warning: 'warning',
+    danger: 'error',
+    error: 'error',
+  }
+  return map[listClass]
 }
 
 function formatCellValue(
@@ -281,8 +330,12 @@ function formatCellValue(
     const opts = field.options as FieldOption[]
     const hit = opts.find(o => o.value === value)
     const text = hit?.label ?? String(value ?? '')
+    const listClassType = resolveListClassTagType(hit?.listClass)
     if (table.tagType) {
       return h(NTag, { type: table.tagType(value), size: 'small' }, { default: () => text })
+    }
+    if (listClassType) {
+      return h(NTag, { type: listClassType, size: 'small' }, { default: () => text })
     }
     return text
   }

@@ -1,7 +1,15 @@
 <script setup lang="tsx">
 import type { Component, VNode } from 'vue'
 import type { FormItemRule } from 'naive-ui'
-import { toFormConfig, type FieldRenderFn, type UnifiedFieldConfig } from './table/fieldSchema'
+import {
+  toFormConfig,
+  type FieldBind,
+  type FormConfigItem,
+  type HiddenValue,
+  type NaiveComponentName,
+  type UnifiedFieldConfig,
+  type VisibleValue,
+} from './table/fieldSchema'
 import {
   NCheckbox,
   NCheckboxGroup,
@@ -29,6 +37,16 @@ import {
   useThemeVars,
 } from 'naive-ui'
 
+export type {
+  FieldBind,
+  FormConfigItem,
+  HiddenValue,
+  NaiveComponentName,
+  VisibleValue,
+}
+/** @deprecated 请使用 FormConfigItem */
+export type ConfigItem = FormConfigItem
+
 const VALIDATE_REG = {
   default: /^.+$/,
   phone: /^[1][3,4,5,6,7,8,9][0-9]{9}$/,
@@ -39,77 +57,9 @@ const VALIDATE_REG = {
 
 export type ValidatePatternType = keyof typeof VALIDATE_REG
 
-export type NaiveComponentName =
-  | 'NInput' | 'NSelect' | 'NDatePicker' | 'NUpload' | 'NInputNumber'
-  | 'NDynamicInput' | 'NSwitch' | 'NCheckboxGroup' | 'NRadioGroup'
-  | 'NRadio' | 'NRadioButton' | 'NCheckbox' | 'NTransfer' | 'NCascader'
-  | 'NTreeSelect' | 'NSlider' | 'NColorPicker' | 'NRate'
-  | 'Checkbox' | 'Radio' | 'RadioButton'
-
-export type HiddenValue = boolean | ((model: Record<string, unknown>) => boolean)
-
-/** visible 与 hidden 等价，visible: false 即隐藏 */
-export type VisibleValue = HiddenValue
-
 export interface FormMessages {
   required?: (label: string) => string
   pattern?: (label: string) => string
-}
-
-export interface FieldBind {
-  required?: boolean
-  hidden?: HiddenValue
-  visible?: VisibleValue
-  hiddenClear?: boolean
-  notValidate?: boolean
-  defaultValue?: unknown
-  message?: string
-  label?: string
-  title?: string
-  pattern?: RegExp
-  patternType?: ValidatePatternType | string
-  fileType?: FormItemRule['type']
-  extendRule?: FormItemRule
-  extendRules?: FormItemRule[]
-  rules?: FormItemRule | FormItemRule[]
-  slotName?: string
-  render?: FieldRenderFn
-  options?: Array<{ label: string; value: string | number | boolean; disabled?: boolean }>
-  col?: number
-  multiple?: boolean
-  disabled?: boolean
-  readonly?: boolean
-  button?: boolean
-  /** NDatePicker 时间戳字段后缀，默认 `value` → `{key}value */
-  dateValueSuffix?: string
-  [key: string]: unknown
-}
-
-/** 同一 label 渲染多个组件时，key / component / bind / bindItem / slot 等需使用数组形式 */
-export interface ConfigItem {
-  id?: string
-  label?: string
-  title?: string
-  key: string | string[]
-  required?: boolean | boolean[]
-  hidden?: HiddenValue
-  visible?: VisibleValue
-  hiddenClear?: boolean
-  notValidate?: boolean
-  defaultValue?: unknown
-  component?: NaiveComponentName | string | Array<NaiveComponentName | string>
-  options?: unknown | unknown[]
-  type?: string | string[]
-  on?: Record<string, (...args: unknown[]) => void> | Array<Record<string, (...args: unknown[]) => void>>
-  bind?: FieldBind | FieldBind[]
-  slot?: Record<string, (item: ConfigItem, formModel: Record<string, unknown>, curData: unknown) => VNode | string> | Array<Record<string, (item: ConfigItem, formModel: Record<string, unknown>, curData: unknown) => VNode | string>>
-  bindItem?: Record<string, unknown> | Array<Record<string, unknown>>
-  render?: FieldRenderFn
-  cols?: number
-  class?: string
-  showFeedback?: boolean
-  /** 占几列，如 2 表示跨两列 */
-  span?: number
 }
 
 const props = withDefaults(defineProps<{
@@ -117,7 +67,7 @@ const props = withDefaults(defineProps<{
    * @deprecated 请改用 fields（统一字段模型）
    * 直接传表单 config（与 fields 二选一，fields 优先）
    */
-  config?: ConfigItem[]
+  config?: FormConfigItem[]
   /** 统一字段配置，自动转换为表单 config */
   fields?: UnifiedFieldConfig[]
   cols?: number
@@ -160,7 +110,7 @@ const formModel = defineModel<Record<string, unknown>>('formModel', { required: 
 
 const resolvedConfig = computed(() => {
   if (props.fields?.length)
-    return toFormConfig(props.fields) as ConfigItem[]
+    return toFormConfig(props.fields) as FormConfigItem[]
   return props.config
 })
 
@@ -194,7 +144,11 @@ const NAIVE_COMPONENTS: Record<string, Component> = {
 
 const CUSTOM_COMPONENTS: Record<string, Component> = {
   file: defineAsyncComponent(() => import('@/components/common/UploadFile.vue')),
-  // Editor: defineAsyncComponent(() => import('@/components/common/Editor.vue')),
+  UploadFile: defineAsyncComponent(() => import('@/components/common/UploadFile.vue')),
+  Editor: defineAsyncComponent(() => import('@/components/common/Editor.vue')),
+  IconSelect: defineAsyncComponent(() => import('@/components/common/IconSelect.vue')),
+  UserSelect: defineAsyncComponent(() => import('@/components/common/UserSelect.vue')),
+  CronInput: defineAsyncComponent(() => import('@/components/Crontab/CronInput.vue')),
 }
 
 const COMPONENTS_WITH_CLEARABLE = new Set([
@@ -259,29 +213,29 @@ function patternMessage(label: string) {
   return props.messages.pattern?.(label) ?? `${label}格式不正确`
 }
 
-function resolveBind(item: ConfigItem, index?: number): FieldBind {
+function resolveBind(item: FormConfigItem, index?: number): FieldBind {
   return resolveArrayValue(item.bind, index, {})!
 }
 
-function resolveBindItem(item: ConfigItem, index?: number): Record<string, unknown> {
+function resolveBindItem(item: FormConfigItem, index?: number): Record<string, unknown> {
   return { ...defaultBindItem.value, ...resolveArrayValue(item.bindItem, index, {})! }
 }
 
-function resolveSlot(item: ConfigItem, index?: number) {
+function resolveSlot(item: FormConfigItem, index?: number) {
   return resolveArrayValue(item.slot, index)
 }
 
-function resolveComponentName(item: ConfigItem, index?: number): string {
+function resolveComponentName(item: FormConfigItem, index?: number): string {
   return resolveArrayValue(item.component, index, 'NInput')!
 }
 
-function resolveFieldKey(item: ConfigItem, index?: number): string {
+function resolveFieldKey(item: FormConfigItem, index?: number): string {
   if (typeof item.key === 'string')
     return item.key
   return resolveArrayValue(item.key, index, item.key[0])!
 }
 
-function resolveOptions(item: ConfigItem, index?: number) {
+function resolveOptions(item: FormConfigItem, index?: number) {
   const options = item.options
   // 多字段场景才是「选项数组的数组」；普通字段的 options 本身就是选项列表，不能取 [0]
   if (
@@ -295,19 +249,19 @@ function resolveOptions(item: ConfigItem, index?: number) {
   return options
 }
 
-function resolveType(item: ConfigItem, index?: number): string {
+function resolveType(item: FormConfigItem, index?: number): string {
   return resolveArrayValue(item.type, index, 'input')!
 }
 
-function resolveEvents(item: ConfigItem, index?: number): Record<string, (...args: unknown[]) => void> {
+function resolveEvents(item: FormConfigItem, index?: number): Record<string, (...args: unknown[]) => void> {
   return resolveArrayValue(item.on, index, {})!
 }
 
-function resolveFieldPath(item: ConfigItem, index?: number): string {
+function resolveFieldPath(item: FormConfigItem, index?: number): string {
   return props.basePath + resolveFieldKey(item, index)
 }
 
-function resolveItemKey(item: ConfigItem, index?: number): string {
+function resolveItemKey(item: FormConfigItem, index?: number): string {
   if (item.id)
     return item.id
   if (Array.isArray(item.key) && item.key.length > 1)
@@ -339,7 +293,7 @@ function resolveVisible(visible: VisibleValue | undefined): boolean | undefined 
   return visible
 }
 
-function isHidden(item: ConfigItem, bind: FieldBind, index?: number): boolean {
+function isHidden(item: FormConfigItem, bind: FieldBind, index?: number): boolean {
   const currentBind = index !== undefined && Array.isArray(item.bind) ? resolveBind(item, index) : bind
   const visible = resolveVisible(currentBind.visible ?? item.visible)
   if (visible !== undefined)
@@ -347,12 +301,12 @@ function isHidden(item: ConfigItem, bind: FieldBind, index?: number): boolean {
   return resolveHidden(currentBind.hidden ?? item.hidden)
 }
 
-function shouldClearOnHidden(item: ConfigItem, index?: number): boolean {
+function shouldClearOnHidden(item: FormConfigItem, index?: number): boolean {
   const bind = resolveBind(item, index)
   return !!(bind.hiddenClear ?? item.hiddenClear ?? props.hiddenClear)
 }
 
-function clearFieldValue(fieldKey: string, item: ConfigItem, index?: number) {
+function clearFieldValue(fieldKey: string, item: FormConfigItem, index?: number) {
   const model = formModel.value
   const componentName = resolveComponentName(item, index)
   const bind = resolveBind(item, index)
@@ -366,7 +320,7 @@ function clearFieldValue(fieldKey: string, item: ConfigItem, index?: number) {
   model[fieldKey] = undefined
 }
 
-function trackHiddenClear(items: ConfigItem[]) {
+function trackHiddenClear(items: FormConfigItem[]) {
   for (const item of items) {
     if (Array.isArray(item.key)) {
       item.key.forEach((subKey, subIndex) => {
@@ -379,7 +333,7 @@ function trackHiddenClear(items: ConfigItem[]) {
   }
 }
 
-function trackFieldHiddenClear(item: ConfigItem, fieldKey: string, index?: number) {
+function trackFieldHiddenClear(item: FormConfigItem, fieldKey: string, index?: number) {
   const bind = resolveBind(item, index)
   const path = props.basePath + fieldKey
   const hidden = isHidden(item, bind, index)
@@ -433,7 +387,7 @@ function resolveControlState(bind: FieldBind) {
   }
 }
 
-function inferFieldType(item: ConfigItem, value: unknown, componentName: string): FormItemRule['type'] {
+function inferFieldType(item: FormConfigItem, value: unknown, componentName: string): FormItemRule['type'] {
   const bind = resolveBind(item)
   if (bind.multiple)
     return 'array'
@@ -441,7 +395,10 @@ function inferFieldType(item: ConfigItem, value: unknown, componentName: string)
     case 'NCheckboxGroup':
     case 'NTransfer':
     case 'UploadFile':
+    case 'file':
       return 'array'
+    case 'UserSelect':
+      return bind.multiple === false ? 'string' : 'array'
     case 'NRate':
     case 'NInputNumber':
     case 'NSlider':
@@ -451,7 +408,7 @@ function inferFieldType(item: ConfigItem, value: unknown, componentName: string)
   }
 }
 
-function setRule(item: ConfigItem, index?: number): FormItemRule | FormItemRule[] {
+function setRule(item: FormConfigItem, index?: number): FormItemRule | FormItemRule[] {
   const bind = resolveBind(item, index)
 
   if (isHidden(item, bind, index))
@@ -505,7 +462,7 @@ function setRule(item: ConfigItem, index?: number): FormItemRule | FormItemRule[
   return [rule]
 }
 
-function initDefaultValues(items: ConfigItem[]) {
+function initDefaultValues(items: FormConfigItem[]) {
   const model = formModel.value
   for (const item of items) {
     if (Array.isArray(item.key)) {
@@ -527,17 +484,17 @@ function initDefaultValues(items: ConfigItem[]) {
 
 watch(() => resolvedConfig.value, config => initDefaultValues(config), { immediate: true, deep: true })
 
-function hasCustomRender(item: ConfigItem, bind: FieldBind) {
+function hasCustomRender(item: FormConfigItem, bind: FieldBind) {
   return !!(bind.render ?? item.render ?? bind.slotName)
 }
 
-function fieldGridStyle(item: ConfigItem) {
+function fieldGridStyle(item: FormConfigItem) {
   if (!item.span || item.span <= 1)
     return undefined
   return { gridColumn: `span ${Math.min(item.span, props.cols)}` }
 }
 
-function renderLabel(item: ConfigItem, bind: FieldBind) {
+function renderLabel(item: FormConfigItem, bind: FieldBind) {
   const text = item.label ?? item.title ?? bind.label ?? bind.title
   if (!text)
     return undefined
@@ -552,8 +509,8 @@ function renderLabel(item: ConfigItem, bind: FieldBind) {
 }
 
 function renderControlSlots(
-  slotDef: ConfigItem['slot'],
-  item: ConfigItem,
+  slotDef: FormConfigItem['slot'],
+  item: FormConfigItem,
   fieldKey: string,
 ) {
   if (!slotDef || typeof slotDef !== 'object' || Array.isArray(slotDef))
@@ -569,7 +526,7 @@ function renderControlSlots(
 }
 
 function renderGroupControl(
-  item: ConfigItem,
+  item: FormConfigItem,
   bind: FieldBind,
   groupType: 'Checkbox' | 'Radio' | 'RadioButton',
   fieldKey: string,
@@ -613,7 +570,7 @@ function resolveGroupType(componentName: string, bind: FieldBind): 'Checkbox' | 
   return null
 }
 
-function renderFieldControl(item: ConfigItem, index?: number) {
+function renderFieldControl(item: FormConfigItem, index?: number) {
   const bind = resolveBind(item, index)
   const fieldKey = resolveFieldKey(item, index)
   const componentName = resolveComponentName(item, index)
@@ -662,7 +619,7 @@ function renderFieldControl(item: ConfigItem, index?: number) {
   )
 }
 
-function safeRenderCustomContent(item: ConfigItem, bind: FieldBind) {
+function safeRenderCustomContent(item: FormConfigItem, bind: FieldBind) {
   const fieldKey = resolveFieldKey(item)
   const renderFn = bind.render ?? item.render
   try {
@@ -682,7 +639,7 @@ function safeRenderCustomContent(item: ConfigItem, bind: FieldBind) {
 }
 
 function renderStandardFormItem(
-  item: ConfigItem,
+  item: FormConfigItem,
   options: {
     itemKey: string
     fieldPath?: string
@@ -712,7 +669,7 @@ function renderStandardFormItem(
   )
 }
 
-function renderFormField(item: ConfigItem, nested = false) {
+function renderFormField(item: FormConfigItem, nested = false) {
   const bind = resolveBind(item)
   const bindItem = resolveBindItem(item)
 
@@ -764,6 +721,7 @@ function renderFormField(item: ConfigItem, nested = false) {
   if (customRender && !nested) {
     return renderStandardFormItem(item, {
       itemKey,
+      fieldPath,
       label: item.label ?? item.title,
       bindItem,
       labelSlot,
@@ -821,7 +779,7 @@ function RenderRoot() {
   )
 }
 
-function collectFieldPaths(items: ConfigItem[] = resolvedConfig.value, prefix = props.basePath): string[] {
+function collectFieldPaths(items: FormConfigItem[] = resolvedConfig.value, prefix = props.basePath): string[] {
   const paths: string[] = []
   for (const item of items) {
     const bind = resolveBind(item)
@@ -836,8 +794,7 @@ function collectFieldPaths(items: ConfigItem[] = resolvedConfig.value, prefix = 
       continue
     }
 
-    if (!hasCustomRender(item, bind))
-      paths.push(`${prefix}${resolveFieldKey(item)}`)
+    paths.push(`${prefix}${resolveFieldKey(item)}`)
   }
   return paths
 }

@@ -68,11 +68,6 @@
 
 <script setup lang="tsx">
 import { AddOutline } from '@vicons/ionicons5'
-import SearchPanel from '@/components/common/SearchPanel.vue'
-import CommonTable from '@/components/common/table/CommonTable.vue'
-import CommonModal from '@/components/common/modal/CommonModal.vue'
-import { defineFields, extractFormDefaults, extractSearchDefaults } from '@/components/common/table/fieldSchema'
-import { defineModal } from '@/components/common/modal/modalSchema'
 import {
   addJob,
   changeJobStatus,
@@ -91,6 +86,7 @@ import {
   loginStatusOptions,
   misfirePolicyOptions,
 } from './constants'
+import { usePermission } from '@/hooks/usePermission'
 
 const { confirmDanger } = useConfirm()
 const { hasPermission } = usePermission()
@@ -126,9 +122,12 @@ const jobFields = defineFields([
   },
   {
     key: 'cronExpression',
-    label: 'cron 表达�?,
-    component: 'NInput',
-    form: { required: true },
+    label: 'cron 表达式',
+    component: 'CronInput',
+    form: {
+      required: true,
+      span: 2,
+    },
     search: false,
     table: { width: 150 },
   },
@@ -152,7 +151,7 @@ const jobFields = defineFields([
   },
   {
     key: 'status',
-    label: '状�?,
+    label: '状态',
     component: 'NSelect',
     options: jobStatusOptions,
     form: { required: true, defaultValue: '1' },
@@ -218,7 +217,7 @@ const logFields = defineFields([
   },
   {
     key: 'status',
-    label: '状�?,
+    label: '状态',
     component: 'NSelect',
     options: loginStatusOptions,
     form: false,
@@ -317,7 +316,7 @@ const tableFields = computed(() => [
             label: '删除',
             type: 'error' as const,
             permission: 'monitor:job:remove',
-            popconfirm: (r) => `是否确认删除任务�?{(r as unknown as SysJob).jobName}」？`,
+            popconfirm: (r) => `是否确认删除任务「${(r as unknown as SysJob).jobName}」？`,
             onClick: async (r) => {
               await removeAndRefresh(() => deleteJob([(r as unknown as SysJob).jobId]))
             },
@@ -353,7 +352,7 @@ function handleChangeStatus(row: SysJob) {
   const action = next === '1' ? '启用' : '暂停'
   confirmDanger({
     title: `确认${action}`,
-    content: `是否确认${action}任务�?{row.jobName}」？`,
+    content: `是否确认${action}任务「${row.jobName}」？`,
     successMessage: `${action}成功`,
     action: async () => {
       await changeJobStatus(row.jobId, next)
@@ -365,8 +364,8 @@ function handleChangeStatus(row: SysJob) {
 function handleRun(row: SysJob) {
   confirmDanger({
     title: '确认执行',
-    content: `是否确认立即执行一次任务�?{row.jobName}」？`,
-    successMessage: '执行指令已发�?,
+    content: `是否确认立即执行一次任务「${row.jobName}」？`,
+    successMessage: '执行指令已发送',
     action: async () => {
       await runJob(row.jobId, row.jobGroup)
     },

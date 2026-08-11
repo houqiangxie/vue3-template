@@ -68,8 +68,6 @@
 
 <script setup lang="ts">
 import { useMessage } from 'naive-ui'
-import { defineFields, extractFormDefaults } from '@/components/common/table/fieldSchema'
-import { defineModal } from '@/components/common/modal/modalSchema'
 
 const statusOptions = [
   { label: '启用', value: 1 },

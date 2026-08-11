@@ -161,13 +161,11 @@
 </template>
 
 <script setup lang="tsx">
-import SearchPanel from '@/components/common/SearchPanel.vue'
-import CommonTable from '@/components/common/table/CommonTable.vue'
-import CommonModal from '@/components/common/modal/CommonModal.vue'
-import { defineFields, extractSearchDefaults } from '@/components/common/table/fieldSchema'
 import { cleanOperLog, deleteOperLog, listOperLog } from '@/api/system/operlog'
 import type { SysOperLog } from '@/api/system/types'
 import { businessTypeOptions, operStatusOptions } from './constants'
+import { usePermission } from '@/hooks/usePermission'
+import { splitDateRange } from '@/hooks/usePageList'
 import { useMessage } from 'naive-ui'
 
 const { hasPermission } = usePermission()
