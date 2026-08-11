@@ -1,8 +1,8 @@
-/** 系统管理公共常量（参照若依） */
+/** 系统管理公共常量 */
 
 export const statusOptions = [
-  { label: '正常', value: '0' },
-  { label: '停用', value: '1' },
+  { label: '正常', value: '1' },
+  { label: '停用', value: '0' },
 ]
 
 export const sexOptions = [
@@ -19,18 +19,18 @@ export const menuTypeOptions = [
 ]
 
 export const visibleOptions = [
-  { label: '显示', value: '0' },
-  { label: '不显示', value: '1' },
+  { label: '显示', value: '1' },
+  { label: '不显示', value: '0' },
 ]
 
 export const cacheOptions = [
-  { label: '缓存', value: '0' },
-  { label: '不缓存', value: '1' },
+  { label: '缓存', value: '1' },
+  { label: '不缓存', value: '0' },
 ]
 
 export const yesNoOptions = [
-  { label: '是', value: '0' },
-  { label: '否', value: '1' },
+  { label: '是', value: '1' },
+  { label: '否', value: '0' },
 ]
 
 export const noticeTypeOptions = [
@@ -52,13 +52,13 @@ export const businessTypeOptions = [
 ]
 
 export const operStatusOptions = [
-  { label: '成功', value: '0' },
-  { label: '失败', value: '1' },
+  { label: '成功', value: '1' },
+  { label: '失败', value: '0' },
 ]
 
 export const loginStatusOptions = [
-  { label: '成功', value: '0' },
-  { label: '失败', value: '1' },
+  { label: '成功', value: '1' },
+  { label: '失败', value: '0' },
 ]
 
 export const jobGroupOptions = [
@@ -67,8 +67,8 @@ export const jobGroupOptions = [
 ]
 
 export const jobStatusOptions = [
-  { label: '正常', value: '0' },
-  { label: '暂停', value: '1' },
+  { label: '正常', value: '1' },
+  { label: '暂停', value: '0' },
 ]
 
 export const misfirePolicyOptions = [
@@ -79,8 +79,8 @@ export const misfirePolicyOptions = [
 ]
 
 export const concurrentOptions = [
-  { label: '允许', value: '0' },
-  { label: '禁止', value: '1' },
+  { label: '允许', value: '1' },
+  { label: '禁止', value: '0' },
 ]
 
 export const configTypeOptions = [

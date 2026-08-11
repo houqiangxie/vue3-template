@@ -78,7 +78,7 @@ export const userRoutes: MockRoute[] = [
         phonenumber: body.phonenumber,
         email: body.email,
         sex: body.sex || '2',
-        status: body.status || '0',
+        status: body.status || '1',
         postIds: body.postIds || [],
         roleIds: body.roleIds || [],
         remark: body.remark,

@@ -71,8 +71,9 @@ const parentMenuOptions = ref<{ label: string, key: number, children?: unknown[]
 
 /** 非按钮类型（目录 / 菜单 / 页面级菜单） */
 const isNotButton = (model: Record<string, unknown>) => model.menuType !== 'F'
-/** 菜单类型 */
-const isMenu = (model: Record<string, unknown>) => model.menuType === 'C'
+/** 菜单或页面级菜单（可配置高亮、面包屑等） */
+const isMenuOrPage = (model: Record<string, unknown>) =>
+  model.menuType === 'C' || model.menuType === 'P'
 /** 非目录（菜单 / 按钮 / 页面级菜单） */
 const isNotDirectory = (model: Record<string, unknown>) => model.menuType !== 'M'
 
@@ -169,7 +170,7 @@ const menuFormFields = computed(() => defineFields([
     key: 'component',
     label: '组件路径',
     component: 'NInput',
-    bind: { placeholder: '请输入组件路径' },
+    bind: { placeholder: '如 System/User；页签宿主填 TabView' },
     form: { visible: isNotButton },
     search: false,
     table: false,
@@ -179,7 +180,7 @@ const menuFormFields = computed(() => defineFields([
     label: '高亮组件路径',
     component: 'NInput',
     bind: { placeholder: '请输入高亮组件路径' },
-    form: { visible: isMenu },
+    form: { visible: isMenuOrPage },
     search: false,
     table: false,
   },
@@ -207,8 +208,8 @@ const menuFormFields = computed(() => defineFields([
     component: 'NRadioGroup',
     options: yesNoOptions,
     form: {
-      defaultValue: '0',
-      visible: isMenu,
+      defaultValue: '1',
+      visible: isMenuOrPage,
     },
     search: false,
     table: false,
@@ -219,7 +220,7 @@ const menuFormFields = computed(() => defineFields([
     component: 'NRadioGroup',
     options: cacheOptions,
     form: {
-      defaultValue: '0',
+      defaultValue: '1',
       visible: isNotButton,
     },
     search: false,
@@ -231,7 +232,8 @@ const menuFormFields = computed(() => defineFields([
     component: 'NRadioGroup',
     options: visibleOptions,
     form: {
-      defaultValue: '0',
+      defaultValue: '1',
+      // 页面级默认不进侧栏，但仍可改
       visible: isNotButton,
     },
     search: false,
@@ -243,8 +245,8 @@ const menuFormFields = computed(() => defineFields([
     component: 'NRadioGroup',
     options: visibleOptions,
     form: {
-      defaultValue: '1',
-      visible: isMenu,
+      defaultValue: '0',
+      visible: (model) => model.menuType === 'C',
     },
     search: false,
     table: false,
@@ -254,7 +256,7 @@ const menuFormFields = computed(() => defineFields([
     label: '菜单状态',
     component: 'NRadioGroup',
     options: statusOptions,
-    form: { defaultValue: '0' },
+    form: { defaultValue: '1' },
     search: false,
     table: false,
   },
@@ -273,7 +275,7 @@ const menuTableFields = defineFields([
     label: '类型',
     component: 'NSelect',
     options: menuTypeOptions,
-    table: { width: 80, format: 'option' },
+    table: { width: 110, format: 'option' },
     form: false,
     search: false,
   },
@@ -313,7 +315,7 @@ const menuTableFields = defineFields([
     table: {
       width: 90,
       format: 'option',
-      tagType: val => (val === '0' ? 'success' : 'error'),
+      tagType: val => (val === '1' ? 'success' : 'error'),
     },
     form: false,
     search: false,
@@ -430,15 +432,19 @@ async function refreshParentOptions() {
 }
 
 function handleAdd(parent?: SysMenu) {
+  const underTabView = parent?.component === 'TabView' || parent?.component === 'TabView/index'
   openCreate({
     parentId: parent?.menuId ?? 0,
-    menuType: parent ? 'C' : 'M',
-    status: '0',
-    visible: '0',
-    isCache: '0',
-    breadcrumb: '0',
-    workbench: '1',
+    menuType: underTabView ? 'P' : (parent ? 'C' : 'M'),
+    status: '1',
+    visible: underTabView ? '0' : '1',
+    isCache: '1',
+    breadcrumb: '1',
+    workbench: '0',
     orderNum: 0,
+    ...(underTabView
+      ? { activeMenu: parent?.routeName || parent?.path || '' }
+      : {}),
   })
 }
 

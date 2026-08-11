@@ -1,5 +1,6 @@
 import type { MenuOption } from 'naive-ui'
 import type { MenuItem } from '@/router/utils/types'
+import { isButtonMenu, isPageLevelMenu } from '@/router/utils/buildDynamicRoutes'
 import { resolveMenuIcon } from './resolveMenuIcon'
 
 function isHttpPath(path?: string) {
@@ -7,16 +8,13 @@ function isHttpPath(path?: string) {
 }
 
 function visibleChildren(menu: MenuItem): MenuItem[] {
-  return (menu.children ?? []).filter(c => !c.hidden && !isButtonType(c))
-}
-
-function isButtonType(menu: MenuItem): boolean {
-  const t = menu.type
-  return t === 3 || t === '3' || t === 'F'
+  return (menu.children ?? []).filter(
+    c => !c.hidden && !isButtonMenu(c) && !isPageLevelMenu(c),
+  )
 }
 
 /**
- * 对齐 guanweb SidebarItem：仅一个可见子菜单且未 alwaysShow 时，提升子项到当前层
+ * 仅一个可见子菜单且未 alwaysShow 时，提升子项到当前层
  */
 function promoteIfSingleChild(menu: MenuItem): MenuItem {
   const kids = visibleChildren(menu)
@@ -26,7 +24,8 @@ function promoteIfSingleChild(menu: MenuItem): MenuItem {
 }
 
 function toMenuOption(menu: MenuItem): MenuOption | null {
-  if (menu.hidden || isButtonType(menu))
+  // 页面级菜单不进侧栏（对齐 guanweb type=4）
+  if (menu.hidden || isButtonMenu(menu) || isPageLevelMenu(menu))
     return null
 
   const display = promoteIfSingleChild(menu)
@@ -56,7 +55,7 @@ function toMenuOption(menu: MenuItem): MenuOption | null {
   return option
 }
 
-/** 将后台菜单树转为 Naive UI 侧栏 MenuOption（对齐 guanweb sidebarRouters） */
+/** 将后台菜单树转为 Naive UI 侧栏 MenuOption */
 export function menusToMenuOptions(menus: MenuItem[]): MenuOption[] {
   return menus
     .map(toMenuOption)

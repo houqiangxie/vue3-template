@@ -5,6 +5,7 @@ import ParentView from '@/components/ParentView/index.vue'
 export type ViewModules = Record<string, () => Promise<any>>
 
 const DIRECTORY_COMPONENTS = new Set(['ParentView', 'Layout', 'ParentView/index'])
+const TAB_VIEW_COMPONENTS = new Set(['TabView', 'TabView/index'])
 const IFRAME_COMPONENTS = new Set([
   'system/iFrame/index',
   'System/IFrame',
@@ -18,6 +19,12 @@ function isDirectoryComponent(component?: string): boolean {
   return DIRECTORY_COMPONENTS.has(component.replace(/^\/+/, ''))
 }
 
+export function isTabViewComponent(component?: string): boolean {
+  if (!component)
+    return false
+  return TAB_VIEW_COMPONENTS.has(component.replace(/^\/+/, ''))
+}
+
 function isIFrameComponent(component?: string): boolean {
   if (!component)
     return false
@@ -28,6 +35,12 @@ function isIFrameComponent(component?: string): boolean {
 export function isButtonMenu(menu: MenuItem): boolean {
   const t = menu.type
   return t === 3 || t === '3' || t === 'F'
+}
+
+/** 页面级菜单：侧栏不展示，由父级 TabView 以 tabs 承载 */
+export function isPageLevelMenu(menu: MenuItem): boolean {
+  const t = menu.type
+  return t === 4 || t === '4' || t === 'P'
 }
 
 function isHttpPath(path?: string): boolean {
@@ -84,6 +97,14 @@ export function filterMenusByAvailableViews(
       return acc
     }
 
+    // TabView 宿主：只要有可用子页即可（自身组件由框架提供）
+    if (isTabViewComponent(menu.component)) {
+      if (!children?.length)
+        return acc
+      acc.push({ ...menu, children })
+      return acc
+    }
+
     const hasSelf = !!resolveViewComponent(modules, baseDir, menu.component)
 
     if (children?.length) {
@@ -118,6 +139,9 @@ export function resolveViewComponent(
   if (isDirectoryComponent(raw))
     return () => Promise.resolve({ default: ParentView })
 
+  if (isTabViewComponent(raw))
+    return () => import('@/components/TabView/index.vue')
+
   if (isIFrameComponent(raw))
     return () => import('@/views/common/IFrame.vue')
 
@@ -148,7 +172,7 @@ function normalizePath(path: string | undefined): string {
   return cleaned.startsWith('/') ? cleaned : `/${cleaned}`
 }
 
-/** 拼接父子 path，兼容绝对/相对两种后台写法（对齐 guanweb filterAsyncRouter2） */
+/** 拼接父子 path，兼容绝对/相对两种后台写法 */
 export function joinMenuPath(parentPath: string, childPath: string): string {
   if (isHttpPath(childPath))
     return childPath
@@ -183,9 +207,9 @@ export function resolveKeepAlive(menu: MenuItem): boolean {
     return menu.keepAlive
   if (typeof menu.cacheFlag === 'boolean')
     return menu.cacheFlag
-  if (menu.isCache === '0' || menu.isCache === true)
+  if (menu.isCache === '1' || menu.isCache === true)
     return true
-  if (menu.isCache === '1' || menu.isCache === false)
+  if (menu.isCache === '0' || menu.isCache === false)
     return false
   if (typeof menu.meta?.keepAlive === 'boolean')
     return menu.meta.keepAlive
@@ -246,7 +270,7 @@ export function normalizeMenusForLayout(menus: MenuItem[]): MenuItem[] {
 }
 
 /**
- * 对齐 guanweb loadView：强制 component.name = 路由 name，
+ * 强制 component.name = 路由 name，
  * 保证 keep-alive include 与 router.push({ name }) 一致。
  */
 function withComponentName(
@@ -302,8 +326,9 @@ function createLeafRoute(
 }
 
 /**
- * 对齐 guanweb `filterAsyncRouter2`：
+ * 动态路由扁平化规则：
  * - ParentView / Layout 目录不注册，子路由提升为 Layout 直属子路由，path 拼接完整
+ * - TabView：注册宿主页；页面级子菜单提升为 Layout 直属路由（侧栏不展示）
  * - 普通带 children 的页面组件仍保留嵌套（相对 path）
  */
 export function buildDynamicRoutes(
@@ -324,7 +349,7 @@ export function buildDynamicRoutes(
     const result: RouteRecordRaw[] = []
 
     for (const menu of menus) {
-      // 按钮 / 外链不注册；hidden 仅侧栏隐藏，路由仍需注册（字典数据、分配用户等下钻页）
+      // 按钮 / 外链不注册；hidden / 页面级仅侧栏隐藏，路由仍需注册
       if (isButtonMenu(menu) || isHttpPath(menu.path))
         continue
 
@@ -332,7 +357,7 @@ export function buildDynamicRoutes(
         ? joinMenuPath(pathPrefix, menu.path || '')
         : normalizePath(menu.path || '/')
 
-      // —— 目录：扁平化（对齐 guanweb）——
+      // —— 目录：扁平化 ——
       if (isDirectoryComponent(menu.component)) {
         if (menu.children?.length)
           result.push(...walk(menu.children, absolutePath, nestUnder))
@@ -342,6 +367,42 @@ export function buildDynamicRoutes(
       const routePath = nestUnder
         ? getRelativePath(absolutePath, nestUnder)
         : absolutePath
+
+      // —— TabView：宿主页 + 页面级子菜单提升为 Layout 同级路由 ——
+      if (isTabViewComponent(menu.component)) {
+        const host = createLeafRoute(
+          modules,
+          baseDir,
+          {
+            ...menu,
+            // TabView 自身不嵌套 router-view children
+            children: undefined,
+          },
+          nestUnder ? routePath : absolutePath,
+        )
+        if (host)
+          result.push(host)
+
+        const tabChildren = (menu.children ?? []).filter(
+          c => !isButtonMenu(c) && !isHttpPath(c.path),
+        )
+        if (tabChildren.length) {
+          // 与 guanweb 一致：子页按自身 path 挂到 Layout，不嵌套在 TabView 路由内
+          result.push(...walk(
+            tabChildren.map(c => ({
+              ...c,
+              hidden: true,
+              meta: {
+                ...c.meta,
+                activeMenu: c.meta?.activeMenu ?? menu.name,
+              },
+            })),
+            '',
+            nestUnder,
+          ))
+        }
+        continue
+      }
 
       // —— 有子菜单的真实页面组件：保留嵌套 ——
       if (menu.children?.length) {
@@ -370,8 +431,16 @@ export function buildDynamicRoutes(
         continue
       }
 
-      // —— 叶子页面（含 hidden 下钻页）——
-      const leaf = createLeafRoute(modules, baseDir, menu, nestUnder ? routePath : absolutePath)
+      // —— 叶子页面（含 hidden / 页面级下钻页）——
+      const leafMenu = isPageLevelMenu(menu)
+        ? { ...menu, hidden: true }
+        : menu
+      const leaf = createLeafRoute(
+        modules,
+        baseDir,
+        leafMenu,
+        nestUnder ? routePath : absolutePath,
+      )
       if (leaf)
         result.push(leaf)
     }
@@ -394,8 +463,11 @@ export function prepareSidebarMenus(menus: MenuItem[]): MenuItem[] {
  */
 export function getDefaultRouteName(menuList: MenuItem[]): string | undefined {
   for (const menu of menuList) {
-    if (menu.hidden || isButtonMenu(menu) || isHttpPath(menu.path))
+    if (menu.hidden || isButtonMenu(menu) || isPageLevelMenu(menu) || isHttpPath(menu.path))
       continue
+
+    if (isTabViewComponent(menu.component) && menu.name)
+      return menu.name
 
     if (menu.children?.length) {
       const childName = getDefaultRouteName(menu.children)
@@ -405,6 +477,20 @@ export function getDefaultRouteName(menuList: MenuItem[]): string | undefined {
     else if (menu.name && (menu.component || menu.meta?.iFrameUrl)) {
       if (!isDirectoryComponent(menu.component))
         return menu.name
+    }
+  }
+  return undefined
+}
+
+/** 在菜单树中按 name 查找节点（供 TabView 取子菜单） */
+export function findMenuByName(menus: MenuItem[], name: string): MenuItem | undefined {
+  for (const menu of menus) {
+    if (menu.name === name)
+      return menu
+    if (menu.children?.length) {
+      const found = findMenuByName(menu.children, name)
+      if (found)
+        return found
     }
   }
   return undefined

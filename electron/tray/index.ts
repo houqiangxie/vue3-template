@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { app, Menu, nativeImage, Tray } from 'electron';
+import { app, Menu, nativeImage, screen, Tray } from 'electron';
+import { resolveMenuLabels, type AppMenuConfig } from '../menu/config';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -16,6 +17,8 @@ export interface TrayManagerOptions {
   tooltip?: string;
   showMainWindow: () => void;
   onQuit: () => void;
+  /** Reuse app menu locale / label overrides for tray items. */
+  menuConfig?: AppMenuConfig;
   /** Called when tray flashing starts (e.g. flash taskbar). */
   onFlashStart?: () => void;
   /** Called when tray flashing stops. */
@@ -52,9 +55,40 @@ function loadImageFromAsset(filename: string): Electron.NativeImage | null {
   return image.isEmpty() ? null : image;
 }
 
+/** Prefer @2x asset on HiDPI, then fall back to the 1x file. */
+function loadTrayAsset(baseName: string): Electron.NativeImage | null {
+  const scale = (() => {
+    try {
+      return screen.getPrimaryDisplay().scaleFactor;
+    }
+    catch {
+      return 1;
+    }
+  })();
+
+  const [name, ext = 'png'] = baseName.split(/\.(?=[^.]+$)/);
+  if (scale >= 1.5) {
+    const hiDpi = loadImageFromAsset(`${name}@2x.${ext}`);
+    if (hiDpi) {
+      return hiDpi;
+    }
+  }
+  return loadImageFromAsset(baseName);
+}
+
 function normalizeTrayImage(image: Electron.NativeImage): Electron.NativeImage {
   if (process.platform === 'win32') {
-    return image.resize({ width: 16, height: 16 });
+    // HiDPI trays look sharper at 32px; 16px is enough on 100% scale.
+    const scale = (() => {
+      try {
+        return screen.getPrimaryDisplay().scaleFactor;
+      }
+      catch {
+        return 1;
+      }
+    })();
+    const size = scale >= 1.5 ? 32 : 16;
+    return image.resize({ width: size, height: size });
   }
   if (process.platform === 'darwin') {
     image.setTemplateImage(true);
@@ -82,8 +116,8 @@ function createBlankIcon(): Electron.NativeImage {
 }
 
 function loadTrayImages() {
-  const normal = loadImageFromAsset('tray-icon.png') ?? createFallbackIcon(64, 158, 255);
-  const alert = loadImageFromAsset('tray-icon-alert.png') ?? createFallbackIcon(255, 140, 0);
+  const normal = loadTrayAsset('tray-icon.png') ?? createFallbackIcon(64, 158, 255);
+  const alert = loadTrayAsset('tray-icon-alert.png') ?? createFallbackIcon(255, 140, 0);
   const blank = createBlankIcon();
 
   return {
@@ -95,7 +129,7 @@ function loadTrayImages() {
 
 export class TrayManager {
   private tray: Tray | null = null;
-  private readonly images = loadTrayImages();
+  private images: ReturnType<typeof loadTrayImages> | null = null;
   private flashTimer: ReturnType<typeof setInterval> | null = null;
   private flashStopTimer: ReturnType<typeof setTimeout> | null = null;
   private flashPhase = false;
@@ -109,17 +143,19 @@ export class TrayManager {
     }
 
     try {
+      this.images = loadTrayImages();
+      const labels = resolveMenuLabels(this.options.menuConfig);
       this.tray = new Tray(this.images.normal);
       this.tray.setToolTip(this.options.tooltip ?? app.getName());
 
       const contextMenu = Menu.buildFromTemplate([
         {
-          label: '显示主窗口',
+          label: labels.showMainWindow,
           click: () => this.handleUserActivate(),
         },
         { type: 'separator' },
         {
-          label: '退出',
+          label: labels.quit,
           click: () => this.options.onQuit(),
         },
       ]);
@@ -137,7 +173,7 @@ export class TrayManager {
 
   /** WeChat-style tray blink: alternate highlight icon and blank. */
   startFlashing(options: TrayFlashOptions = {}) {
-    if (!this.tray) {
+    if (!this.tray || !this.images) {
       return;
     }
 
@@ -150,7 +186,7 @@ export class TrayManager {
     this.options.onFlashStart?.();
 
     this.flashTimer = setInterval(() => {
-      if (!this.tray) {
+      if (!this.tray || !this.images) {
         return;
       }
       this.flashPhase = !this.flashPhase;
@@ -171,7 +207,9 @@ export class TrayManager {
     this.stopFlashingTimers();
     this.flashing = false;
     this.flashPhase = false;
-    this.tray?.setImage(this.images.normal);
+    if (this.images) {
+      this.tray?.setImage(this.images.normal);
+    }
     this.options.onFlashStop?.();
   }
 
@@ -183,6 +221,7 @@ export class TrayManager {
     this.stopFlashing();
     this.tray?.destroy();
     this.tray = null;
+    this.images = null;
   }
 
   setTooltip(tooltip: string) {

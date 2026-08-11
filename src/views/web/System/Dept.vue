@@ -138,7 +138,7 @@ const deptFormFields = computed(() => defineFields([
     label: '状态',
     component: 'NRadioGroup',
     options: statusOptions,
-    form: { required: true, defaultValue: '0' },
+    form: { required: true, defaultValue: '1' },
     search: false,
     table: false,
   },
@@ -181,7 +181,7 @@ const deptTableFields = defineFields([
     table: {
       width: 90,
       format: 'option',
-      tagType: val => (val === '0' ? 'success' : 'error'),
+      tagType: val => (val === '1' ? 'success' : 'error'),
     },
     form: false,
     search: false,
@@ -302,7 +302,7 @@ async function refreshParentOptions() {
 function handleAdd(parent?: SysDept) {
   openCreate({
     parentId: parent?.deptId ?? 0,
-    status: '0',
+    status: '1',
     orderNum: 0,
   })
 }

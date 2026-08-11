@@ -149,12 +149,12 @@ const dictFields = defineFields([
     label: '状态',
     component: 'NRadioGroup',
     options: statusOptions,
-    form: { required: true, defaultValue: '0' },
+    form: { required: true, defaultValue: '1' },
     search: false,
     table: {
       width: 80,
       format: 'option',
-      tagType: val => (val === '0' ? 'success' : 'error'),
+      tagType: val => (val === '1' ? 'success' : 'error'),
     },
   },
   {
@@ -252,7 +252,7 @@ const formModalConfig = computed(() => defineModal({
 }))
 
 function handleAdd() {
-  openCreate({ status: '0' })
+  openCreate({ status: '1' })
 }
 
 function openDictData(row: SysDictType) {

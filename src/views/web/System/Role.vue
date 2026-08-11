@@ -196,7 +196,7 @@ const roleFields = defineFields([
     label: '状态',
     component: 'NRadioGroup',
     options: statusOptions,
-    form: { required: true, defaultValue: '0' },
+    form: { required: true, defaultValue: '1' },
     search: false,
     table: {
       width: 90,
@@ -206,9 +206,9 @@ const roleFields = defineFields([
           return statusOptions.find(o => o.value === role.status)?.label ?? ''
         return (
           <NSwitch
-            value={role.status === '0'}
+            value={role.status === '1'}
             rubberBand={false}
-            onUpdateValue={(val: boolean) => handleStatusChange(role, val ? '0' : '1')}
+            onUpdateValue={(val: boolean) => handleStatusChange(role, val ? '1' : '0')}
           />
         )
       },
@@ -368,7 +368,7 @@ function resetMenuTreeState() {
 
 function handleAdd() {
   resetMenuTreeState()
-  openCreate({ status: '0', roleSort: 0 })
+  openCreate({ status: '1', roleSort: 0 })
 }
 
 async function handleEdit(row: SysRole) {
@@ -414,7 +414,7 @@ function handleBatchDelete() {
 }
 
 function handleStatusChange(role: SysRole, status: '0' | '1') {
-  const text = status === '0' ? '启用' : '停用'
+  const text = status === '1' ? '启用' : '停用'
   confirmDanger({
     title: '确认操作',
     content: `确认${text}角色「${role.roleName}」吗？`,

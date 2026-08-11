@@ -1,14 +1,21 @@
-import { app, type BrowserWindow } from 'electron';
+import { BrowserWindow, app } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { IPC_EVENTS } from '../ipc/channels';
 import { getUpdateConfig, isUpdateEnabled } from './config';
 import type { UpdateActionResult, UpdateProgress, UpdateStatusPayload } from './types';
 
-type GetMainWindow = () => BrowserWindow | null;
+type BroadcastFn = (channel: string, ...args: unknown[]) => void;
 
 let status: UpdateStatusPayload = { phase: 'idle' };
 let initialized = false;
-let getMainWindowRef: GetMainWindow = () => null;
+let broadcastRef: BroadcastFn = (channel, ...args) => {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send(channel, ...args);
+    }
+  }
+};
+let checkIntervalId: ReturnType<typeof setInterval> | null = null;
 
 function canUseUpdater(): boolean {
   return app.isPackaged && isUpdateEnabled();
@@ -16,7 +23,7 @@ function canUseUpdater(): boolean {
 
 function emitStatus(patch: Partial<UpdateStatusPayload>) {
   status = { ...status, ...patch };
-  getMainWindowRef()?.webContents.send(IPC_EVENTS.UPDATE_STATUS, status);
+  broadcastRef(IPC_EVENTS.UPDATE_STATUS, status);
 }
 
 function toProgress(progress: {
@@ -41,8 +48,10 @@ export function getUpdateStatus(): UpdateStatusPayload {
   return { ...status };
 }
 
-export function initAppUpdater(getMainWindow: GetMainWindow) {
-  getMainWindowRef = getMainWindow;
+export function initAppUpdater(options?: { broadcast?: BroadcastFn }) {
+  if (options?.broadcast) {
+    broadcastRef = options.broadcast;
+  }
 
   if (!canUseUpdater()) {
     status = {
@@ -181,11 +190,27 @@ export function quitAndInstall(): UpdateActionResult {
 
 export function scheduleStartupUpdateCheck() {
   const config = getUpdateConfig();
-  if (!canUseUpdater() || !config.checkOnStartup) {
+  if (!canUseUpdater()) {
     return;
   }
 
-  setTimeout(() => {
-    void checkForUpdates({ silent: true });
-  }, 3000);
+  if (config.checkOnStartup) {
+    setTimeout(() => {
+      void checkForUpdates({ silent: true });
+    }, 3000);
+  }
+
+  const intervalMs = config.checkIntervalMs ?? 0;
+  if (intervalMs > 0 && !checkIntervalId) {
+    checkIntervalId = setInterval(() => {
+      void checkForUpdates({ silent: true });
+    }, intervalMs);
+  }
+}
+
+export function stopUpdateChecks() {
+  if (checkIntervalId) {
+    clearInterval(checkIntervalId);
+    checkIntervalId = null;
+  }
 }

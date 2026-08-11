@@ -1,16 +1,18 @@
 # Vue3 Template
 
-基于 Vue 3 + Vite + Naive UI 的中后台前端模板，支持 **Web 管理端**、**App 端（MPA）** 与 **Electron 桌面端**。内置若依风格动态路由/权限、CRUD 组合式封装，以及可切换的本地 Mock。
+基于 Vue 3 + Vite + Naive UI 的中后台前端模板，支持 **Web 管理端**、**App 端（MPA）** 与 **Electron 桌面端**。内置动态路由/权限、CRUD 组合式封装，以及可切换的本地 Mock。
 
 ## 技术栈
 
-| 类别 | 选型 |
-|------|------|
-| 框架 | Vue 3、Vue Router、Pinia |
-| 构建 | Vite 8、TypeScript、UnoCSS、Sass |
-| UI | Naive UI（Web）、Vant（App） |
-| 桌面 | Electron + electron-updater |
-| 其它 | unplugin-auto-import / components、file-viewer、xlsx |
+
+| 类别  | 选型                                                 |
+| --- | -------------------------------------------------- |
+| 框架  | Vue 3、Vue Router、Pinia                             |
+| 构建  | Vite 8、TypeScript、UnoCSS、Sass                      |
+| UI  | Naive UI（Web）、Vant（App）                            |
+| 桌面  | Electron + electron-updater                        |
+| 其它  | unplugin-auto-import / components、file-viewer、xlsx |
+
 
 ## 快速开始
 
@@ -46,18 +48,24 @@ cp .env.example .env.dev.local
 # 编辑 VITE_LOGIN_AES_KEY / VITE_LOGIN_AES_IV
 ```
 
+
+
 ## 常用脚本
 
-| 命令 | 说明 |
-|------|------|
-| `pnpm dev` | 开发服务（遵循 `.env.dev` 的 Mock 开关） |
-| `pnpm dev:mock` | 强制本地 Mock |
-| `pnpm dev:api` | 强制代理真实接口 |
-| `pnpm dev:electron` | Electron 开发模式 |
-| `pnpm build` / `pnpm prod` / `pnpm build:test` | 按 mode 构建 Web |
-| `pnpm build:electron` | 构建并打包桌面端 |
-| `pnpm typecheck` | `vue-tsc --noEmit` |
-| `pnpm lint` | ESLint |
+
+| 命令                                             | 说明                            |
+| ---------------------------------------------- | ----------------------------- |
+| `pnpm dev`                                     | 开发服务（遵循 `.env.dev` 的 Mock 开关） |
+| `pnpm dev:mock`                                | 强制本地 Mock                     |
+| `pnpm dev:api`                                 | 强制代理真实接口                      |
+| `pnpm dev:electron`                            | Electron 开发模式                 |
+| `pnpm build` / `pnpm prod` / `pnpm build:test` | 按 mode 构建 Web                 |
+| `pnpm build:electron`                          | 构建并打包桌面端                      |
+| `pnpm typecheck`                               | `vue-tsc --noEmit`            |
+| `pnpm lint`                                    | ESLint                        |
+
+
+
 
 ## 项目结构
 
@@ -81,13 +89,19 @@ cp .env.example .env.dev.local
 └── vite.config.ts
 ```
 
+
+
 ## 核心能力
+
+
 
 ### 双端 MPA
 
 - Web：`index.html` → `src/pages/web.ts`，Naive UI + 后台布局
 - App：`app/index.html` → `src/pages/app.ts`，偏移动端
 - 公共启动逻辑在 `src/pages/createBootstrap.ts`
+
+
 
 ### 动态路由与权限
 
@@ -109,16 +123,20 @@ cp .env.example .env.dev.local
 - 开发且 `VITE_USE_MOCK=true` 时挂载到 `/api`
 - 启动日志会打印 `[api] MOCK` 或 `[api] PROXY → …`
 
+
+
 ## 环境变量
 
-| 变量 | 说明 |
-|------|------|
-| `VITE_baseUrl` | 接口前缀，默认 `/api` |
-| `VITE_USE_MOCK` | `true` 本地 Mock，`false` 走代理 |
-| `VITE_API_PROXY_TARGET` | 代理目标（Mock 关闭时） |
-| `VITE_BUILD_URL` | 部署 publicPath / base |
+
+| 变量                                         | 说明                          |
+| ------------------------------------------ | --------------------------- |
+| `VITE_baseUrl`                             | 接口前缀，默认 `/api`              |
+| `VITE_USE_MOCK`                            | `true` 本地 Mock，`false` 走代理  |
+| `VITE_API_PROXY_TARGET`                    | 代理目标（Mock 关闭时）              |
+| `VITE_BUILD_URL`                           | 部署 publicPath / base        |
 | `VITE_LOGIN_AES_KEY` / `VITE_LOGIN_AES_IV` | 登录密码 AES（本地 `.env.*.local`） |
-| `VITE_ALLOW_QUERY_TOKEN` | 是否允许 URL `?token=`（生产默认关闭） |
+| `VITE_ALLOW_QUERY_TOKEN`                   | 是否允许 URL `?token=`（生产默认关闭）  |
+
 
 完整本地覆盖示例见 `.env.example`。
 
@@ -133,8 +151,11 @@ pnpm build:electron:dir # 仅输出目录
 
 主进程代码在 `electron/`，渲染进程复用 Web 构建产物。
 
+已内置：单实例锁、sandbox 渲染进程、IPC 白名单、托盘闪烁、系统通知、自动更新（启动检查 + 周期检查）。更新相关环境变量见 `.env.example`。
+
 ## 开发建议
 
 - 新增系统页：先补 `src/api/system/*`，再按现有 System 页用 hooks + 统一 fields 搭页面
 - 密钥、本机代理地址只写 `.env.*.local`（已在 `.gitignore`）
 - 提交前可跑：`pnpm typecheck`、`pnpm lint`
+

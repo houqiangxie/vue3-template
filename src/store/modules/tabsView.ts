@@ -16,7 +16,7 @@ export type RouteItem = Partial<RouteLocationNormalized> & {
 
 export type ITabsViewState = {
   tabsList: RouteItem[]
-  /** 当前应 keep-alive 的组件名（对齐 guanweb cachedViews，随标签开闭同步） */
+  /** 当前应 keep-alive 的组件名（随标签开闭同步） */
   cachedViews: string[]
 }
 

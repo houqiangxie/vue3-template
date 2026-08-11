@@ -25,7 +25,7 @@ export type PageSearchModel = Record<string, unknown> & {
 }
 
 /**
- * 将若依分页接口响应转为 usePageList 所需结构
+ * 将分页接口响应（rows/total）转为 usePageList 所需结构
  * @example fetcher: async (q) => toPageResult(await listConfig(q))
  */
 export function toPageResult(

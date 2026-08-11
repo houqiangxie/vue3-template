@@ -155,12 +155,12 @@ const dataFields = defineFields([
     label: '状态',
     component: 'NRadioGroup',
     options: statusOptions,
-    form: { required: true, defaultValue: '0' },
+    form: { required: true, defaultValue: '1' },
     search: false,
     table: {
       width: 80,
       format: 'option',
-      tagType: val => (val === '0' ? 'success' : 'error'),
+      tagType: val => (val === '1' ? 'success' : 'error'),
     },
   },
   {
@@ -327,7 +327,7 @@ function handleAdd() {
   }
   openCreate({
     dictType: currentDictType.value,
-    status: '0',
+    status: '1',
     dictSort: 0,
   })
 }

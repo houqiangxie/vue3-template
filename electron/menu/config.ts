@@ -2,6 +2,7 @@
 export interface AppMenuLabels {
   file: string;
   hideToTray: string;
+  showMainWindow: string;
   quit: string;
   edit: string;
   undo: string;
@@ -21,12 +22,14 @@ export interface AppMenuLabels {
   minimize: string;
   close: string;
   help: string;
+  checkForUpdates: string;
   about: string;
 }
 
 export const MENU_LABELS_ZH_CN: AppMenuLabels = {
   file: '文件',
   hideToTray: '隐藏到托盘',
+  showMainWindow: '显示主窗口',
   quit: '退出',
   edit: '编辑',
   undo: '撤销',
@@ -46,6 +49,7 @@ export const MENU_LABELS_ZH_CN: AppMenuLabels = {
   minimize: '最小化',
   close: '关闭',
   help: '帮助',
+  checkForUpdates: '检查更新',
   about: '关于',
 };
 

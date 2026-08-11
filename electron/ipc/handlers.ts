@@ -1,5 +1,4 @@
-import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
-import { app, shell } from 'electron';
+import { BrowserWindow, app, shell, type IpcMainInvokeEvent } from 'electron';
 import type { NotificationService } from '../notification';
 import type { ShowNotificationOptions } from '../notification/types';
 import {
@@ -27,6 +26,18 @@ type IpcHandler = (
   ...args: any[]
 ) => unknown;
 
+/** Prefer the window that sent the IPC (child title bars), fall back to main. */
+function resolveTargetWindow(
+  event: IpcMainInvokeEvent,
+  getMainWindow: () => BrowserWindow | null,
+): BrowserWindow | null {
+  const fromSender = BrowserWindow.fromWebContents(event.sender);
+  if (fromSender && !fromSender.isDestroyed()) {
+    return fromSender;
+  }
+  return getMainWindow();
+}
+
 /**
  * IPC handler registry — add new channels here only.
  * Registration and preload whitelist are derived automatically.
@@ -50,12 +61,12 @@ export function createIpcHandlers(ctx: IpcHandlerContext): Record<IpcChannel, Ip
       return shell.openExternal(url);
     },
 
-    [IPC_CHANNELS.WINDOW_MINIMIZE]: ({ getMainWindow }) => {
-      getMainWindow()?.minimize();
+    [IPC_CHANNELS.WINDOW_MINIMIZE]: ({ getMainWindow }, event) => {
+      resolveTargetWindow(event, getMainWindow)?.minimize();
     },
 
-    [IPC_CHANNELS.WINDOW_MAXIMIZE]: ({ getMainWindow }) => {
-      const win = getMainWindow();
+    [IPC_CHANNELS.WINDOW_MAXIMIZE]: ({ getMainWindow }, event) => {
+      const win = resolveTargetWindow(event, getMainWindow);
       if (!win) {
         return;
       }
@@ -67,8 +78,8 @@ export function createIpcHandlers(ctx: IpcHandlerContext): Record<IpcChannel, Ip
       }
     },
 
-    [IPC_CHANNELS.WINDOW_CLOSE]: ({ getMainWindow }) => {
-      getMainWindow()?.close();
+    [IPC_CHANNELS.WINDOW_CLOSE]: ({ getMainWindow }, event) => {
+      resolveTargetWindow(event, getMainWindow)?.close();
     },
 
     [IPC_CHANNELS.WINDOW_OPEN]: ({ windowManager }, _event, options: OpenWindowOptions) => {

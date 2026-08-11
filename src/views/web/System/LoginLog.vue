@@ -101,7 +101,7 @@ const logFields = defineFields([
     table: {
       width: 100,
       format: 'option',
-      tagType: val => (val === '0' ? 'success' : 'error'),
+      tagType: val => (val === '1' ? 'success' : 'error'),
     },
   },
   {

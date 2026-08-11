@@ -94,12 +94,12 @@ const noticeFields = defineFields([
     label: '状态',
     component: 'NSelect',
     options: statusOptions,
-    form: { required: true, defaultValue: '0' },
+    form: { required: true, defaultValue: '1' },
     search: { enabled: true, defaultValue: null },
     table: {
       width: 80,
       format: 'option',
-      tagType: val => (val === '0' ? 'success' : 'error'),
+      tagType: val => (val === '1' ? 'success' : 'error'),
     },
   },
   {
@@ -197,7 +197,7 @@ const formModalConfig = computed(() => defineModal({
 }))
 
 function handleAdd() {
-  openCreate({ noticeType: '1', status: '0' })
+  openCreate({ noticeType: '1', status: '1' })
 }
 
 function handleBatchDelete() {

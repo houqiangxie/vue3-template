@@ -58,11 +58,11 @@ export const menuRoutes: MockRoute[] = [
         perms: body.perms,
         redirect: body.redirect,
         icon: body.icon,
-        isCache: body.isCache || '0',
-        breadcrumb: body.breadcrumb || '0',
+        isCache: body.isCache || '1',
+        breadcrumb: body.breadcrumb || '1',
         workbench: body.workbench || '1',
-        visible: body.visible || '0',
-        status: body.status || '0',
+        visible: body.visible || '1',
+        status: body.status || '1',
       } as SysMenu)
       menus.push(row)
       return ok(null)

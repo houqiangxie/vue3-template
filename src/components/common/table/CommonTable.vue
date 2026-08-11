@@ -85,7 +85,7 @@ const props = withDefaults(defineProps<{
   /** 开启多选列 */
   selectable?: boolean
   /**
-   * 列设置持久化 key（参考 guanweb ProTable colSettingName）
+   * 列设置持久化 key
    * 传入后开启列拖拽排序与显隐配置
    */
   colSettingKey?: string

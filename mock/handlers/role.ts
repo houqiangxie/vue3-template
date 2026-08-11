@@ -144,7 +144,7 @@ export const roleRoutes: MockRoute[] = [
         roleName: body.roleName,
         roleKey: body.roleKey,
         roleSort: body.roleSort ?? roles.length + 1,
-        status: body.status || '0',
+        status: body.status || '1',
         menuIds: body.menuIds || [],
         remark: body.remark,
       } as SysRole)

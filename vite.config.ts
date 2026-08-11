@@ -94,6 +94,8 @@ export default ({ command, mode }: ConfigEnv) => {
     vueJsx(),
     // 按需复制预览资源，排除 ppt（CJK 字体约 16MB），显著减小 public/vendor
     // 资源路径已含 vendor/ 前缀；勿再设 baseDir: 'vendor'，否则会复制到 public/vendor/vendor
+    // 按需复制预览资源，排除 ppt（CJK 字体约 16MB），显著减小 public/vendor
+    // 资源路径已含 vendor/ 前缀；勿再设 baseDir: 'vendor'，否则会复制到 public/vendor/vendor
     fileViewerRenderers({
       formats: ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv'],
       copyAssets: true,
@@ -116,7 +118,6 @@ export default ({ command, mode }: ConfigEnv) => {
   ];
 
   if (isElectron) {
-    plugins.push(electronAssetsPlugin());
     plugins.push(
       electron({
         main: {
@@ -126,7 +127,7 @@ export default ({ command, mode }: ConfigEnv) => {
             build: {
               outDir: 'dist-electron',
               rollupOptions: {
-                external: ['electron'],
+                external: ['electron', 'electron-updater'],
               },
             },
           },
@@ -166,7 +167,7 @@ export default ({ command, mode }: ConfigEnv) => {
     server: {
       open: false,
       cors: true,
-      port: 88,
+      port: 90,
       hmr: { overlay: false },
       host: process.env.VITE_DEV_HOST || '0.0.0.0',
       watch: {
@@ -218,7 +219,8 @@ export default ({ command, mode }: ConfigEnv) => {
               return 'file-viewer'
             if (id.includes('xlsx'))
               return 'xlsx'
-            if (id.includes('/vant/') || id.includes('\\vant\\'))
+            // Electron desktop shell does not ship the App (MPA) entry; skip vant split.
+            if (!isElectron && (id.includes('/vant/') || id.includes('\\vant\\')))
               return 'vant'
             if (
               id.includes('/vue/')

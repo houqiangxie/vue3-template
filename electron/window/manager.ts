@@ -1,20 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   app,
   BrowserWindow,
   shell,
   type BrowserWindowConstructorOptions,
+  type WebPreferences,
 } from 'electron';
 import type { OpenWindowOptions, WindowActionResult } from './types';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export interface WindowManagerOptions {
   isDev: boolean;
   devServerUrl?: string;
   getMainWindow: () => BrowserWindow | null;
+  /** Shared with the main window — keeps preload path + sandbox in sync. */
+  webPreferences: WebPreferences;
   onWindowClosed?: (windowId: string) => void;
 }
 
@@ -118,12 +118,7 @@ export class WindowManager {
       maximizable: options.maximizable ?? true,
       minimizable: options.minimizable ?? true,
       center: options.center ?? true,
-      webPreferences: {
-        preload: path.join(__dirname, 'preload.cjs'),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: false,
-      },
+      webPreferences: this.options.webPreferences,
     };
 
     const win = new BrowserWindow(browserOptions);

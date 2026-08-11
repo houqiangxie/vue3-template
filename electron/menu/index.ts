@@ -1,5 +1,5 @@
-import type { BrowserWindow } from 'electron';
-import { Menu, app, dialog } from 'electron';
+import { BrowserWindow, Menu, app, dialog } from 'electron';
+import { checkForUpdates } from '../updater';
 import type { AppMenuConfig } from './config';
 import { resolveMenuLabels } from './config';
 
@@ -88,6 +88,38 @@ export function setupApplicationMenu(ctx: AppMenuContext) {
     {
       label: labels.help,
       submenu: [
+        {
+          label: labels.checkForUpdates,
+          click: () => {
+            void checkForUpdates({ silent: false }).then((result) => {
+              if (result.ok) {
+                return;
+              }
+              const win = focusedWindow();
+              if (!win) {
+                return;
+              }
+              void dialog.showMessageBox(win, {
+                type: 'info',
+                title: labels.checkForUpdates,
+                message: result.reason ?? '当前无法检查更新',
+                buttons: ['确定'],
+              });
+            }).catch((error: unknown) => {
+              const win = focusedWindow();
+              if (!win) {
+                return;
+              }
+              const message = error instanceof Error ? error.message : String(error);
+              void dialog.showMessageBox(win, {
+                type: 'error',
+                title: labels.checkForUpdates,
+                message,
+                buttons: ['确定'],
+              });
+            });
+          },
+        },
         {
           label: labels.about,
           click: () => {

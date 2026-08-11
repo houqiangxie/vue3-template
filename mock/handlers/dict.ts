@@ -60,7 +60,7 @@ export const dictRoutes: MockRoute[] = [
         dictId: genDictTypeId(),
         dictName: body.dictName,
         dictType: body.dictType,
-        status: body.status || '0',
+        status: body.status || '1',
         remark: body.remark,
       } as SysDictType)
       dictTypes.push(row)
@@ -129,7 +129,7 @@ export const dictRoutes: MockRoute[] = [
     path: '/system/dict/data/type/:dictType',
     handler: (req) => {
       const dictType = req.params.dictType
-      return ok(dictDatas.filter(d => d.dictType === dictType && d.status === '0').sort((a, b) => a.dictSort - b.dictSort))
+      return ok(dictDatas.filter(d => d.dictType === dictType && d.status === '1').sort((a, b) => a.dictSort - b.dictSort))
     },
   },
   {
@@ -148,7 +148,7 @@ export const dictRoutes: MockRoute[] = [
         cssClass: body.cssClass,
         listClass: body.listClass || 'default',
         isDefault: body.isDefault || 'N',
-        status: body.status || '0',
+        status: body.status || '1',
         remark: body.remark,
       } as SysDictData)
       dictDatas.push(row)

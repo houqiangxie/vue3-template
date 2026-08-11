@@ -1,6 +1,6 @@
 import { usePermissionStore } from '@/store/modules/permission'
 
-/** 检查是否拥有指定权限（参照若依 v-hasPermi） */
+/** 检查是否拥有指定权限 */
 export function usePermission() {
   const permissionStore = usePermissionStore()
 

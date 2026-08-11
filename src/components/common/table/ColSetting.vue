@@ -1,5 +1,5 @@
 <!--
- * 表格列设置：拖拽调整顺序 + 开关控制显隐（参考 guanweb ProTable，增强拖拽排序）
+ * 表格列设置：拖拽调整顺序 + 开关控制显隐
  -->
 <template>
   <n-drawer v-model:show="visible" :width="400" placement="right">

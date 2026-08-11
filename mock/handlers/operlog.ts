@@ -12,16 +12,25 @@ export const operlogRoutes: MockRoute[] = [
       let list = [...operLogs]
       const title = req.query.title?.trim()
       const operName = req.query.operName?.trim()
+      const operIp = req.query.operIp?.trim()
       const businessType = req.query.businessType
       const status = req.query.status
+      const beginTime = req.query.beginTime
+      const endTime = req.query.endTime
       if (title)
         list = list.filter(l => l.title.includes(title))
       if (operName)
         list = list.filter(l => (l.operName || '').includes(operName))
+      if (operIp)
+        list = list.filter(l => (l.operIp || '').includes(operIp))
       if (businessType !== undefined && businessType !== '')
         list = list.filter(l => String(l.businessType) === String(businessType))
       if (status !== undefined && status !== '')
         list = list.filter(l => l.status === status)
+      if (beginTime)
+        list = list.filter(l => String(l.operTime || '') >= String(beginTime))
+      if (endTime)
+        list = list.filter(l => String(l.operTime || '') <= String(endTime))
       list.sort((a, b) => String(b.operTime).localeCompare(String(a.operTime)))
       const start = (pageNum - 1) * pageSize
       return pageOk(list.slice(start, start + pageSize), list.length)

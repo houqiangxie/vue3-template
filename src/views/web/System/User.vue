@@ -1,6 +1,6 @@
 <template>
   <div class="system-page system-page--split">
-    <!-- 左侧部门树（对齐若依 / guanweb）-->
+    <!-- 左侧部门树 -->
     <aside class="system-page__aside">
       <div class="system-page__aside-title">组织机构</div>
       <n-input
@@ -193,7 +193,7 @@ const {
 onMounted(async () => {
   roleOptions.value = await getUserRoleOptions()
   postOptions.value = await getUserPostOptions()
-  const { data: depts } = await listDept({ status: '0' })
+  const { data: depts } = await listDept({ status: '1' })
   deptTreeData.value = deptToTreeSelectData(depts ?? [])
   await fetchList()
 })
@@ -287,7 +287,7 @@ const userFields = computed(() => defineFields([
     label: '状态',
     component: 'NRadioGroup',
     options: statusOptions,
-    form: { required: true, defaultValue: '0' },
+    form: { required: true, defaultValue: '1' },
     search: false,
     table: {
       width: 90,
@@ -297,9 +297,9 @@ const userFields = computed(() => defineFields([
           return statusOptions.find(o => o.value === user.status)?.label ?? ''
         return (
           <NSwitch
-            value={user.status === '0'}
+            value={user.status === '1'}
             rubberBand={false}
-            onUpdateValue={(val: boolean) => handleStatusChange(user, val ? '0' : '1')}
+            onUpdateValue={(val: boolean) => handleStatusChange(user, val ? '1' : '0')}
           />
         )
       },
@@ -458,7 +458,7 @@ function onDeptSelect(keys: Array<string | number>) {
 
 function handleAdd() {
   openCreate({
-    status: '0',
+    status: '1',
     sex: '0',
     roleIds: [],
     postIds: [],
@@ -490,7 +490,7 @@ function handleBatchDelete() {
 }
 
 function handleStatusChange(user: SysUser, status: '0' | '1') {
-  const text = status === '0' ? '启用' : '停用'
+  const text = status === '1' ? '启用' : '停用'
   confirmDanger({
     title: '确认操作',
     content: `确认${text}用户「${user.userName}」吗？`,

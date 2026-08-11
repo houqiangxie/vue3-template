@@ -50,7 +50,7 @@ export const noticeRoutes: MockRoute[] = [
         noticeTitle: body.noticeTitle,
         noticeType: body.noticeType,
         noticeContent: body.noticeContent || '',
-        status: body.status || '0',
+        status: body.status || '1',
         createBy: body.createBy || 'admin',
         remark: body.remark,
       } as SysNotice)

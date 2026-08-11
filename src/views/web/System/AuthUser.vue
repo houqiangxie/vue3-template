@@ -156,7 +156,7 @@ const userFields = defineFields([
     table: {
       width: 80,
       format: 'option',
-      tagType: val => (val === '0' ? 'success' : 'error'),
+      tagType: val => (val === '1' ? 'success' : 'error'),
     },
   },
   {

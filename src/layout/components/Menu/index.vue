@@ -103,7 +103,7 @@
     return null
   }
 
-  /** 跳过 Layout 等外壳；扁平路由下从侧栏树反查一级菜单 key（对齐 guanweb 混合菜单） */
+  /** 跳过 Layout 等外壳；扁平路由下从侧栏树反查一级菜单 key */
   function getTopRouteKey(): string {
     const all = menuStore.menuOptions as MenuOption[]
     const explicit = (currentRoute.meta?.activeMenu as string) || ''

@@ -87,4 +87,11 @@ export class NotificationService {
 
     return true;
   }
+
+  destroy() {
+    for (const timer of this.timers.values()) {
+      clearTimeout(timer);
+    }
+    this.timers.clear();
+  }
 }

@@ -161,7 +161,7 @@ const jobFields = defineFields([
     table: {
       width: 80,
       format: 'option',
-      tagType: val => (val === '0' ? 'success' : 'warning'),
+      tagType: val => (val === '1' ? 'success' : 'warning'),
     },
   },
   {
@@ -227,7 +227,7 @@ const logFields = defineFields([
     table: {
       width: 80,
       format: 'option',
-      tagType: val => (val === '0' ? 'success' : 'error'),
+      tagType: val => (val === '1' ? 'success' : 'error'),
     },
   },
   {
@@ -301,7 +301,7 @@ const tableFields = computed(() => [
           },
           {
             key: 'changeStatus',
-            label: job.status === '0' ? '暂停' : '启用',
+            label: job.status === '1' ? '暂停' : '启用',
             type: 'warning' as const,
             permission: 'monitor:job:changeStatus',
             onClick: (r) => handleChangeStatus(r as unknown as SysJob),
@@ -350,8 +350,8 @@ function handleAdd() {
 }
 
 function handleChangeStatus(row: SysJob) {
-  const next = row.status === '0' ? '1' : '0'
-  const action = next === '0' ? '启用' : '暂停'
+  const next = row.status === '1' ? '0' : '1'
+  const action = next === '1' ? '启用' : '暂停'
   confirmDanger({
     title: `确认${action}`,
     content: `是否确认${action}任务「${row.jobName}」？`,

@@ -50,7 +50,7 @@ export const postRoutes: MockRoute[] = [
         postCode: body.postCode,
         postName: body.postName,
         postSort: Number(body.postSort ?? 0),
-        status: body.status || '0',
+        status: body.status || '1',
         remark: body.remark,
       } as SysPost)
       posts.push(row)

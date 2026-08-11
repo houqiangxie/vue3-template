@@ -80,7 +80,7 @@ export const jobRoutes: MockRoute[] = [
         jobGroup: job.jobGroup,
         invokeTarget: job.invokeTarget,
         jobMessage: `${job.jobName} 手动执行成功，耗时：1毫秒`,
-        status: '0',
+        status: '1',
         createTime: now(),
       })
       return ok(null)

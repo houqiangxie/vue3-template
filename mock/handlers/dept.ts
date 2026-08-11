@@ -44,7 +44,7 @@ export const deptRoutes: MockRoute[] = [
         leader: body.leader,
         phone: body.phone,
         email: body.email,
-        status: body.status || '0',
+        status: body.status || '1',
       } as SysDept)
       depts.push(row)
       return ok(null)
