@@ -61,7 +61,6 @@ import { defineModal } from '@/components/common/modal/modalSchema'
 import { addNotice, deleteNotice, listNotice, updateNotice } from '@/api/system/notice'
 import type { SysNotice } from '@/api/system/types'
 import { noticeTypeOptions, statusOptions } from './constants'
-import { usePermission } from '@/hooks/usePermission'
 
 const { hasPermission } = usePermission()
 const { confirmBatchDelete } = useConfirm()
@@ -91,7 +90,7 @@ const noticeFields = defineFields([
   },
   {
     key: 'status',
-    label: '状态',
+    label: '状�?,
     component: 'NSelect',
     options: statusOptions,
     form: { required: true, defaultValue: '1' },
@@ -104,7 +103,7 @@ const noticeFields = defineFields([
   },
   {
     key: 'createBy',
-    label: '创建者',
+    label: '创建�?,
     component: 'NInput',
     search: { enabled: true },
     form: false,
@@ -175,7 +174,7 @@ const tableFields = computed(() => [
           label: '删除',
           type: 'error',
           permission: 'system:notice:remove',
-          popconfirm: (r) => `是否确认删除公告「${(r as unknown as SysNotice).noticeTitle}」？`,
+          popconfirm: (r) => `是否确认删除公告�?{(r as unknown as SysNotice).noticeTitle}」？`,
           onClick: async (r) => {
             await removeAndRefresh(() => deleteNotice([(r as unknown as SysNotice).noticeId]))
           },

@@ -91,7 +91,6 @@ import {
   loginStatusOptions,
   misfirePolicyOptions,
 } from './constants'
-import { usePermission } from '@/hooks/usePermission'
 
 const { confirmDanger } = useConfirm()
 const { hasPermission } = usePermission()
@@ -127,7 +126,7 @@ const jobFields = defineFields([
   },
   {
     key: 'cronExpression',
-    label: 'cron 表达式',
+    label: 'cron 表达�?,
     component: 'NInput',
     form: { required: true },
     search: false,
@@ -153,7 +152,7 @@ const jobFields = defineFields([
   },
   {
     key: 'status',
-    label: '状态',
+    label: '状�?,
     component: 'NSelect',
     options: jobStatusOptions,
     form: { required: true, defaultValue: '1' },
@@ -219,7 +218,7 @@ const logFields = defineFields([
   },
   {
     key: 'status',
-    label: '状态',
+    label: '状�?,
     component: 'NSelect',
     options: loginStatusOptions,
     form: false,
@@ -318,7 +317,7 @@ const tableFields = computed(() => [
             label: '删除',
             type: 'error' as const,
             permission: 'monitor:job:remove',
-            popconfirm: (r) => `是否确认删除任务「${(r as unknown as SysJob).jobName}」？`,
+            popconfirm: (r) => `是否确认删除任务�?{(r as unknown as SysJob).jobName}」？`,
             onClick: async (r) => {
               await removeAndRefresh(() => deleteJob([(r as unknown as SysJob).jobId]))
             },
@@ -354,7 +353,7 @@ function handleChangeStatus(row: SysJob) {
   const action = next === '1' ? '启用' : '暂停'
   confirmDanger({
     title: `确认${action}`,
-    content: `是否确认${action}任务「${row.jobName}」？`,
+    content: `是否确认${action}任务�?{row.jobName}」？`,
     successMessage: `${action}成功`,
     action: async () => {
       await changeJobStatus(row.jobId, next)
@@ -366,8 +365,8 @@ function handleChangeStatus(row: SysJob) {
 function handleRun(row: SysJob) {
   confirmDanger({
     title: '确认执行',
-    content: `是否确认立即执行一次任务「${row.jobName}」？`,
-    successMessage: '执行指令已发送',
+    content: `是否确认立即执行一次任务�?{row.jobName}」？`,
+    successMessage: '执行指令已发�?,
     action: async () => {
       await runJob(row.jobId, row.jobGroup)
     },

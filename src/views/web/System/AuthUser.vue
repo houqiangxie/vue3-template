@@ -99,7 +99,6 @@ import {
 } from '@/api/system/role'
 import type { SysUser } from '@/api/system/types'
 import { statusOptions } from './constants'
-import { usePermission } from '@/hooks/usePermission'
 
 const route = useRoute()
 const router = useRouter()
@@ -148,7 +147,7 @@ const userFields = defineFields([
   },
   {
     key: 'status',
-    label: '状态',
+    label: '状�?,
     component: 'NSelect',
     options: statusOptions,
     search: false,
@@ -259,7 +258,7 @@ function goBack() {
 function handleCancel(row: SysUser) {
   confirmDanger({
     title: '确认取消授权',
-    content: `是否取消用户「${row.userName}」的角色授权？`,
+    content: `是否取消用户�?{row.userName}」的角色授权？`,
     successMessage: '取消授权成功',
     action: async () => {
       await authUserCancel({ userId: row.userId, roleId: roleId.value })
@@ -273,7 +272,7 @@ function handleCancelAll() {
     return
   confirmDanger({
     title: '确认批量取消',
-    content: `是否取消选中的 ${checkedUserIds.value.length} 个用户的角色授权？`,
+    content: `是否取消选中�?${checkedUserIds.value.length} 个用户的角色授权？`,
     successMessage: '取消授权成功',
     action: async () => {
       await authUserCancelAll({

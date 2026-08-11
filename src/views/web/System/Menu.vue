@@ -45,7 +45,6 @@ import CommonTable from '@/components/common/table/CommonTable.vue'
 import CommonModal from '@/components/common/modal/CommonModal.vue'
 import { defineFields, extractFormDefaults, extractSearchDefaults } from '@/components/common/table/fieldSchema'
 import { defineModal } from '@/components/common/modal/modalSchema'
-import { ApiError } from '@/utils/fetch'
 import {
   addMenu,
   deleteMenu,
@@ -62,7 +61,6 @@ import {
   visibleOptions,
   yesNoOptions,
 } from './constants'
-import { usePermission } from '@/hooks/usePermission'
 
 const message = useMessage()
 const { hasPermission } = usePermission()

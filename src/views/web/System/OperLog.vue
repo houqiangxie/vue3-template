@@ -168,8 +168,6 @@ import { defineFields, extractSearchDefaults } from '@/components/common/table/f
 import { cleanOperLog, deleteOperLog, listOperLog } from '@/api/system/operlog'
 import type { SysOperLog } from '@/api/system/types'
 import { businessTypeOptions, operStatusOptions } from './constants'
-import { usePermission } from '@/hooks/usePermission'
-import { splitDateRange } from '@/hooks/usePageList'
 import { useMessage } from 'naive-ui'
 
 const { hasPermission } = usePermission()

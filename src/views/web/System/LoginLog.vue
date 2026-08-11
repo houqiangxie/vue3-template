@@ -44,7 +44,6 @@ import CommonTable from '@/components/common/table/CommonTable.vue'
 import { defineFields, extractSearchDefaults } from '@/components/common/table/fieldSchema'
 import { cleanLogininfor, deleteLogininfor, listLogininfor } from '@/api/system/logininfor'
 import { loginStatusOptions } from './constants'
-import { usePermission } from '@/hooks/usePermission'
 
 const { hasPermission } = usePermission()
 const { confirmDanger, confirmBatchDelete } = useConfirm()
@@ -77,7 +76,7 @@ const logFields = defineFields([
   },
   {
     key: 'browser',
-    label: '浏览器',
+    label: '浏览�?,
     component: 'NInput',
     search: false,
     form: false,
@@ -93,7 +92,7 @@ const logFields = defineFields([
   },
   {
     key: 'status',
-    label: '登录状态',
+    label: '登录状�?,
     component: 'NSelect',
     options: loginStatusOptions,
     search: { enabled: true, defaultValue: null },

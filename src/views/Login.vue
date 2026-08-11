@@ -96,9 +96,7 @@
  * 兼容旧后端时在 .env.* 配置 VITE_LOGIN_AES_KEY / VITE_LOGIN_AES_IV（均为 16 字节）。
  * 客户端加密不能替代 HTTPS / 服务端认证。
  */
-import { post } from '@/utils/fetch'
 import CryptoJS from 'crypto-js'
-import { local } from 'ux-web-storage'
 import {
   LockClosedOutline,
   PersonOutline,

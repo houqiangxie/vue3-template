@@ -106,7 +106,14 @@ export default ({ command, mode }: ConfigEnv) => {
       dts: 'src/components.d.ts',
     }),
     AutoImport({
-      imports: ['vue', 'vue-router', 'pinia'],
+      imports: [
+        'vue',
+        'vue-router',
+        'pinia',
+        {
+          'ux-web-storage': ['local', 'session', 'db'],
+        },
+      ],
       resolvers: [NaiveUiResolver()],
       dts: 'src/auto-import.d.ts',
       dirs: ['src/utils/**', 'src/store/**', 'src/hooks/**'],

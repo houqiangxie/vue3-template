@@ -68,7 +68,6 @@ import {
 } from '@/api/system/dict'
 import type { SysDictType } from '@/api/system/types'
 import { statusOptions } from './constants'
-import { usePermission } from '@/hooks/usePermission'
 
 const router = useRouter()
 const { hasPermission } = usePermission()
@@ -94,7 +93,7 @@ const searchFields = defineFields([
   },
   {
     key: 'status',
-    label: '状态',
+    label: '状�?,
     component: 'NSelect',
     options: statusOptions,
     search: { enabled: true, defaultValue: null },
@@ -146,7 +145,7 @@ const dictFields = defineFields([
   },
   {
     key: 'status',
-    label: '状态',
+    label: '状�?,
     component: 'NRadioGroup',
     options: statusOptions,
     form: { required: true, defaultValue: '1' },
@@ -206,7 +205,7 @@ const tableFields = computed(() => [
           label: '删除',
           type: 'error',
           permission: 'system:dict:remove',
-          popconfirm: (r) => `是否确认删除字典「${(r as unknown as SysDictType).dictName}」？`,
+          popconfirm: (r) => `是否确认删除字典�?{(r as unknown as SysDictType).dictName}」？`,
           onClick: async (r) => {
             await removeAndRefresh(() => deleteDictType([(r as unknown as SysDictType).dictId]))
           },

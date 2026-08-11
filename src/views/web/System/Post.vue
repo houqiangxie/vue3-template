@@ -61,7 +61,6 @@ import { defineModal } from '@/components/common/modal/modalSchema'
 import { addPost, deletePost, listPost, updatePost } from '@/api/system/post'
 import type { SysPost } from '@/api/system/types'
 import { statusOptions } from './constants'
-import { usePermission } from '@/hooks/usePermission'
 
 const { hasPermission } = usePermission()
 const { confirmBatchDelete } = useConfirm()
@@ -95,7 +94,7 @@ const postFields = defineFields([
   },
   {
     key: 'status',
-    label: '状态',
+    label: '状�?,
     component: 'NSelect',
     options: statusOptions,
     form: { required: true, defaultValue: '1' },
@@ -171,7 +170,7 @@ const tableFields = computed(() => [
           label: '删除',
           type: 'error',
           permission: 'system:post:remove',
-          popconfirm: (r) => `是否确认删除岗位「${(r as unknown as SysPost).postName}」？`,
+          popconfirm: (r) => `是否确认删除岗位�?{(r as unknown as SysPost).postName}」？`,
           onClick: async (r) => {
             await removeAndRefresh(() => deletePost([(r as unknown as SysPost).postId]))
           },

@@ -54,7 +54,7 @@
         <div class="role-menu-block">
           <div class="role-menu-block__toolbar">
             <n-checkbox v-model:checked="menuExpand" @update:checked="toggleExpand">展开/折叠</n-checkbox>
-            <n-checkbox v-model:checked="menuNodeAll" @update:checked="toggleCheckAll">全选/全不选</n-checkbox>
+            <n-checkbox v-model:checked="menuNodeAll" @update:checked="toggleCheckAll">全�?全不�?/n-checkbox>
             <n-checkbox v-model:checked="menuCheckStrictly">父子联动</n-checkbox>
           </div>
           <n-tree
@@ -119,7 +119,6 @@ import {
 } from '@/api/system/role'
 import type { SysRole } from '@/api/system/types'
 import { statusOptions } from './constants'
-import { usePermission } from '@/hooks/usePermission'
 
 const router = useRouter()
 const { message, confirmBatchDelete, confirmDanger } = useConfirm()
@@ -144,7 +143,7 @@ const searchFields = defineFields([
   },
   {
     key: 'status',
-    label: '状态',
+    label: '状�?,
     component: 'NSelect',
     options: statusOptions,
     search: { enabled: true, defaultValue: null },
@@ -193,7 +192,7 @@ const roleFields = defineFields([
   },
   {
     key: 'status',
-    label: '状态',
+    label: '状�?,
     component: 'NRadioGroup',
     options: statusOptions,
     form: { required: true, defaultValue: '1' },
@@ -271,7 +270,7 @@ const tableFields = computed(() => [
           type: 'error',
           permission: 'system:role:remove',
           show: (r) => (r as unknown as SysRole).roleId !== 1,
-          popconfirm: (r) => `是否确认删除角色「${(r as unknown as SysRole).roleName}」？`,
+          popconfirm: (r) => `是否确认删除角色�?{(r as unknown as SysRole).roleName}」？`,
           onClick: async (r) => {
             await deleteRole([(r as unknown as SysRole).roleId])
             message.success('删除成功')
@@ -417,7 +416,7 @@ function handleStatusChange(role: SysRole, status: '0' | '1') {
   const text = status === '1' ? '启用' : '停用'
   confirmDanger({
     title: '确认操作',
-    content: `确认${text}角色「${role.roleName}」吗？`,
+    content: `确认${text}角色�?{role.roleName}」吗？`,
     successMessage: `${text}成功`,
     action: async () => {
       await changeRoleStatus(role.roleId, status)
