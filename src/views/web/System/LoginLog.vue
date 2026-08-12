@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="system-page">
     <SearchPanel
       v-model:search-model="searchModel"
@@ -24,6 +24,7 @@
       flex-height
       selectable
       col-setting-key="system-loginlog"
+      :csv-export="{ fileName: 'login-log' }"
       v-model:checked-row-keys="checkedIds"
       :data="tableData"
       :fields="tableFields"
@@ -31,7 +32,7 @@
       :page-size="searchModel.pageSize as number"
       :item-count="total"
       :row-key="(row: Record<string, unknown>) => row.infoId as number"
-      :table-props="{ loading }"
+      :loading="loading"
       @update:page="onPageChange"
       @update:page-size="onPageSizeChange"
     />

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="system-page">
     <div class="system-page__sub-header">
       <n-button quaternary @click="goBack">
@@ -50,7 +50,7 @@
       :page-size="searchModel.pageSize as number"
       :item-count="total"
       :row-key="(row: Record<string, unknown>) => row.dictCode as number"
-      :table-props="{ loading }"
+      :loading="loading"
       @update:page="onPageChange"
       @update:page-size="onPageSizeChange"
     />

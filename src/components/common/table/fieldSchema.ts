@@ -130,6 +130,13 @@ export interface TableFieldConfig {
   actions?: TableActionsResolver
   /** 操作列行内按钮上限，超出收起到「更多」 */
   actionsMax?: number
+  /** 是否参与 CSV 导出，默认 true；操作列默认 false */
+  allowExport?: boolean
+  /**
+   * 导出「展示数据」时的文案
+   * 有自定义 render 且无法从 format 推导时建议提供
+   */
+  exportText?: (value: unknown, row: Record<string, unknown>) => string
   /** 内置格式化：option 映射 / date / datetime */
   format?: 'option' | 'date' | 'datetime' | ((value: unknown, row: Record<string, unknown>) => string)
   /** option 映射时的颜色 */
@@ -349,8 +356,74 @@ function formatCellValue(
   return value ?? ''
 }
 
-function resolveColumnKey(field: UnifiedFieldConfig): string {
+/** CSV 单元格转义（与 Naive UI formatCsvCell 一致） */
+export function escapeCsvCell(value: string) {
+  return value.replace(/,/g, '\\,')
+}
+
+/**
+ * 导出「展示数据」用的纯文本（option 标签、日期格式等）
+ * 优先 exportText → format → 原始值
+ */
+export function formatExportCellValue(
+  value: unknown,
+  field: UnifiedFieldConfig,
+  table: TableFieldConfig,
+  row: Record<string, unknown>,
+): string {
+  if (table.exportText)
+    return String(table.exportText(value, row) ?? '')
+
+  if (typeof table.format === 'function')
+    return String(table.format(value, row) ?? '')
+
+  if (table.format === 'option' && field.options) {
+    const opts = field.options as FieldOption[]
+    const hit = opts.find(o => o.value === value)
+    return hit?.label ?? String(value ?? '')
+  }
+
+  if (table.format === 'date' && value)
+    return new Date(value as string | number).toLocaleDateString()
+
+  if (table.format === 'datetime' && value)
+    return new Date(value as string | number).toLocaleString()
+
+  if (value == null)
+    return ''
+  return String(value)
+}
+
+export function resolveColumnKey(field: UnifiedFieldConfig): string {
   return typeof field.key === 'string' ? field.key : field.key[0]
+}
+
+/** 是否为不参与导出的操作列 */
+export function isActionsColumnKey(key: string, label?: string) {
+  if (key === 'actions' || key === 'action')
+    return true
+  if (label === '操作')
+    return true
+  return false
+}
+
+/** 标记 selection / expand / 操作列为不可导出 */
+export function withExportColumnFlags(cols: DataTableColumns): DataTableColumns {
+  return cols.map((col) => {
+    if ('children' in col && col.children) {
+      return {
+        ...col,
+        children: withExportColumnFlags(col.children as DataTableColumns) as typeof col.children,
+      }
+    }
+    if ('type' in col && (col.type === 'selection' || col.type === 'expand'))
+      return { ...col, allowExport: false }
+    const key = 'key' in col ? String(col.key ?? '') : ''
+    const title = 'title' in col && typeof col.title === 'string' ? col.title : undefined
+    if (isActionsColumnKey(key, title) || col.allowExport === false)
+      return { ...col, allowExport: false }
+    return col
+  }) as DataTableColumns
 }
 
 /** 转为 Naive UI DataTable columns */
@@ -360,9 +433,11 @@ export function toTableColumns(fields: UnifiedFieldConfig[]): DataTableColumns {
     .map((field) => {
       const table = field.table === false ? {} : (field.table ?? {})
       const colKey = resolveColumnKey(field)
+      const label = field.label ?? field.title
+      const isActions = Boolean(table.actions) || isActionsColumnKey(colKey, label)
       return {
         key: colKey,
-        title: field.label ?? field.title ?? colKey,
+        title: label ?? colKey,
         width: table.width,
         minWidth: table.minWidth,
         maxWidth: table.maxWidth,
@@ -370,6 +445,7 @@ export function toTableColumns(fields: UnifiedFieldConfig[]): DataTableColumns {
         align: table.align,
         sorter: table.sortable ? 'default' : undefined,
         ellipsis: table.ellipsis,
+        allowExport: table.allowExport ?? !isActions,
         render: (row: Record<string, unknown>, index: number) => {
           if (table.render)
             return table.render(row, index)
@@ -383,7 +459,7 @@ export function toTableColumns(fields: UnifiedFieldConfig[]): DataTableColumns {
           return formatCellValue(row[colKey], field, table, row)
         },
       }
-    })
+    }) as DataTableColumns
 }
 
 /** 从统一配置提取搜索默认值 */

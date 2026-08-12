@@ -16,6 +16,8 @@ const setting = {
     isReload: true,
     showFullscreen: true,
     showUserInfo: true,
+    showSearch: true,
+    showNotice: true,
   },
   // 弹窗
   modalSetting: {

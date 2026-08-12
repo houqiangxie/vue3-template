@@ -77,8 +77,10 @@
       </n-breadcrumb>
     </div>
 
-    <!-- 右侧：刷新（顶栏模式）+ 全屏 + 用户 + 配置 -->
+    <!-- 右侧：搜索 + 通知 + 刷新（顶栏模式）+ 全屏 + 用户 + 配置 -->
     <div class="layout-header-right">
+      <HeaderSearch v-if="showSearch" />
+      <HeaderNotice v-if="showNotice" />
       <div
         v-if="isHorizontalHeader && showReload"
         class="layout-header-trigger layout-header-trigger-min"
@@ -146,6 +148,8 @@
   import { usePermissionStore } from '@/store/modules/permission';
   import { AsideMenu } from '@/layout/components/Menu';
   import ProjectSetting from './ProjectSetting.vue';
+  import HeaderSearch from './HeaderSearch.vue';
+  import HeaderNotice from './HeaderNotice.vue';
   import type { MenuItem } from '@/router/utils/types';
   import * as AntdIcons from '@vicons/antd';
   import {
@@ -176,6 +180,8 @@
   const showLogo = computed(() => settingStore.showLogo);
   const showFullscreen = computed(() => settingStore.headerSetting.showFullscreen);
   const showUserInfo = computed(() => settingStore.headerSetting.showUserInfo);
+  const showSearch = computed(() => settingStore.headerSetting.showSearch !== false);
+  const showNotice = computed(() => settingStore.headerSetting.showNotice !== false);
 
   function hexLuminance(hex: string): number {
     const raw = hex.replace('#', '');
@@ -369,6 +375,7 @@
       storage.remove(TABS_ROUTES);
       permissionStore.clearRoutes(router);
       permissionStore.setPermissions([]);
+      permissionStore.setRoles([]);
       permissionStore.setMenus([]);
       try {
         (local as any).removeItem?.('token');
@@ -459,7 +466,7 @@
 
     &-right {
       display: flex;
-      align-items: center;
+      align-items: stretch;
       align-self: stretch;
       margin-right: 20px;
       flex-shrink: 0;

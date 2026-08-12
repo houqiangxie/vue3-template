@@ -36,6 +36,9 @@ export const usePermissionStore = defineStore('permission', () => {
   /** 用户权限列表 */
   const userPermissions = ref<string[]>([])
 
+  /** 用户角色列表 */
+  const userRoles = ref<string[]>([])
+
   /** 用户菜单列表（后台返回，权限过滤后；含页面级子菜单供 TabView 使用） */
   const userMenuList = ref<MenuItem[]>([])
 
@@ -54,6 +57,7 @@ export const usePermissionStore = defineStore('permission', () => {
   async function fetchUserMenuAndPermissions(): Promise<{
     menus: MenuItem[]
     permissions: string[]
+    roles: string[]
   }> {
     const [menusRes, infoRes] = await Promise.all([
       getRouters(),
@@ -63,11 +67,16 @@ export const usePermissionStore = defineStore('permission', () => {
     return {
       menus: menusRes.data ?? [],
       permissions: infoRes.data?.permissions ?? [],
+      roles: infoRes.data?.roles ?? [],
     }
   }
 
   function setPermissions(permissions: string[]) {
     userPermissions.value = permissions
+  }
+
+  function setRoles(roles: string[]) {
+    userRoles.value = roles
   }
 
   function setMenus(menus: MenuItem[]) {
@@ -98,9 +107,10 @@ export const usePermissionStore = defineStore('permission', () => {
       viewModules.value = modules
       viewsBaseDir.value = baseDir
 
-      const { menus, permissions } = await fetchUserMenuAndPermissions()
+      const { menus, permissions, roles } = await fetchUserMenuAndPermissions()
 
       userPermissions.value = permissions
+      userRoles.value = roles
 
       const filteredMenus = filterMenusByAvailableViews(
         filterMenuByPermission(menus, permissions),
@@ -221,6 +231,7 @@ export const usePermissionStore = defineStore('permission', () => {
   function logout(router: Router): void {
     clearRoutes(router)
     userPermissions.value = []
+    userRoles.value = []
     userMenuList.value = []
 
     try {
@@ -236,11 +247,13 @@ export const usePermissionStore = defineStore('permission', () => {
     routesLoaded,
     addedRouteNames,
     userPermissions,
+    userRoles,
     userMenuList,
     defaultRouteName,
     viewModules,
     viewsBaseDir,
     setPermissions,
+    setRoles,
     setMenus,
     setupRoutes,
     filterMenuByPermission,

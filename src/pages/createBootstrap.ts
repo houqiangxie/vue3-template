@@ -3,6 +3,7 @@ import type { Router } from 'vue-router'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import emitter from '@/utils/emitter'
+import { setupDirectives } from '@/directive'
 
 export interface BootstrapOptions {
   rootComponent: Parameters<typeof createApp>[0]
@@ -31,6 +32,7 @@ export async function createBootstrap(options: BootstrapOptions) {
   const pinia = createPinia()
   app.use(pinia)
   app.use(router)
+  setupDirectives(app)
 
   await setup?.(app)
   await router.isReady()

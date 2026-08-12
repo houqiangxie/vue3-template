@@ -1,32 +1,10 @@
-<template>
+﻿<template>
   <div class="system-page system-page--split">
-    <!-- 左侧部门树 -->
-    <aside class="system-page__aside">
-      <div class="system-page__aside-title">组织机构</div>
-      <n-input
-        v-model:value="deptFilter"
-        clearable
-        placeholder="请输入部门名称"
-        size="small"
-        class="system-page__aside-search"
-      >
-        <template #prefix>
-          <n-icon size="14"><SearchOutline /></n-icon>
-        </template>
-      </n-input>
-      <n-tree
-        block-line
-        selectable
-        :data="deptTreeData"
-        :pattern="deptFilter"
-        :selected-keys="selectedDeptKeys"
-        key-field="key"
-        label-field="label"
-        children-field="children"
-        :show-irrelevant-nodes="false"
-        @update:selected-keys="onDeptSelect"
-      />
-    </aside>
+    <DeptSelect
+      v-model:value="selectedDeptId"
+      mode="panel"
+      @change="onDeptChange"
+    />
 
     <div class="system-page__main">
       <SearchPanel
@@ -36,20 +14,31 @@
         @reset-form="handleResetSearch"
       >
         <template #default>
-          <n-button v-if="hasPermission('system:user:add')" type="primary" @click="handleAdd">
+          <n-button v-hasPermi="'system:user:add'" type="primary" @click="handleAdd">
             <template #icon>
               <n-icon size="14"><AddOutline /></n-icon>
             </template>
             新增
           </n-button>
           <n-button
-            v-if="hasPermission('system:user:remove')"
+            v-hasPermi="'system:user:remove'"
             type="error"
             secondary
             :disabled="!checkedUserIds.length"
             @click="handleBatchDelete"
           >
             删除
+          </n-button>
+          <n-button v-hasPermi="'system:user:import'" secondary @click="importVisible = true">
+            导入
+          </n-button>
+          <n-button
+            v-hasPermi="'system:user:export'"
+            secondary
+            :loading="downloading"
+            @click="handleExport"
+          >
+            导出
           </n-button>
         </template>
       </SearchPanel>
@@ -67,13 +56,12 @@
         :page-size="searchModel.pageSize as number"
         :item-count="total"
         :row-key="(row: Record<string, unknown>) => row.userId as number"
-        :table-props="{ loading }"
+        :loading="loading"
         @update:page="onPageChange"
         @update:page-size="onPageSizeChange"
       />
     </div>
 
-    <!-- 新增/编辑 -->
     <CommonModal
       v-model:show="formVisible"
       v-model:form-model="formData"
@@ -82,7 +70,6 @@
       @confirm="handleSubmit"
     />
 
-    <!-- 重置密码 -->
     <CommonModal
       v-model:show="pwdVisible"
       v-model:form-model="pwdForm"
@@ -90,11 +77,20 @@
       :loading="submitting"
       @confirm="handleResetPwd"
     />
+
+    <ExcelImportModal
+      v-model:show="importVisible"
+      title="用户导入"
+      tip="仅允许导入 xls、xlsx 格式文件。"
+      :on-download-template="handleDownloadTemplate"
+      :on-import="handleImportUsers"
+      @success="fetchList"
+    />
   </div>
 </template>
 
 <script setup lang="tsx">
-import { AddOutline, SearchOutline } from '@vicons/ionicons5'
+import { AddOutline } from '@vicons/ionicons5'
 import { NSwitch } from 'naive-ui'
 import {
   addUser,
@@ -102,6 +98,7 @@ import {
   deleteUser,
   getUserPostOptions,
   getUserRoleOptions,
+  importUser,
   listUser,
   resetUserPwd,
   updateUser,
@@ -109,18 +106,17 @@ import {
 import { deptToTreeSelectData, listDept } from '@/api/system/dept'
 import type { SysUser } from '@/api/system/types'
 import { sexOptions, statusOptions } from './constants'
-import { usePermission } from '@/hooks/usePermission'
 
 const { message, confirmBatchDelete, confirmDanger } = useConfirm()
-const { hasPermission } = usePermission()
+const { download, downloading } = useDownload()
 
 const roleOptions = ref<{ label: string, value: number }[]>([])
 const postOptions = ref<{ label: string, value: number }[]>([])
 const deptTreeData = ref<ReturnType<typeof deptToTreeSelectData>>([])
-const deptFilter = ref('')
-const selectedDeptKeys = ref<number[]>([])
+const selectedDeptId = ref<number | null>(null)
 const checkedUserIds = ref<Array<string | number>>([])
 const pwdVisible = ref(false)
+const importVisible = ref(false)
 const currentUserId = ref<number>()
 const pwdForm = ref({ password: '', confirmPassword: '' })
 
@@ -439,14 +435,13 @@ const pwdModalConfig = defineModal({
 })
 
 function handleResetSearch() {
-  selectedDeptKeys.value = []
+  selectedDeptId.value = null
   handleReset({ deptId: undefined })
 }
 
-function onDeptSelect(keys: Array<string | number>) {
+function onDeptChange(keys: number[]) {
   const id = keys[0]
-  selectedDeptKeys.value = id !== undefined ? [Number(id)] : []
-  searchModel.value.deptId = id !== undefined ? Number(id) : undefined
+  searchModel.value.deptId = id
   searchModel.value.pageNum = 1
   fetchList()
 }
@@ -523,5 +518,20 @@ async function handleResetPwd() {
   finally {
     submitting.value = false
   }
+}
+
+async function handleDownloadTemplate() {
+  await download('/system/user/importTemplate', { filename: 'user_template.xlsx' })
+}
+
+async function handleImportUsers(file: File) {
+  await importUser(file)
+}
+
+async function handleExport() {
+  await download('/system/user/export', {
+    params: { ...searchModel.value } as Record<string, unknown>,
+    filename: `user_${Date.now()}.xlsx`,
+  })
 }
 </script>

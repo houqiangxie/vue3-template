@@ -85,3 +85,27 @@ export interface ColSettingItem {
   label: string
   isShow: boolean
 }
+
+/** CommonTable CSV 导出选项（对齐 Naive UI downloadCsv） */
+export interface TableCsvExportOptions {
+  fileName?: string
+  /** true：导出原始 data；false：导出当前页过滤/排序后的数据 */
+  keepOriginalData?: boolean
+}
+
+/** CommonTable 工具栏导出配置 */
+export interface TableCsvExportConfig {
+  /** 文件名（不含扩展名） */
+  fileName?: string
+  /** 权限码 */
+  permission?: string | string[]
+  /** 自定义操作项；不传则默认「原始数据 / 展示数据」 */
+  actions?: TableActionItem[]
+}
+
+/** CommonTable 对外导出方法 */
+export interface CommonTableExportInst {
+  downloadCsv: (options?: TableCsvExportOptions) => void
+  exportOriginalData: (fileName?: string) => void
+  exportDisplayData: (fileName?: string) => void
+}

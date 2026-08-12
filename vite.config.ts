@@ -224,8 +224,6 @@ export default ({ command, mode }: ConfigEnv) => {
               return 'naive-ui'
             if (id.includes('@file-viewer'))
               return 'file-viewer'
-            if (id.includes('xlsx'))
-              return 'xlsx'
             // Electron desktop shell does not ship the App (MPA) entry; skip vant split.
             if (!isElectron && (id.includes('/vant/') || id.includes('\\vant\\')))
               return 'vant'

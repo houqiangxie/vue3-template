@@ -27,6 +27,8 @@ export interface IHeaderSetting {
   isReload: boolean;
   showFullscreen: boolean;
   showUserInfo: boolean;
+  showSearch?: boolean;
+  showNotice?: boolean;
 }
 
 export interface IModalSetting {

@@ -23,7 +23,8 @@
       :fields="tableFields"
       :show-pagination="false"
       :row-key="(row: Record<string, unknown>) => row.menuId as number"
-      :table-props="{ loading, defaultExpandAll: true }"
+      :loading="loading"
+      :table-props="{ defaultExpandAll: true }"
     />
 
     <!-- 新增/编辑 -->

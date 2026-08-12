@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="system-page">
     <div class="system-page__sub-header">
       <n-button quaternary @click="goBack">
@@ -44,7 +44,7 @@
       :page-size="searchModel.pageSize as number"
       :item-count="total"
       :row-key="(row: any) => row.userId"
-      :table-props="{ loading }"
+      :loading="loading"
       @update:page="onPageChange"
       @update:page-size="onPageSizeChange"
     />
@@ -71,10 +71,8 @@
         :page-size="unallocatedSearch.pageSize as number"
         :item-count="unallocatedTotal"
         :row-key="(row: any) => row.userId"
-        :table-props="{
-          loading: unallocatedLoading,
-          maxHeight: 360,
-        }"
+        :loading="unallocatedLoading"
+        :table-props="{ maxHeight: 360 }"
         @update:page="onUnallocatedPageChange"
         @update:page-size="onUnallocatedPageSizeChange"
       />

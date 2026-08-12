@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="system-page">
     <SearchPanel
       v-model:search-model="searchModel"
@@ -29,7 +29,7 @@
       :page-size="searchModel.pageSize as number"
       :item-count="total"
       :row-key="(row: any) => row.tokenId"
-      :table-props="{ loading }"
+      :loading="loading"
       @update:page="onPageChange"
       @update:page-size="onPageSizeChange"
     />

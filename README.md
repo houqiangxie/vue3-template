@@ -11,7 +11,7 @@
 | 构建  | Vite 8、TypeScript、UnoCSS、Sass                      |
 | UI  | Naive UI（Web）、Vant（App）                            |
 | 桌面  | Electron + electron-updater                        |
-| 其它  | unplugin-auto-import / components、file-viewer、xlsx |
+| 其它  | unplugin-auto-import / components、file-viewer |
 
 
 ## 快速开始

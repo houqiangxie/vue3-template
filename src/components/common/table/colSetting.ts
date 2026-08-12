@@ -14,7 +14,9 @@ function resolveFieldLabel(field: UnifiedFieldConfig): string {
 
 /** 是否为操作列 */
 export function isActionsField(field: UnifiedFieldConfig): boolean {
-  return resolveFieldKey(field) === 'actions'
+  const key = resolveFieldKey(field)
+  const label = resolveFieldLabel(field)
+  return key === 'actions' || key === 'action' || label === '操作'
 }
 
 /** 是否可参与列设置（显隐 / 排序） */

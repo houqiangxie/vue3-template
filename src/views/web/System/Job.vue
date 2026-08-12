@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="system-page">
     <SearchPanel
       v-model:search-model="searchModel"
@@ -27,7 +27,7 @@
       :page="searchModel.pageNum as number"
       :page-size="searchModel.pageSize as number"
       :item-count="total"
-      :table-props="{ loading }"
+      :loading="loading"
       @update:page="onPageChange"
       @update:page-size="onPageSizeChange"
     />
@@ -58,7 +58,8 @@
         :page="logSearch.pageNum as number"
         :page-size="logSearch.pageSize as number"
         :item-count="logTotal"
-        :table-props="{ loading: logLoading, maxHeight: 420 }"
+        :loading="logLoading"
+        :table-props="{ maxHeight: 420 }"
         @update:page="onLogPageChange"
         @update:page-size="onLogPageSizeChange"
       />

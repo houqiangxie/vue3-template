@@ -26,7 +26,8 @@ export function useTreeList<T extends Record<string, unknown> = Record<string, u
 
   const searchModel = ref({ ...defaults }) as Ref<Record<string, unknown>>
   const tableData = ref<T[]>([]) as Ref<T[]>
-  const loading = ref(false)
+  /** immediate 时初始即为 loading，避免首屏空状态闪烁 */
+  const loading = ref(immediate)
 
   async function fetchList() {
     loading.value = true

@@ -61,7 +61,8 @@ export function usePageList<T extends Record<string, unknown> = Record<string, u
 
   const tableData = ref<T[]>([]) as Ref<T[]>
   const total = ref(0)
-  const loading = ref(false)
+  /** immediate 时初始即为 loading，避免首屏空状态闪烁 */
+  const loading = ref(immediate)
 
   function resolveQuery() {
     const model = { ...searchModel.value }

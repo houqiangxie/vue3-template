@@ -354,6 +354,18 @@
           </div>
         </div>
         <div class="drawer-setting-item">
+          <div class="drawer-setting-item-title">显示菜单搜索</div>
+          <div class="drawer-setting-item-action">
+            <n-switch :value="settingStore.headerSetting.showSearch !== false" @update:value="(v: boolean) => settingStore.headerSetting.showSearch = v" />
+          </div>
+        </div>
+        <div class="drawer-setting-item">
+          <div class="drawer-setting-item-title">显示通知公告</div>
+          <div class="drawer-setting-item-action">
+            <n-switch :value="settingStore.headerSetting.showNotice !== false" @update:value="(v: boolean) => settingStore.headerSetting.showNotice = v" />
+          </div>
+        </div>
+        <div class="drawer-setting-item">
           <div class="drawer-setting-item-title">显示用户信息</div>
           <div class="drawer-setting-item-action">
             <n-switch v-model:value="settingStore.headerSetting.showUserInfo" />

@@ -33,27 +33,27 @@ export interface SysMenu {
   menuId: number
   parentId: number
   menuName: string
-  /** M=目录 C=菜单 F=按钮 P=页面级菜�?*/
+  /** M=目录 C=菜单 F=按钮 P=页面级菜单 */
   menuType: 'M' | 'C' | 'F' | 'P'
   orderNum: number
-  /** 路由 name（keep-alive / 侧栏 key�?*/
+  /** 路由 name（keep-alive / 侧栏 key） */
   routeName?: string
   path?: string
   component?: string
-  /** 高亮侧栏的菜�?name / 路径 */
+  /** 高亮侧栏的菜单 name / 路径 */
   activeMenu?: string
   /** 权限字符 */
   perms?: string
-  /** 重定�?url */
+  /** 重定向 url */
   redirect?: string
   icon?: string
-  /** 是否缓存�?=缓存 1=不缓�?*/
+  /** 是否缓存：0=缓存 1=不缓存 */
   isCache?: '0' | '1'
-  /** 面包屑显示：0=�?1=�?*/
+  /** 面包屑显示：0=显示 1=隐藏 */
   breadcrumb?: '0' | '1'
-  /** 显示工作台：0=显示 1=不显�?*/
+  /** 显示工作台：0=显示 1=不显示 */
   workbench?: '0' | '1'
-  /** 显示状态：0=显示 1=不显�?*/
+  /** 显示状态：0=显示 1=不显示 */
   visible: '0' | '1'
   status: '0' | '1'
   children?: SysMenu[]
@@ -130,7 +130,7 @@ export interface SysOperLog {
   businessType: number
   method?: string
   requestMethod?: string
-  /** 0其它 1后台用户 2手机端用�?*/
+  /** 0其它 1后台用户 2手机端用户 */
   operatorType?: number
   operName?: string
   deptName?: string
@@ -167,7 +167,7 @@ export interface SysJob {
   jobGroup: string
   invokeTarget: string
   cronExpression: string
-  /** 0默认 1立即触发执行 2触发一次执�?3不触发立即执�?*/
+  /** 0默认 1立即触发执行 2触发一次执行 3不触发立即执行 */
   misfirePolicy?: '0' | '1' | '2' | '3'
   /** 0允许 1禁止 */
   concurrent?: '0' | '1'
@@ -207,7 +207,7 @@ export interface SysConfig {
   configName: string
   configKey: string
   configValue: string
-  /** Y=系统内置 N=非内�?*/
+  /** Y=系统内置 N=非内置 */
   configType: 'Y' | 'N'
   remark?: string
   createTime?: string

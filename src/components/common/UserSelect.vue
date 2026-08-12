@@ -239,7 +239,8 @@ function displayName(user: SysUser) {
         :page-size="searchModel.pageSize as number"
         :item-count="total"
         :row-key="(row: Record<string, unknown>) => row.userId as number"
-        :table-props="{ loading, maxHeight: 360 }"
+        :loading="loading"
+        :table-props="{ maxHeight: 360 }"
         @update:page="onPageChange"
         @update:page-size="onPageSizeChange"
       />
