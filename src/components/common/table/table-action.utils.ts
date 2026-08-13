@@ -4,7 +4,6 @@ import type {
   TableActionItem,
   TableActionPopconfirmConfig,
 } from './types'
-import { usePermissionStore } from '@/store/modules/permission'
 
 /** 权限检查（可在 setup 外调用） */
 export function hasPermission(perm?: string | string[]): boolean {

@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite'
 import type { MockRoute } from './utils'
-import { matchPath, parseQuery, readBody, sendJson } from './utils'
+import { matchPath, parseQuery, readBody, sendJson, sendStream } from './utils'
+import { aiRoutes } from './handlers/ai'
 import { authRoutes } from './handlers/auth'
 import { configRoutes } from './handlers/config'
 import { deptRoutes } from './handlers/dept'
@@ -29,6 +30,7 @@ const routes: MockRoute[] = [
   ...logininforRoutes,
   ...jobRoutes,
   ...onlineRoutes,
+  ...aiRoutes,
 ]
 /**
  * 开发环境 Mock 插件：拦截 /api/*，业务代码无需改动。
@@ -71,6 +73,11 @@ export function mockApiPlugin(apiPrefix = '/api'): Plugin {
               res.statusCode = 200
               res.setHeader('Content-Type', payload.contentType || 'text/plain')
               res.end(payload.body)
+              return
+            }
+
+            if (payload?.__stream) {
+              await sendStream(res, payload, req)
               return
             }
 

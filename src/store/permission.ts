@@ -2,8 +2,6 @@ import type { Router } from 'vue-router'
 
 import { getInfo, getRouters } from '@/api/system/auth'
 import { menusToMenuOptions } from '@/config/menu/menuFromRoutes'
-import { useMenuStore } from '@/store/modules/menu'
-import { useTabsViewStore } from '@/store/modules/tabsView'
 
 import {
   buildDynamicRoutes,

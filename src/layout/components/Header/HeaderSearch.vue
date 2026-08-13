@@ -2,7 +2,6 @@
 import { SearchOutlined } from '@vicons/antd'
 import { NEmpty, NIcon, NInput } from 'naive-ui'
 import CommonModal from '@/components/common/modal/CommonModal.vue'
-import { usePermissionStore } from '@/store/modules/permission'
 import type { MenuItem } from '@/router/utils/types'
 
 interface SearchItem {

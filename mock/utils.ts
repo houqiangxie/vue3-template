@@ -18,6 +18,22 @@ export interface MockRoute {
   handler: MockHandler
 }
 
+/** 原始一次性响应 */
+export interface MockRawPayload {
+  __raw: true
+  body: string | Buffer
+  contentType?: string
+}
+
+/** SSE / 分片流式响应 */
+export interface MockStreamPayload {
+  __stream: true
+  chunks: string[]
+  contentType?: string
+  /** 分片间隔 ms，默认 40 */
+  delay?: number
+}
+
 export function ok<T>(data: T, message = '操作成功') {
   return { code: 0, data, message }
 }
@@ -93,6 +109,41 @@ export function sendJson(res: ServerResponse, payload: unknown, status = 200) {
   res.statusCode = status
   res.setHeader('Content-Type', 'application/json;charset=utf-8')
   res.end(JSON.stringify(payload))
+}
+
+export function sleep(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
+/** 写出 SSE / NDJSON 分片流 */
+export async function sendStream(res: ServerResponse, payload: MockStreamPayload, req?: IncomingMessage) {
+  res.statusCode = 200
+  res.setHeader('Content-Type', payload.contentType || 'text/event-stream;charset=utf-8')
+  res.setHeader('Cache-Control', 'no-cache, no-transform')
+  res.setHeader('Connection', 'keep-alive')
+  res.flushHeaders?.()
+
+  let aborted = false
+  const onClose = () => {
+    aborted = true
+  }
+  req?.on('close', onClose)
+
+  const delay = Number.isFinite(payload.delay) ? Math.max(0, Number(payload.delay)) : 40
+  try {
+    for (const chunk of payload.chunks) {
+      if (aborted || res.writableEnded)
+        break
+      res.write(chunk)
+      if (delay > 0)
+        await sleep(delay)
+    }
+  }
+  finally {
+    req?.off('close', onClose)
+    if (!res.writableEnded)
+      res.end()
+  }
 }
 
 export function now() {

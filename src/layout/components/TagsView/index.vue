@@ -94,12 +94,7 @@
   } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { storage } from '@/utils/Storage';
-  import { TABS_ROUTES } from '@/store/mutation-types';
-  import { useTabsViewStore } from '@/store/modules/tabsView';
-  import type { RouteItem } from '@/store/modules/tabsView';
-  import { useProjectSetting } from '@/hooks/setting/useProjectSetting';
-  import { useDesignSetting } from '@/hooks/setting/useDesignSetting';
-  import { useProjectSettingStore } from '@/store/modules/projectSetting';
+  import type { RouteItem } from '@/store/tabsView';
   import { usePageReload } from '@/hooks/usePageReload';
   import { useMessage, useThemeVars } from 'naive-ui';
   import Draggable from 'vuedraggable';
@@ -120,8 +115,7 @@
       collapsed: { type: Boolean },
     },
     setup() {
-      const { getDarkTheme, getAppTheme } = useDesignSetting();
-      const { multiTabsSetting } = useProjectSetting();
+      const designStore = useDesignSettingStore();
       const settingStore = useProjectSettingStore();
       const message = useMessage();
       const route = useRoute();
@@ -136,6 +130,8 @@
       const themeVars = useThemeVars();
       const getCardColor = computed(() => themeVars.value.cardColor);
       const getBaseColor = computed(() => themeVars.value.textColor1);
+      const getDarkTheme = computed(() => designStore.darkTheme);
+      const getAppTheme = computed(() => designStore.appTheme);
 
       const state = reactive({
         activeKey: route.fullPath,
@@ -143,7 +139,6 @@
         dropdownX: 0,
         dropdownY: 0,
         showDropdown: false,
-        multiTabsSetting,
       });
 
       // ---- 简化的路由信息提取 ----

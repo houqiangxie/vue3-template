@@ -8,7 +8,6 @@
 <script lang="ts" setup>
   import { computed } from 'vue';
   import { websiteConfig } from '@/config/website.config';
-  import { useProjectSettingStore } from '@/store/modules/projectSetting';
 
   defineProps<{ collapsed?: boolean }>();
 

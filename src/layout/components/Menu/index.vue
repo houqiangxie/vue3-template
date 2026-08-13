@@ -18,8 +18,6 @@
   import { ref, computed, watch, onMounted, reactive, toRefs } from 'vue';
   import type { MenuOption } from 'naive-ui';
   import { useRoute, useRouter } from 'vue-router';
-  import { useProjectSettingStore } from '@/store/modules/projectSetting';
-  import { useMenuStore } from '@/store/modules/menu';
 
   const props = withDefaults(
     defineProps<{

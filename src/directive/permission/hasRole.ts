@@ -1,5 +1,4 @@
 import type { Directive, DirectiveBinding } from 'vue'
-import { usePermissionStore } from '@/store/modules/permission'
 
 function checkRole(el: HTMLElement, binding: DirectiveBinding<string | string[]>) {
   const { value } = binding

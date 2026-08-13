@@ -11,7 +11,6 @@ import {
 import type { Ref } from 'vue'
 import type { SetOptionOpts } from 'echarts/core'
 import { useDebounceFn } from '@/hooks/useDebounceFn'
-import { useDesignSetting } from '@/hooks/setting/useDesignSetting'
 import { echarts } from './echarts'
 import type { ECOption, EChartsType } from './echarts'
 import type {
@@ -94,7 +93,7 @@ export function useEcharts(
   } = options
 
   const chart = shallowRef<EChartsType>()
-  const { getDarkTheme } = useDesignSetting()
+  const designStore = useDesignSettingStore()
   const vm = getCurrentInstance()
 
   let resizeObserver: ResizeObserver | undefined
@@ -193,7 +192,7 @@ export function useEcharts(
       chart.value = undefined
     }
 
-    const themeValue = resolveThemeName(theme, followDarkTheme, getDarkTheme.value)
+    const themeValue = resolveThemeName(theme, followDarkTheme, designStore.darkTheme)
     const chartInstance = echarts.init(el, themeValue, {
       renderer,
       ...initOpts,
@@ -225,7 +224,7 @@ export function useEcharts(
       reinit()
       return
     }
-    applyTheme(chartInstance, resolveThemeName(theme, followDarkTheme, getDarkTheme.value))
+    applyTheme(chartInstance, resolveThemeName(theme, followDarkTheme, designStore.darkTheme))
   }
 
   function setupLazy(el: HTMLElement) {
@@ -298,11 +297,14 @@ export function useEcharts(
   }
 
   if (followDarkTheme) {
-    watch(getDarkTheme, () => {
-      if (getExplicitTheme(theme) !== undefined)
-        return
-      switchTheme()
-    })
+    watch(
+      () => designStore.darkTheme,
+      () => {
+        if (getExplicitTheme(theme) !== undefined)
+          return
+        switchTheme()
+      },
+    )
   }
 
   watch(

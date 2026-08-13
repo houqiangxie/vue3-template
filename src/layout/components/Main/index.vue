@@ -13,19 +13,17 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, unref } from 'vue';
+  import { computed } from 'vue';
   import { useRoute } from 'vue-router';
-  import { useProjectSetting } from '@/hooks/setting/useProjectSetting';
   import { usePageReload } from '@/hooks/usePageReload';
-  import { useTabsViewStore } from '@/store/modules/tabsView';
 
   const route = useRoute();
   const tabsViewStore = useTabsViewStore();
-  const { isPageAnimate, pageAnimateType } = useProjectSetting();
+  const settingStore = useProjectSettingStore();
   const { viewKey, reloadingName, pageAlive } = usePageReload();
 
   const getTransitionName = computed(() =>
-    unref(isPageAnimate) ? unref(pageAnimateType) : '',
+    settingStore.isPageAnimate ? settingStore.pageAnimateType : '',
   );
 
   /**

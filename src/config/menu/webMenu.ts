@@ -15,6 +15,7 @@ export const webMenuOptions: MenuOption[] = [
       { label: '首页', key: 'Index-HomeIndex' },
       { label: 'Modal 示例', key: 'Index-ModalDemo' },
       { label: '个人信息', key: 'Index-PersonInfo' },
+      { label: 'AI 助手', key: 'Index-AiChat' },
     ],
   },
   {

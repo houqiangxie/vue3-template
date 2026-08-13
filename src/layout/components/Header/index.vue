@@ -12,7 +12,7 @@
       v-if="isHorizontalHeader"
       class="layout-header-left layout-header-left-menu"
     >
-      <div v-if="navMode === 'horizontal' && showLogo" class="logo">
+      <div v-if="settingStore.navMode === 'horizontal' && showLogo" class="logo">
         <img :src="websiteConfig.logo" alt="logo" />
         <h2 class="title">{{ websiteConfig.title }}</h2>
       </div>
@@ -136,16 +136,11 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, unref, onMounted, onUnmounted } from 'vue';
+  import { ref, computed, onMounted, onUnmounted } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import { useProjectSetting } from '@/hooks/setting/useProjectSetting';
   import { usePageReload } from '@/hooks/usePageReload';
-  import { useProjectSettingStore } from '@/store/modules/projectSetting';
-  import { useDesignSettingStore } from '@/store/modules/designSetting';
   import { websiteConfig } from '@/config/website.config';
   import { storage } from '@/utils/Storage';
-  import { TABS_ROUTES } from '@/store/mutation-types';
-  import { usePermissionStore } from '@/store/modules/permission';
   import { AsideMenu } from '@/layout/components/Menu';
   import ProjectSetting from './ProjectSetting.vue';
   import HeaderSearch from './HeaderSearch.vue';
@@ -164,7 +159,6 @@
   const props = defineProps<{ collapsed?: boolean; inverted?: boolean }>();
   const emit = defineEmits(['update:collapsed']);
 
-  const { navMode, navTheme, menuSetting } = useProjectSetting();
   const settingStore = useProjectSettingStore();
   const designStore = useDesignSettingStore();
   const permissionStore = usePermissionStore();
@@ -216,17 +210,17 @@
     };
   });
 
-  const mixMenu = computed(() => unref(menuSetting).mixMenu);
+  const mixMenu = computed(() => settingStore.menuSetting.mixMenu);
 
   const isHorizontalHeader = computed(
     () =>
-      unref(navMode) === 'horizontal' ||
-      (unref(navMode) === 'horizontal-mix' && mixMenu.value),
+      settingStore.navMode === 'horizontal' ||
+      (settingStore.navMode === 'horizontal-mix' && mixMenu.value),
   );
 
   // 与布局 header inverted 规则一致
   const getInverted = computed(() =>
-    ['light', 'header-dark'].includes(unref(navTheme))
+    ['light', 'header-dark'].includes(settingStore.navTheme)
       ? !!props.inverted
       : !props.inverted,
   );

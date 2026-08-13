@@ -12,7 +12,6 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue';
-  import { useProjectSettingStore } from '@/store/modules/projectSetting';
   import { websiteConfig } from '@/config/website.config';
 
   const settingStore = useProjectSettingStore();

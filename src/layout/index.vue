@@ -47,7 +47,7 @@
 
       <n-layout-content
         class="layout-content"
-        :class="{ 'layout-default-background': !getDarkTheme }"
+        :class="{ 'layout-default-background': !designStore.darkTheme }"
       >
         <div
           class="layout-content-main"
@@ -74,20 +74,16 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, unref, computed, watch, onMounted, onUnmounted } from 'vue';
+  import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
   import { useRoute } from 'vue-router';
   import { Logo } from './components/Logo';
   import { TabsView } from './components/TagsView';
   import { MainView } from './components/Main';
   import { AsideMenu } from './components/Menu';
   import { PageHeader } from './components/Header';
-  import { useProjectSetting } from '@/hooks/setting/useProjectSetting';
-  import { useDesignSetting } from '@/hooks/setting/useDesignSetting';
-  import { useProjectSettingStore } from '@/store/modules/projectSetting';
   import { websiteConfig } from '@/config/website.config';
 
-  const { getDarkTheme } = useDesignSetting();
-  const { navMode, navTheme } = useProjectSetting();
+  const designStore = useDesignSettingStore();
   const settingStore = useProjectSettingStore();
 
   const route = useRoute();
@@ -131,11 +127,11 @@
   const showFooter = computed(() => settingStore.showFooter);
 
   const inverted = computed(() =>
-    ['dark', 'header-dark'].includes(unref(navTheme)),
+    ['dark', 'header-dark'].includes(settingStore.navTheme),
   );
 
   const getHeaderInverted = computed(() =>
-    ['light', 'header-dark'].includes(unref(navTheme)) ? unref(inverted) : !unref(inverted),
+    ['light', 'header-dark'].includes(settingStore.navTheme) ? inverted.value : !inverted.value,
   );
 
   const leftMenuWidth = computed(() => {
@@ -146,7 +142,7 @@
   // 是否显示 sider（仅 vertical / horizontal-mix 且非移动端）
   const showSider = computed(() => {
     if (isMobile.value) return false;
-    const mode = unref(navMode);
+    const mode = settingStore.navMode;
     if (mode === 'horizontal') return false;
     if (mode === 'horizontal-mix' && settingStore.menuSetting.mixMenu) {
       const top = route.matched.find((r) => r.name && r.name !== 'Layout');

@@ -36,19 +36,28 @@
         <div class="drawer-setting-item">
           <div class="drawer-setting-item-title">灰色模式</div>
           <div class="drawer-setting-item-action">
-            <n-switch v-model:value="designStore.grayMode" />
+            <n-switch
+              :value="designStore.grayMode"
+              @update:value="designStore.setGrayMode"
+            />
           </div>
         </div>
         <div class="drawer-setting-item">
           <div class="drawer-setting-item-title">色弱模式</div>
           <div class="drawer-setting-item-action">
-            <n-switch v-model:value="designStore.colorWeak" />
+            <n-switch
+              :value="designStore.colorWeak"
+              @update:value="designStore.setColorWeak"
+            />
           </div>
         </div>
         <div class="drawer-setting-item">
           <div class="drawer-setting-item-title">紧凑密度</div>
           <div class="drawer-setting-item-action">
-            <n-switch v-model:value="designStore.compact" />
+            <n-switch
+              :value="designStore.compact"
+              @update:value="designStore.setCompact"
+            />
           </div>
         </div>
         <div class="drawer-setting-item drawer-setting-item-column">
@@ -56,7 +65,13 @@
             圆角
             <n-text depth="3" style="margin-left: 8px">{{ designStore.borderRadius }}px</n-text>
           </div>
-          <n-slider v-model:value="designStore.borderRadius" :min="0" :max="16" :step="1" />
+          <n-slider
+            :value="designStore.borderRadius"
+            :min="0"
+            :max="16"
+            :step="1"
+            @update:value="designStore.setBorderRadius"
+          />
         </div>
 
         <!-- 系统主题色 -->
@@ -91,6 +106,18 @@
             <span class="color-field__value">{{ appThemeColor }}</span>
           </div>
         </div>
+        <div class="drawer-setting-item">
+          <div class="drawer-setting-item-title">主题编辑器</div>
+          <div class="drawer-setting-item-action">
+            <n-switch
+              :value="designStore.showThemeEditor"
+              @update:value="togThemeEditor"
+            />
+          </div>
+        </div>
+        <n-text depth="3" class="drawer-setting-tip">
+          开启后右下角可编辑主题变量；关闭入口后已保存的覆盖配置仍会继续生效。
+        </n-text>
 
         <!-- 导航栏模式 -->
         <n-divider title-placement="center">导航栏模式</n-divider>
@@ -543,9 +570,8 @@
 <script lang="ts" setup>
   import { computed, ref } from 'vue';
   import { useDialog, useMessage } from 'naive-ui';
-  import { useProjectSettingStore } from '@/store/modules/projectSetting';
-  import { useDesignSettingStore } from '@/store/modules/designSetting';
   import { animates as animateOptions } from '@/settings/animateSetting';
+  import { NAIVE_THEME_EDITOR_KEY } from '@/utils/theme';
   import { CheckOutlined } from '@vicons/antd';
   import { Moon, SunnySharp } from '@vicons/ionicons5';
 
@@ -655,6 +681,10 @@
     designStore.setAppTheme(normalizeHexColor(color, '#2d8cf0'));
   }
 
+  function togThemeEditor(val: boolean) {
+    designStore.setShowThemeEditor(val);
+  }
+
   function togNavTheme(theme: NavTheme) {
     if (designStore.darkTheme) return;
     if (settingStore.navMode === 'horizontal' && theme === 'light') {
@@ -742,6 +772,7 @@
         try {
           localStorage.removeItem('__project_setting__');
           localStorage.removeItem('__design_setting__');
+          localStorage.removeItem(NAIVE_THEME_EDITOR_KEY);
         } catch {}
         location.reload();
       },
@@ -892,6 +923,13 @@
       flex-direction: column;
       gap: 10px;
       padding-top: 4px;
+    }
+
+    .drawer-setting-tip {
+      display: block;
+      margin: -4px 0 8px;
+      font-size: 12px;
+      line-height: 1.5;
     }
 
     .import-input {

@@ -1,6 +1,5 @@
 import { saveAs } from 'file-saver'
 import { local } from 'ux-web-storage'
-import { useCommonStore } from '@/store/common'
 import { toQueryString } from '@/utils/fetch'
 
 function parseFilename(disposition: string | null): string | undefined {
@@ -62,7 +61,7 @@ export function useDownload() {
 
     downloading.value = true
     if (showLoading)
-      useCommonStore().setLoading(true)
+      useLoadingStore().setLoading(true)
 
     try {
       const res = await fetch(fullUrl, {
@@ -92,7 +91,7 @@ export function useDownload() {
     finally {
       downloading.value = false
       if (showLoading)
-        useCommonStore().setLoading(false)
+        useLoadingStore().setLoading(false)
     }
   }
 

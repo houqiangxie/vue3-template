@@ -37,6 +37,8 @@ const setting = {
   borderRadius: 3,
   // 紧凑密度
   compact: false,
+  // 显示 Naive UI 主题编辑器（右下角入口；关闭后已编辑主题仍生效）
+  showThemeEditor: false,
 };
 
 export default setting;

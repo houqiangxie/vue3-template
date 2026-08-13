@@ -1,4 +1,3 @@
-import { usePermissionStore } from '@/store/modules/permission'
 
 function matchAny(owned: string[], required: string[], superCode?: string): boolean {
   if (!owned.length)

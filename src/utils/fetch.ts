@@ -1,5 +1,4 @@
 import { db, local } from 'ux-web-storage'
-import { useCommonStore } from '@/store/common'
 import { showRequestError } from '@/utils/toast'
 import { deepClone } from '@/utils/common'
 
@@ -117,27 +116,31 @@ function clearRequestTimeout(config: PendingConfig) {
   }
 }
 
+/** 仅清理 pending/timeout，不 abort（请求正常结束时用） */
+function clearPendingRequest(requestKey: string) {
+  const pending = pendingRequest.get(requestKey)
+  if (pending)
+    clearRequestTimeout(pending)
+  pendingRequest.delete(requestKey)
+  cacheRequestMap.delete(requestKey)
+}
+
+/** 主动取消：abort + 清理。务必取 Map 里的旧请求，避免 last 场景误 abort 新请求 */
 export const removePendingRequest = (config: PendingConfig | RequestConfig, requestKey?: string) => {
   if (!requestKey)
     requestKey = generateReqKey(config as PendingConfig)
-  if (!(config as PendingConfig).requestKey)
-    (config as PendingConfig).requestKey = requestKey
-  if (pendingRequest.has(requestKey)) {
-    const cancelToken = (config as PendingConfig).controller
-      ? (config as PendingConfig)
-      : pendingRequest.get(requestKey)
-    if (cancelToken) {
-      clearRequestTimeout(cancelToken)
-      if (cancelToken.controller) {
-        if (!cancelToken.abortReason)
-          cancelToken.abortReason = 'cancel'
-        cancelToken.abortRequest = true
-        cancelToken.controller.abort()
-      }
-    }
-    pendingRequest.delete(requestKey)
-    cacheRequestMap.delete(requestKey)
+  const cancelToken = pendingRequest.get(requestKey)
+  if (!cancelToken)
+    return
+  clearRequestTimeout(cancelToken)
+  if (cancelToken.controller) {
+    if (!cancelToken.abortReason)
+      cancelToken.abortReason = 'cancel'
+    cancelToken.abortRequest = true
+    cancelToken.controller.abort()
   }
+  pendingRequest.delete(requestKey)
+  cacheRequestMap.delete(requestKey)
 }
 
 export const removeAllPendingRequest = () => {
@@ -240,49 +243,63 @@ export function unwrapData<T = unknown>(res: ApiResponse<T>, fallbackMsg = '请�
   throw new ApiError(res.message || res.msg || fallbackMsg, res.code, false, res)
 }
 
+function buildHeaders(config: RequestConfig, token?: string): Record<string, string> {
+  const headers: Record<string, string> = {}
+  // fileUpload 交给浏览器自动带 boundary，不要手写 multipart Content-Type
+  if (!config.fileUpload) {
+    headers['Content-Type'] = config.formData
+      ? 'application/x-www-form-urlencoded'
+      : 'application/json;charset=utf-8'
+  }
+  if (token && !config.isNotAuth) {
+    headers.token = token
+    headers.Authorization = token
+  }
+  if (config.headers)
+    Object.assign(headers, config.headers)
+  return headers
+}
+
+function omitNullFields(data: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...data }
+  for (const key of Object.keys(next)) {
+    if (next[key] === null)
+      delete next[key]
+  }
+  return next
+}
+
 async function request<T = unknown>(
   method: RequestMethod,
   path: string,
   data: Record<string, unknown> = {},
   config: RequestConfig = {},
 ): Promise<ApiResponse<T>> {
-  const commonStore = useCommonStore()
+  const loadingStore = useLoadingStore()
   const token = local.token?.token as string | undefined
   const controller = new AbortController()
   const { signal } = controller
   path = (config?.unwanted ? '' : import.meta.env.VITE_baseUrl) + path
 
-  const configTemp: PendingConfig = Object.assign(
-    {
-      responseType: 'json' as const,
-      method,
-      url: path,
-      body: data,
-      headers: {
-        'Content-Type': config.formData
-          ? 'application/x-www-form-urlencoded'
-          : config.fileUpload
-            ? 'multipart/form-data;'
-            : 'application/json;charset=utf-8',
-        ...(token ? { token, Authorization: token } : {}),
-      },
-    },
-    { signal, ...configDefault, ...config, controller, method, url: path, body: data },
-  )
-
-  if (config.isNotAuth) {
-    delete configTemp.headers.token
-    delete configTemp.headers.Authorization
+  const configTemp: PendingConfig = {
+    ...configDefault,
+    ...config,
+    responseType: config.responseType || 'json',
+    method,
+    url: path,
+    body: data,
+    headers: buildHeaders(config, token),
+    controller,
+    signal,
   }
-  if (config.fileUpload)
-    delete configTemp.headers['Content-Type']
 
   const requestKey = generateReqKey(configTemp)
+  configTemp.requestKey = requestKey
   if (cacheRequestMap.has(requestKey))
     return cacheRequestMap.get(requestKey)! as Promise<ApiResponse<T>>
 
   if (!config.hideLoading)
-    commonStore.setLoading(true)
+    loadingStore.setLoading(true)
   addPendingRequest(configTemp)
 
   const timeoutMs = Number(configTemp.timeout)
@@ -299,63 +316,79 @@ async function request<T = unknown>(
   if (config.cached) {
     const res = await db.get(requestKey)
     if (res) {
-      clearRequestTimeout(configTemp)
-      pendingRequest.delete(requestKey)
-      cacheRequestMap.delete(requestKey)
-      commonStore.setLoading(false)
-      return Promise.resolve({ cached: true, requestKey, res } as unknown as ApiResponse<T>)
+      clearPendingRequest(requestKey)
+      if (!config.hideLoading)
+        loadingStore.setLoading(false)
+      return res as ApiResponse<T>
     }
   }
 
-  let payload: Record<string, unknown> | FormData | URLSearchParams | BodyInit | undefined = data
-  if (!config.fileUpload) {
-    const paramsData = deepClone(data) as Record<string, unknown>
-    for (const key in paramsData) {
-      if (paramsData[key] === null)
-        delete paramsData[key]
-    }
-    payload = paramsData
+  const payload = config.fileUpload ? data : omitNullFields(data)
+
+  let body: BodyInit | undefined
+  if (method !== 'GET') {
+    if (config.fileUpload)
+      body = payload as unknown as BodyInit
+    else if (config.formData)
+      body = new URLSearchParams(payload as Record<string, string>)
+    else
+      body = JSON.stringify(payload)
   }
 
-  const myInit: Record<string, unknown> = {
+  const myInit: RequestInit = {
     method,
-    ...configDefault,
-    ...config,
+    mode: configTemp.mode,
+    cache: configTemp.cache,
     signal,
-    body: config.fileUpload
-      ? payload
-      : (config.formData
-          ? new URLSearchParams(payload as Record<string, string>)
-          : JSON.stringify(payload)),
+    headers: configTemp.headers,
+    body,
   }
-
-  if (method === 'GET')
-    delete myInit.body
-
-  const stripKeys = [
-    'controller', 'showError', 'canEmpty', 'returnOrigin', 'withoutCheck',
-    'timeout', 'cached', 'catchExpires', 'last', 'requestKey', 'hideLoading',
-    'formData', 'fileUpload', 'joinUrl', 'unwanted', 'isNotAuth', 'responseType',
-    'abortReason', 'timeoutId', 'abortRequest',
-  ]
-  for (const key of stripKeys)
-    delete myInit[key]
 
   let params = ''
-  if (payload && typeof payload === 'object' && !Array.isArray(payload) && !(payload instanceof FormData)
+  if (!config.fileUpload && payload && typeof payload === 'object' && !Array.isArray(payload)
     && (method === 'GET' || config.joinUrl)) {
     params = toQueryString(payload as Record<string, unknown>)
   }
 
   const fetchPromise = new Promise<ApiResponse<T>>((resolve, reject) => {
     const url = params ? `${path}?${params}` : path
-    fetch(url, myInit as RequestInit).then(async (response) => {
-      clearRequestTimeout(configTemp)
+    let settled = false
+    const finish = () => {
+      if (settled)
+        return
+      settled = true
+      clearPendingRequest(requestKey)
       if (!config.hideLoading)
-        commonStore.setLoading(false)
-      const res = await resultReduction(response, configTemp.responseType) as ApiResponse<T>
-      removePendingRequest(configTemp)
-      cacheRequestMap.delete(requestKey)
+        loadingStore.setLoading(false)
+    }
+
+    fetch(url, myInit).then(async (response) => {
+      const responseType = configTemp.responseType || 'json'
+      let raw: unknown
+      try {
+        raw = await resultReduction(response, responseType)
+      }
+      catch (parseError) {
+        finish()
+        const shown = notifyError(configTemp, '服务器异常，请稍后再试')
+        return reject(new ApiError('服务器异常，请稍后再试', -1, shown, parseError))
+      }
+
+      finish()
+
+      // blob / text / arrayBuffer：不做业务 code 解包
+      if (responseType !== 'json') {
+        if (response.status === 401 && !configTemp.withoutCheck) {
+          redirectToLogin()
+          return reject(new ApiError('未登录或登录已过期', 401, true, raw))
+        }
+        if (response.status >= 200 && response.status < 300)
+          return resolve(raw as ApiResponse<T>)
+        const shown = notifyError(configTemp, `请求失败 (${response.status})`)
+        return reject(new ApiError(`请求失败 (${response.status})`, response.status, shown, raw))
+      }
+
+      const res = raw as ApiResponse<T>
 
       if ((response.status === 401 || res.code === 401) && !configTemp.withoutCheck) {
         redirectToLogin()
@@ -376,10 +409,8 @@ async function request<T = unknown>(
           const shown = notifyError(configTemp, msg)
           return reject(new ApiError(msg, res.code, shown, res))
         }
-        if (configTemp.cached) {
-          const key = generateReqKey(configTemp)
-          db.set(key, deepClone(res), configTemp.catchExpires ?? undefined)
-        }
+        if (configTemp.cached)
+          db.set(requestKey, deepClone(res), configTemp.catchExpires ?? undefined)
         return resolve(res)
       }
 
@@ -387,11 +418,7 @@ async function request<T = unknown>(
       const shown = notifyError(configTemp, httpMsg)
       return reject(new ApiError(httpMsg, res.code ?? response.status, shown, res))
     }).catch((error) => {
-      clearRequestTimeout(configTemp)
-      if (!config.hideLoading)
-        commonStore.setLoading(false)
-      removePendingRequest(configTemp || {})
-      cacheRequestMap.delete(requestKey)
+      finish()
       if (error instanceof ApiError)
         return reject(error)
       if (configTemp.abortRequest) {
@@ -424,57 +451,4 @@ export async function put<T = unknown>(path = '', data: Record<string, unknown> 
 
 export async function del<T = unknown>(path = '', data: Record<string, unknown> = {}, config: RequestConfig = {}) {
   return await request<T>('DELETE', path, data, config)
-}
-
-interface FetchStreamOptions {
-  url?: string
-  requestInit?: RequestInit
-  onmessage?: (data: string[], index: number) => void
-  ondone?: () => void
-  onerror?: (response: unknown) => void
-}
-
-export class FetchStream {
-  url = ''
-  requestInit: RequestInit = {}
-  onmessage: (data: string[], index: number) => void = () => {}
-  ondone: () => void = () => {}
-  onerror: (response: unknown) => void = () => {}
-
-  constructor(options: FetchStreamOptions = {}) {
-    this.url = options.url || ''
-    this.requestInit = options.requestInit || {}
-    this.onmessage = options.onmessage || (() => {})
-    this.ondone = options.ondone || (() => {})
-    this.onerror = options.onerror || (() => {})
-    this.createFetchRequest()
-  }
-
-  createFetchRequest() {
-    fetch(this.url, {
-      method: 'POST',
-      ...this.requestInit,
-    }).then((response) => {
-      if (response.status === 200)
-        return response.body
-      return Promise.reject(response)
-    }).then(async (readableStream) => {
-      if (!readableStream)
-        return
-      const reader = readableStream.getReader()
-      let index = 0
-      while (true) {
-        const { value, done } = await reader.read()
-        if (done) {
-          this.ondone?.()
-          break
-        }
-        const dataText = new TextDecoder('utf-8').decode(value)
-        const data = dataText.split('\n\n').filter(Boolean)
-        this.onmessage(data, index++)
-      }
-    }).catch((response) => {
-      this.onerror?.(response)
-    })
-  }
 }

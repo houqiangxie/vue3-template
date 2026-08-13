@@ -1,6 +1,4 @@
 import { local } from 'ux-web-storage'
-import { useCommonStore } from '@/store/common'
-import { usePermissionStore } from '@/store/modules/permission'
 import type { ViewModules } from '@/router/utils/buildDynamicRoutes'
 import type { Router } from 'vue-router'
 
@@ -23,9 +21,9 @@ export default (router: Router, viewModules: ViewModules, viewsBaseDir: string):
       return { path: target, query: to.query, hash: to.hash, replace: true }
     }
 
-    const commonStore = useCommonStore()
+    const loadingStore = useLoadingStore()
     // iframe 嵌入只用显式标记；勿依赖 query.token（易进日志/Referer）
-    commonStore.isIframe = to.query.isIframe === '1' || to.query.isIframe === 'true' || to.query.isIframe === ''
+    loadingStore.isIframe = to.query.isIframe === '1' || to.query.isIframe === 'true' || to.query.isIframe === ''
 
     // ?token= 仅 DEV 或显式 VITE_ALLOW_QUERY_TOKEN=true 时写入本地；生产默认忽略并剥离 query
     // 新嵌入请用 postMessage / 首屏注入等方式传凭证，勿再依赖 URL 凭证

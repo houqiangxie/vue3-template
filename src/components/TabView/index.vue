@@ -35,7 +35,6 @@ import {
   resolveViewComponent,
 } from '@/router/utils/buildDynamicRoutes'
 import type { MenuItem } from '@/router/utils/types'
-import { usePermissionStore } from '@/store/modules/permission'
 import { TAB_VIEW_QUERY_KEY } from './constants'
 
 defineOptions({ name: 'TabView' })

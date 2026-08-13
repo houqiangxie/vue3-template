@@ -17,7 +17,6 @@
 
 <script lang="ts" setup>
   import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-  import { useProjectSettingStore } from '@/store/modules/projectSetting';
 
   const LOCK_KEY = '__app_locked__';
   const settingStore = useProjectSettingStore();

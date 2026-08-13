@@ -2,7 +2,6 @@ import { computed, nextTick, reactive, ref } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useRoute } from 'vue-router'
 import { TAB_VIEW_QUERY_KEY } from '@/components/TabView/constants'
-import { useTabsViewStore } from '@/store/modules/tabsView'
 
 /** 按稳定 path 记录刷新代数，改变 key 即可重挂载，无需 /redirect */
 const refreshKeys = reactive<Record<string, number>>({})

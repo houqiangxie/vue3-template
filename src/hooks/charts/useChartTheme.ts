@@ -1,5 +1,4 @@
 import { computed } from 'vue'
-import { useDesignSetting } from '@/hooks/setting/useDesignSetting'
 import type { ECOption } from './echarts'
 
 /** 暗色主题名（与 ECharts 内置 dark 一致） */
@@ -10,14 +9,14 @@ export const CHART_DARK_THEME = 'dark'
  * 返回值可直接传给 useEcharts / EChart 的 theme。
  */
 export function useChartTheme() {
-  const { getDarkTheme, getAppTheme } = useDesignSetting()
+  const designStore = useDesignSettingStore()
 
-  const chartTheme = computed(() => (getDarkTheme.value ? CHART_DARK_THEME : undefined))
+  const chartTheme = computed(() => (designStore.darkTheme ? CHART_DARK_THEME : undefined))
 
   /** 用主题色补齐常用配色，可 merge 进业务 option */
   const themeColorOption = computed<ECOption>(() => ({
     color: [
-      getAppTheme.value,
+      designStore.appTheme,
       '#36cfc9',
       '#73d13d',
       '#ffc53d',
@@ -31,8 +30,8 @@ export function useChartTheme() {
   return {
     chartTheme,
     themeColorOption,
-    isDark: getDarkTheme,
-    appTheme: getAppTheme,
+    isDark: computed(() => designStore.darkTheme),
+    appTheme: computed(() => designStore.appTheme),
   }
 }
 
