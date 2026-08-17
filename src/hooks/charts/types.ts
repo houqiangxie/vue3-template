@@ -11,7 +11,7 @@ export interface UseEchartsOptions {
   option?: Ref<ECOption | undefined | null> | ECOption
   /** 主题名或主题对象；不传则跟随应用暗色模式（'dark' / undefined） */
   theme?: Ref<ChartThemeName> | ChartThemeName
-  /** 渲染器，默认 canvas */
+  /** 渲染器，默认 canvas；若用 svg 需先 echarts.use([SVGRenderer]) */
   renderer?: 'canvas' | 'svg'
   /** 是否自动监听容器尺寸并 resize，默认 true */
   autoresize?: boolean

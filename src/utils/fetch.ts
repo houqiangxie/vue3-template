@@ -13,6 +13,7 @@ export interface RequestConfig {
   cached?: boolean
   catchExpires?: number | null
   last?: boolean
+  /** true=不触发顶部进度条（默认）；false=请求期间显示顶部条 */
   hideLoading?: boolean
   formData?: boolean
   fileUpload?: boolean
@@ -80,6 +81,7 @@ const configDefault: RequestConfig = {
   cached: false,
   catchExpires: null,
   last: false,
+  hideLoading: false,
 }
 
 function generateReqKey(config: { method?: string, url?: string, body?: unknown, requestKey?: string }) {
@@ -298,7 +300,7 @@ async function request<T = unknown>(
   if (cacheRequestMap.has(requestKey))
     return cacheRequestMap.get(requestKey)! as Promise<ApiResponse<T>>
 
-  if (!config.hideLoading)
+  if (!configTemp.hideLoading)
     loadingStore.setLoading(true)
   addPendingRequest(configTemp)
 
@@ -317,7 +319,7 @@ async function request<T = unknown>(
     const res = await db.get(requestKey)
     if (res) {
       clearPendingRequest(requestKey)
-      if (!config.hideLoading)
+      if (!configTemp.hideLoading)
         loadingStore.setLoading(false)
       return res as ApiResponse<T>
     }
@@ -358,7 +360,7 @@ async function request<T = unknown>(
         return
       settled = true
       clearPendingRequest(requestKey)
-      if (!config.hideLoading)
+      if (!configTemp.hideLoading)
         loadingStore.setLoading(false)
     }
 

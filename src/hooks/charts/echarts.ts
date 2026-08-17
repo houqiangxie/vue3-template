@@ -1,12 +1,12 @@
 /**
  * ECharts 按需注册（精简核心）。
- * 后台常用：柱 / 线 / 饼 / 散点 / 雷达 / 仪表盘 / 漏斗。
- * 其它类型在业务侧按需追加：
+ * 默认：柱 / 线 / 饼 + Canvas。其它类型在业务侧追加：
  * ```ts
  * import { echarts } from '@/hooks/charts/echarts'
- * import { HeatmapChart } from 'echarts/charts'
- * import { VisualMapComponent } from 'echarts/components'
- * echarts.use([HeatmapChart, VisualMapComponent])
+ * import { ScatterChart, RadarChart, GaugeChart, FunnelChart } from 'echarts/charts'
+ * import { VisualMapComponent, RadarComponent, GraphicComponent } from 'echarts/components'
+ * import { SVGRenderer } from 'echarts/renderers'
+ * echarts.use([ScatterChart, RadarChart, GaugeChart, FunnelChart, VisualMapComponent, RadarComponent, GraphicComponent, SVGRenderer])
  * ```
  */
 import * as echarts from 'echarts/core'
@@ -14,10 +14,6 @@ import {
   BarChart,
   LineChart,
   PieChart,
-  ScatterChart,
-  RadarChart,
-  GaugeChart,
-  FunnelChart,
 } from 'echarts/charts'
 import {
   TitleComponent,
@@ -28,24 +24,15 @@ import {
   LegendComponent,
   ToolboxComponent,
   DataZoomComponent,
-  VisualMapComponent,
   MarkLineComponent,
   MarkPointComponent,
-  MarkAreaComponent,
-  GraphicComponent,
-  RadarComponent,
-  AriaComponent,
 } from 'echarts/components'
-import { LabelLayout, UniversalTransition } from 'echarts/features'
-import { CanvasRenderer, SVGRenderer } from 'echarts/renderers'
+import { LabelLayout } from 'echarts/features'
+import { CanvasRenderer } from 'echarts/renderers'
 import type {
   BarSeriesOption,
   LineSeriesOption,
   PieSeriesOption,
-  ScatterSeriesOption,
-  RadarSeriesOption,
-  GaugeSeriesOption,
-  FunnelSeriesOption,
 } from 'echarts/charts'
 import type {
   TitleComponentOption,
@@ -55,13 +42,8 @@ import type {
   LegendComponentOption,
   ToolboxComponentOption,
   DataZoomComponentOption,
-  VisualMapComponentOption,
   MarkLineComponentOption,
   MarkPointComponentOption,
-  MarkAreaComponentOption,
-  GraphicComponentOption,
-  RadarComponentOption,
-  AriaComponentOption,
 } from 'echarts/components'
 import type { ComposeOption } from 'echarts/core'
 
@@ -69,10 +51,6 @@ echarts.use([
   BarChart,
   LineChart,
   PieChart,
-  ScatterChart,
-  RadarChart,
-  GaugeChart,
-  FunnelChart,
   TitleComponent,
   TooltipComponent,
   GridComponent,
@@ -81,27 +59,16 @@ echarts.use([
   LegendComponent,
   ToolboxComponent,
   DataZoomComponent,
-  VisualMapComponent,
   MarkLineComponent,
   MarkPointComponent,
-  MarkAreaComponent,
-  GraphicComponent,
-  RadarComponent,
-  AriaComponent,
   LabelLayout,
-  UniversalTransition,
   CanvasRenderer,
-  SVGRenderer,
 ])
 
 export type ECOption = ComposeOption<
   | BarSeriesOption
   | LineSeriesOption
   | PieSeriesOption
-  | ScatterSeriesOption
-  | RadarSeriesOption
-  | GaugeSeriesOption
-  | FunnelSeriesOption
   | TitleComponentOption
   | TooltipComponentOption
   | GridComponentOption
@@ -109,13 +76,8 @@ export type ECOption = ComposeOption<
   | LegendComponentOption
   | ToolboxComponentOption
   | DataZoomComponentOption
-  | VisualMapComponentOption
   | MarkLineComponentOption
   | MarkPointComponentOption
-  | MarkAreaComponentOption
-  | GraphicComponentOption
-  | RadarComponentOption
-  | AriaComponentOption
 >
 
 export type { EChartsType } from 'echarts/core'

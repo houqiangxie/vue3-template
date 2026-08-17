@@ -92,10 +92,7 @@ export default ({ command, mode }: ConfigEnv) => {
     },
     vue(),
     vueJsx(),
-    // 按需复制预览资源，排除 ppt（CJK 字体约 16MB），显著减小 public/vendor
-    // 资源路径已含 vendor/ 前缀；勿再设 baseDir: 'vendor'，否则会复制到 public/vendor/vendor
-    // 按需复制预览资源，排除 ppt（CJK 字体约 16MB），显著减小 public/vendor
-    // 资源路径已含 vendor/ 前缀；勿再设 baseDir: 'vendor'，否则会复制到 public/vendor/vendor
+    // 按需复制预览资源，排除 ppt（CJK 字体约 16MB）；路径已含 vendor/，勿再设 baseDir
     fileViewerRenderers({
       formats: ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv'],
       copyAssets: true,
@@ -160,7 +157,12 @@ export default ({ command, mode }: ConfigEnv) => {
 
   if (!isDev) {
     plugins.push(
-      viteCompression({ deleteOriginFile: false }),
+      viteCompression({ algorithm: 'gzip', deleteOriginFile: false }),
+      viteCompression({
+        algorithm: 'brotliCompress',
+        ext: '.br',
+        deleteOriginFile: false,
+      }),
     );
   }
 
@@ -202,11 +204,12 @@ export default ({ command, mode }: ConfigEnv) => {
     },
     base: buildBase,
     build: {
-      target: 'es2018',
+      target: 'es2020',
       outDir: env.VITE_outputDir,
       assetsDir: 'assets',
       assetsInlineLimit: 2048,
       cssCodeSplit: true,
+      reportCompressedSize: false,
       rolldownOptions: {
         input: isElectron
           ? {

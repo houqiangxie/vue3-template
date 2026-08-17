@@ -4,7 +4,7 @@
  * colSettingKey：开启列设置（拖拽排序 + 显隐，持久化到 localStorage）
  * csvExport：默认开启 CSV 导出（与列设置合并为一个工具按钮）
  * loading / emptyText：统一加载与空状态；首次加载展示骨架
- * virtualScroll：虚拟滚动，默认关闭
+ * virtualScroll：虚拟滚动；未显式开启时，flexHeight 且行数 ≥ 40 自动开启
  -->
 <template>
   <div
@@ -47,7 +47,7 @@
         ref="tableRef"
         :class="{ 'h-full': flexHeight }"
         :flex-height="flexHeight"
-        :virtual-scroll="virtualScroll"
+        :virtual-scroll="effectiveVirtualScroll"
         :columns="resolvedColumns"
         :data="data"
         :pagination="showPagination ? pagination : false"
@@ -144,7 +144,7 @@ const props = withDefaults(defineProps<{
    * 弹窗内表格请保持默认 false
    */
   flexHeight?: boolean
-  /** 虚拟滚动（大数据量时按需开启，需配合确定高度 / flexHeight） */
+  /** 虚拟滚动；未传时：flexHeight 且当前页 ≥ 40 行自动开启 */
   virtualScroll?: boolean
   /** 开启多选列 */
   selectable?: boolean
@@ -213,6 +213,9 @@ const showToolbar = computed(() => cleanedToolbarActions.value.length > 0)
 /** 首次加载：loading 且无数据 → 骨架；已有数据再刷新 → 表格 loading 遮罩 */
 const showSkeleton = computed(() => props.loading && props.data.length === 0)
 const overlayLoading = computed(() => props.loading && props.data.length > 0)
+const effectiveVirtualScroll = computed(() =>
+  props.virtualScroll || (props.flexHeight && props.data.length >= 40),
+)
 
 const csvExportConfig = computed<TableCsvExportConfig>(() => {
   if (props.csvExport && typeof props.csvExport === 'object')

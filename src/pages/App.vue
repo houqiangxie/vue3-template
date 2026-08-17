@@ -6,7 +6,7 @@
     :theme-overrides="themeOverrides"
   >
     <component
-      :is="designStore.showThemeEditor ? NThemeEditor : Passthrough"
+      :is="themeShell"
       :key="designStore.showThemeEditor ? designStore.themeEditorEpoch : 'app'"
     >
       <n-dialog-provider>
@@ -14,9 +14,7 @@
           <RegisterMessage />
           <AppWatermark />
           <AppLockScreen />
-          <n-spin :show="loadingStore.showLoading">
-            <router-view />
-          </n-spin>
+          <router-view />
         </n-message-provider>
       </n-dialog-provider>
     </component>
@@ -24,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent } from 'vue';
+import { computed, defineAsyncComponent, defineComponent } from 'vue';
 import {
   lightTheme,
   darkTheme,
@@ -32,7 +30,6 @@ import {
   dateZhCN,
   enUS,
   dateEnUS,
-  NThemeEditor,
 } from 'naive-ui';
 
 import AppWatermark from '@/components/common/AppWatermark.vue';
@@ -48,22 +45,25 @@ const Passthrough = defineComponent({
   },
 });
 
-const loadingStore = useLoadingStore();
+const AsyncThemeEditor = defineAsyncComponent(() =>
+  import('naive-ui').then(m => m.NThemeEditor),
+);
+
 const designStore = useDesignSettingStore();
 const projectStore = useProjectSettingStore();
 const { themeOverrides } = useAppThemeOverrides();
 useAppThemeEffects();
 
 const getDarkTheme = computed(() => designStore.darkTheme);
+const themeShell = computed(() =>
+  designStore.showThemeEditor ? AsyncThemeEditor : Passthrough,
+);
 
 const naiveLocale = computed(() => (projectStore.locale === 'en-US' ? enUS : zhCN));
 const naiveDateLocale = computed(() => (projectStore.locale === 'en-US' ? dateEnUS : dateZhCN));
 </script>
 
 <style lang="scss">
-.n-spin-content {
-  opacity: 1 !important;
-}
 .n-scrollbar-rail__scrollbar {
   z-index: 999;
 }

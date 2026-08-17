@@ -4,24 +4,29 @@ import type { Router } from 'vue-router'
 
 /**
  * 安装全局导航守卫：
- *  1. 保持 "isIframe" 标志同步
- *  2. 将未认证用户重定向到 /login
- *  3. 在第一次认证导航时，调用 `permissionStore.setupRoutes()`
+ *  1. 顶部进度条（路由切换）
+ *  2. 保持 "isIframe" 标志同步
+ *  3. 将未认证用户重定向到 /login
+ *  4. 在第一次认证导航时，调用 `permissionStore.setupRoutes()`
  *     根据后台菜单动态添加路由，然后重新触发导航
  */
 export default (router: Router, viewModules: ViewModules, viewsBaseDir: string): void => {
-  router.beforeEach(async (to) => {
+  router.beforeEach(async (to, from) => {
+    const loadingStore = useLoadingStore()
+    if (to.fullPath !== from.fullPath)
+      loadingStore.setNavigating(true)
+
     // 兼容旧版 /redirect/... 刷新地址（hash / history 均适用）
     if (to.path === '/redirect' || to.path.startsWith('/redirect/')) {
       let target = to.path.slice('/redirect'.length) || '/'
       while (target.startsWith('/redirect/') || target === '/redirect') {
         target = target === '/redirect' ? '/' : target.slice('/redirect'.length)
       }
-      if (!target.startsWith('/')) target = '/' + target
+      if (!target.startsWith('/'))
+        target = `/${target}`
       return { path: target, query: to.query, hash: to.hash, replace: true }
     }
 
-    const loadingStore = useLoadingStore()
     // iframe 嵌入只用显式标记；勿依赖 query.token（易进日志/Referer）
     loadingStore.isIframe = to.query.isIframe === '1' || to.query.isIframe === 'true' || to.query.isIframe === ''
 
@@ -88,5 +93,13 @@ export default (router: Router, viewModules: ViewModules, viewsBaseDir: string):
       return `/login?returnUrl=${encodeURIComponent(to.fullPath)}`
 
     return true
+  })
+
+  router.afterEach(() => {
+    useLoadingStore().setNavigating(false)
+  })
+
+  router.onError(() => {
+    useLoadingStore().setNavigating(false)
   })
 }

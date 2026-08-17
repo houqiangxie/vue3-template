@@ -96,7 +96,6 @@
  * 兼容旧后端时在 .env.* 配置 VITE_LOGIN_AES_KEY / VITE_LOGIN_AES_IV（均为 16 字节）。
  * 客户端加密不能替代 HTTPS / 服务端认证。
  */
-import CryptoJS from 'crypto-js'
 import {
   LockClosedOutline,
   PersonOutline,
@@ -104,24 +103,17 @@ import {
 } from '@vicons/ionicons5'
 import type { FormInst, FormItemRule } from 'naive-ui'
 import { websiteConfig } from '@/config/website.config'
+import { aesEncryptCbcHex } from '@/utils/aes'
 
 const AES_KEY = String(import.meta.env.VITE_LOGIN_AES_KEY || '')
 const AES_IV = String(import.meta.env.VITE_LOGIN_AES_IV || '')
 
-function encryptPassword(word: string) {
+async function encryptPassword(word: string) {
   if (!AES_KEY || !AES_IV) {
     console.warn('[login] VITE_LOGIN_AES_KEY / VITE_LOGIN_AES_IV 未配置，将以明文提交密码（仅限本地调试）')
     return word
   }
-  const key = CryptoJS.enc.Utf8.parse(AES_KEY)
-  const iv = CryptoJS.enc.Utf8.parse(AES_IV)
-  const srcs = CryptoJS.enc.Utf8.parse(word)
-  const encrypted = CryptoJS.AES.encrypt(srcs, key, {
-    iv,
-    mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs7,
-  })
-  return encrypted.ciphertext.toString().toUpperCase()
+  return aesEncryptCbcHex(word, AES_KEY, AES_IV)
 }
 
 /** 仅允许站内相对路径，防止 open redirect */
@@ -171,7 +163,7 @@ const loginSubmit = async () => {
     await loginFormRef.value?.validate()
     const params = {
       username: form.username,
-      password: encryptPassword(form.password),
+      password: await encryptPassword(form.password),
       code: form.code,
       uuid: form.uuid,
       name: form.username,

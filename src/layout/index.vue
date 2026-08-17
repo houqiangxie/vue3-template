@@ -56,6 +56,9 @@
           }"
         >
           <TabsView v-if="isMultiTabs" v-model:collapsed="collapsed" />
+          <div class="layout-page-loading">
+            <AppLoadingBar />
+          </div>
           <div class="main-view">
             <div class="main-view-inner">
               <MainView />
@@ -81,6 +84,7 @@
   import { MainView } from './components/Main';
   import { AsideMenu } from './components/Menu';
   import { PageHeader } from './components/Header';
+  import AppLoadingBar from '@/components/common/AppLoadingBar.vue';
   import { websiteConfig } from '@/config/website.config';
 
   const designStore = useDesignSettingStore();
@@ -263,6 +267,14 @@
     flex-direction: column;
     padding-top: 64px; /* 为 fixed header 空出 */
     box-sizing: border-box;
+  }
+
+  /* 标签栏下方：顶部进度条锚点（不占高度，贴在内容区上沿） */
+  .layout-page-loading {
+    position: relative;
+    z-index: 6;
+    height: 0;
+    flex-shrink: 0;
   }
 
   .fluid-header {

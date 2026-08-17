@@ -6,18 +6,16 @@
     :theme-overrides="themeOverrides"
   >
     <component
-      :is="designStore.showThemeEditor ? NThemeEditor : Passthrough"
+      :is="themeShell"
       :key="designStore.showThemeEditor ? designStore.themeEditorEpoch : 'app'"
     >
       <n-dialog-provider>
         <n-message-provider>
           <RegisterMessage />
-          <AppUpdater />
+          <AppUpdater v-if="inElectron" />
           <AppWatermark />
           <AppLockScreen />
-          <n-spin :show="loadingStore.showLoading">
-            <router-view />
-          </n-spin>
+          <router-view />
         </n-message-provider>
       </n-dialog-provider>
     </component>
@@ -25,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent } from 'vue';
+import { computed, defineAsyncComponent, defineComponent } from 'vue';
 import {
   lightTheme,
   darkTheme,
@@ -33,12 +31,11 @@ import {
   dateZhCN,
   enUS,
   dateEnUS,
-  NThemeEditor,
 } from 'naive-ui';
 
-import AppUpdater from '@/components/common/AppUpdater.vue';
 import AppWatermark from '@/components/common/AppWatermark.vue';
 import AppLockScreen from '@/components/common/AppLockScreen.vue';
+import { isElectron } from '@/utils/electron';
 
 import { useAppThemeOverrides } from '@/hooks/setting/useAppThemeOverrides';
 import { useAppThemeEffects } from '@/hooks/setting/useAppThemeEffects';
@@ -50,22 +47,32 @@ const Passthrough = defineComponent({
   },
 });
 
-const loadingStore = useLoadingStore();
+/** Theme editor is heavy — only pull the chunk when enabled. */
+const AsyncThemeEditor = defineAsyncComponent(() =>
+  import('naive-ui').then(m => m.NThemeEditor),
+);
+
+const AppUpdater = defineAsyncComponent(() =>
+  import('@/components/common/AppUpdater.vue'),
+);
+
+const inElectron = isElectron();
+
 const designStore = useDesignSettingStore();
 const projectStore = useProjectSettingStore();
 const { themeOverrides } = useAppThemeOverrides();
 useAppThemeEffects();
 
 const getDarkTheme = computed(() => designStore.darkTheme);
+const themeShell = computed(() =>
+  designStore.showThemeEditor ? AsyncThemeEditor : Passthrough,
+);
 
 const naiveLocale = computed(() => (projectStore.locale === 'en-US' ? enUS : zhCN));
 const naiveDateLocale = computed(() => (projectStore.locale === 'en-US' ? dateEnUS : dateZhCN));
 </script>
 
 <style lang="scss">
-.n-spin-content {
-  opacity: 1 !important;
-}
 .n-scrollbar-rail__scrollbar {
   z-index: 999;
 }
