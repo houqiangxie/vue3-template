@@ -92,18 +92,24 @@
         </div>
         <div class="drawer-setting-item">
           <div class="drawer-setting-item-title">自定义主题色</div>
-          <div class="drawer-setting-item-action color-field">
-            <div class="color-field__swatch">
-              <n-color-picker
-                :value="appThemeColor"
-                :show-alpha="false"
-                :modes="['hex']"
-                size="small"
-                :render-label="renderEmptyColorLabel"
-                @update:value="togTheme"
-              />
-            </div>
-            <span class="color-field__value">{{ appThemeColor }}</span>
+          <div class="drawer-setting-item-action">
+            <n-color-picker
+              :value="appThemeColor"
+              :show-alpha="false"
+              :modes="['hex']"
+              @update:value="togTheme"
+            >
+              <template #trigger="{ value, onClick, ref: triggerRef }">
+                <n-text
+                  :ref="triggerRef"
+                  class="color-field__value"
+                  :style="{ color: value || undefined }"
+                  @click="onClick"
+                >
+                  {{ value }}
+                </n-text>
+              </template>
+            </n-color-picker>
           </div>
         </div>
         <div class="drawer-setting-item">
@@ -305,52 +311,70 @@
         </div>
         <div class="drawer-setting-item" :class="{ 'is-disabled': designStore.darkTheme }">
           <div class="drawer-setting-item-title">顶栏背景色</div>
-          <div class="drawer-setting-item-action color-field">
-            <div class="color-field__swatch">
-              <n-color-picker
-                :value="headerBgColor"
-                :show-alpha="false"
-                :modes="['hex']"
-                size="small"
-                :render-label="renderEmptyColorLabel"
-                :disabled="designStore.darkTheme"
-                @update:value="onHeaderBgColorChange"
-              />
-            </div>
-            <span class="color-field__value">{{ headerBgColor }}</span>
+          <div class="drawer-setting-item-action">
+            <n-color-picker
+              :value="headerBgColor"
+              :show-alpha="false"
+              :modes="['hex']"
+              :disabled="designStore.darkTheme"
+              @update:value="onHeaderBgColorChange"
+            >
+              <template #trigger="{ value, onClick, ref: triggerRef }">
+                <n-text
+                  :ref="triggerRef"
+                  class="color-field__value"
+                  :style="{ color: value || undefined }"
+                  @click="onClick"
+                >
+                  {{ value }}
+                </n-text>
+              </template>
+            </n-color-picker>
           </div>
         </div>
         <div class="drawer-setting-item" :class="{ 'is-disabled': designStore.darkTheme }">
           <div class="drawer-setting-item-title">页签背景色</div>
-          <div class="drawer-setting-item-action color-field">
-            <div class="color-field__swatch">
-              <n-color-picker
-                :value="tabsBgColor"
-                :show-alpha="false"
-                :modes="['hex']"
-                size="small"
-                :render-label="renderEmptyColorLabel"
-                :disabled="designStore.darkTheme || !settingStore.multiTabsSetting.show"
-                @update:value="onTabsBgColorChange"
-              />
-            </div>
-            <span class="color-field__value">{{ tabsBgColor }}</span>
+          <div class="drawer-setting-item-action">
+            <n-color-picker
+              :value="tabsBgColor"
+              :show-alpha="false"
+              :modes="['hex']"
+              :disabled="designStore.darkTheme || !settingStore.multiTabsSetting.show"
+              @update:value="onTabsBgColorChange"
+            >
+              <template #trigger="{ value, onClick, ref: triggerRef }">
+                <n-text
+                  :ref="triggerRef"
+                  class="color-field__value"
+                  :style="{ color: value || undefined }"
+                  @click="onClick"
+                >
+                  {{ value }}
+                </n-text>
+              </template>
+            </n-color-picker>
           </div>
         </div>
         <div class="drawer-setting-item">
           <div class="drawer-setting-item-title">弹窗顶部背景色</div>
-          <div class="drawer-setting-item-action color-field">
-            <div class="color-field__swatch">
-              <n-color-picker
-                :value="modalHeaderBgColor"
-                :show-alpha="false"
-                :modes="['hex']"
-                size="small"
-                :render-label="renderEmptyColorLabel"
-                @update:value="onModalHeaderBgColorChange"
-              />
-            </div>
-            <span class="color-field__value">{{ modalHeaderBgColor }}</span>
+          <div class="drawer-setting-item-action">
+            <n-color-picker
+              :value="modalHeaderBgColor"
+              :show-alpha="false"
+              :modes="['hex']"
+              @update:value="onModalHeaderBgColorChange"
+            >
+              <template #trigger="{ value, onClick, ref: triggerRef }">
+                <n-text
+                  :ref="triggerRef"
+                  class="color-field__value"
+                  :style="{ color: value || undefined }"
+                  @click="onClick"
+                >
+                  {{ value }}
+                </n-text>
+              </template>
+            </n-color-picker>
           </div>
         </div>
 
@@ -594,11 +618,6 @@
         : v;
     }
     return fallback;
-  }
-
-  /** 隐藏选择器内部色值文案，避免与右侧展示重复 */
-  function renderEmptyColorLabel() {
-    return '';
   }
 
   // 修复旧缓存里可能被写成 null/空字符串的颜色，避免选择器空白
@@ -847,47 +866,12 @@
         flex: 0 0 120px;
       }
 
-      .color-field {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        flex: 0 0 auto;
-        max-width: none;
-      }
-
-      .color-field__swatch {
-        width: 28px;
-        height: 28px;
-        flex: 0 0 28px;
-        position: relative;
-
-        :deep(.n-color-picker) {
-          width: 28px !important;
-          min-width: 28px !important;
-          height: 28px !important;
-          border: 1px solid rgba(0, 0, 0, 0.12);
-        }
-
-        :deep(.n-color-picker__fill) {
-          left: 2px;
-          right: 2px;
-          top: 2px;
-          bottom: 2px;
-        }
-
-        :deep(.n-color-picker__value) {
-          display: none;
-        }
-      }
-
       .color-field__value {
-        flex: 0 0 auto;
-        font-size: 12px;
-        line-height: 28px;
+        cursor: pointer;
+        font-size: 13px;
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        color: var(--n-text-color-2, #666);
         white-space: nowrap;
-        user-select: all;
+        user-select: none;
       }
 
       .theme-item {
