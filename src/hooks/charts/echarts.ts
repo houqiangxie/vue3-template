@@ -3,7 +3,7 @@
  * 后台常用：柱 / 线 / 饼 / 散点 / 雷达 / 仪表盘 / 漏斗。
  * 其它类型在业务侧按需追加：
  * ```ts
- * import { echarts } from '@/hooks/charts'
+ * import { echarts } from '@/hooks/charts/echarts'
  * import { HeatmapChart } from 'echarts/charts'
  * import { VisualMapComponent } from 'echarts/components'
  * echarts.use([HeatmapChart, VisualMapComponent])

@@ -337,5 +337,3 @@ export function useEcharts(
     getDataURL,
   }
 }
-
-export type { ECOption, EChartsType }
