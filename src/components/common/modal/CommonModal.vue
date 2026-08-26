@@ -5,6 +5,54 @@ import CommonForm from '../CommonForm.vue'
 import CommonTable from '../table/CommonTable.vue'
 import type { ModalConfig, ModalSection } from './modalSchema'
 
+const settingStore = useProjectSettingStore()
+
+function hexLuminance(hex: string): number {
+  const raw = hex.replace('#', '')
+  if (raw.length !== 6)
+    return 1
+  const r = Number.parseInt(raw.slice(0, 2), 16) / 255
+  const g = Number.parseInt(raw.slice(2, 4), 16) / 255
+  const b = Number.parseInt(raw.slice(4, 6), 16) / 255
+  const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
+}
+
+const modalHeaderBg = computed(() => {
+  const bg = settingStore.modalSetting.headerBgColor
+  if (!bg)
+    return ''
+  const normalized = bg.trim().toLowerCase()
+  // 默认白色：浅色/深色主题均跟随 Naive UI 主题
+  if (normalized === '#fff' || normalized === '#ffffff')
+    return ''
+  return bg
+})
+
+const modalHeaderOnDark = computed(() => {
+  const bg = modalHeaderBg.value
+  return !!bg && hexLuminance(bg) < 0.45
+})
+
+const modalHeaderStyle = computed(() => {
+  const bg = modalHeaderBg.value
+  if (!bg)
+    return undefined
+  return {
+    backgroundColor: bg,
+    color: modalHeaderOnDark.value ? '#fff' : undefined,
+  }
+})
+
+const modalHeaderClass = computed(() => {
+  if (!modalHeaderBg.value)
+    return undefined
+  const classes = ['common-modal-header--custom']
+  if (modalHeaderOnDark.value)
+    classes.push('common-modal-header--dark')
+  return classes.join(' ')
+})
+
 defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<{
@@ -165,6 +213,8 @@ defineExpose({
     :class="attrs.class"
     :title="title"
     :style="[attrs.style, modalStyle]"
+    :header-style="modalHeaderStyle"
+    :header-class="modalHeaderClass"
   >
     <template v-if="slots.header" #header>
       <slot name="header" />
@@ -262,6 +312,7 @@ defineExpose({
   margin-bottom: 12px;
   font-size: 13px;
   color: #999;
+  overflow:hidden;
 }
 
 .common-modal__body {

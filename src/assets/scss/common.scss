@@ -72,3 +72,18 @@
   font-weight: 600;
   color: #1f2937;
 }
+
+/* CommonModal 自定义顶栏：背景需跟随卡片顶部圆角，否则会盖住 modal 倒角 */
+.n-card-header.common-modal-header--custom {
+  border-top-left-radius: var(--n-border-radius);
+  border-top-right-radius: var(--n-border-radius);
+}
+
+/* CommonModal 自定义顶栏：关闭按钮在深色背景上可见 */
+.n-card-header.common-modal-header--dark .n-card-header__close {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.n-card-header.common-modal-header--dark .n-card-header__close:hover {
+  color: #fff;
+}
