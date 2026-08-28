@@ -149,7 +149,7 @@ export const usePermissionStore = defineStore('permission', () => {
         router.addRoute({
           path: '/:pathMatch(.*)*',
           name: catchAllRouteName,
-          redirect: '/',
+          redirect: '/404',
         })
       }
 

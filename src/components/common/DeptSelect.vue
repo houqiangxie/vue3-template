@@ -118,14 +118,14 @@ defineExpose({ reload: loadDepts, treeData })
 
 <template>
   <!-- 左侧筛选面板 -->
-  <aside v-if="mode === 'panel'" class="system-page__aside dept-select-panel">
-    <div v-if="title" class="system-page__aside-title">{{ title }}</div>
+  <aside v-if="mode === 'panel'" class="page-container__aside dept-select-panel">
+    <div v-if="title" class="page-container__aside-title">{{ title }}</div>
     <NInput
       v-model:value="filter"
       clearable
       :placeholder="placeholder"
       size="small"
-      class="system-page__aside-search"
+      class="page-container__aside-search"
     >
       <template #prefix>
         <NIcon size="14"><SearchOutline /></NIcon>

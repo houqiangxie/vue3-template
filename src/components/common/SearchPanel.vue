@@ -1,32 +1,93 @@
 <script setup lang="tsx">
-import type { Component, VNode } from 'vue'
+import type { Component, ComponentPublicInstance, VNode } from 'vue'
 import {
+  computed,
+  defineAsyncComponent,
+  onActivated,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  useSlots,
+  watch,
+} from 'vue'
+import {
+  NAutoComplete,
   NButton,
   NCascader,
+  NCheckboxGroup,
+  NColorPicker,
   NDatePicker,
+  NDynamicInput,
+  NDynamicTags,
   NForm,
   NFormItem,
   NFormItemGi,
   NGrid,
   NIcon,
   NInput,
+  NInputNumber,
+  NInputOtp,
+  NMention,
+  NRadioGroup,
+  NRate,
   NSelect,
+  NSlider,
+  NSwitch,
+  NTimePicker,
+  NTransfer,
   NTreeSelect,
+  NUpload,
+  useMessage,
   useThemeVars,
 } from 'naive-ui'
 import { ChevronDownOutline, ChevronUpOutline, RefreshOutline, SearchOutline } from '@vicons/ionicons5'
+import { sqlSearchLabels } from '@/components/common/SqlSearch/labels'
+import { useSearchPanelCollapse } from '@/hooks/useSearchPanelCollapse'
 import { toSearchConfig, type FieldBind, type FieldRenderFn, type SearchConfigItem, type UnifiedFieldConfig } from './table/fieldSchema'
+
+interface SqlSearchExpose {
+  validate: () => boolean
+  toParams: () => unknown
+  toParamsPruned: () => unknown
+  getSql: () => string
+  getParameterizedSql: () => { sql: string, params: unknown[] }
+  reset: (value?: unknown) => void
+}
 
 const SEARCH_COMPONENTS: Record<string, Component> = {
   NInput,
   NSelect,
   NDatePicker,
+  NTimePicker,
+  NInputNumber,
   NCascader,
   NTreeSelect,
+  NSwitch,
+  NRadioGroup,
+  NCheckboxGroup,
+  NTransfer,
+  NSlider,
+  NColorPicker,
+  NRate,
+  NAutoComplete,
+  NMention,
+  NInputOtp,
+  NDynamicInput,
+  NDynamicTags,
+  NUpload,
+  SqlSearch: defineAsyncComponent(() => import('@/components/common/SqlSearch/index.vue')),
+  DeptSelect: defineAsyncComponent(() => import('@/components/common/DeptSelect.vue')),
+  UserSelect: defineAsyncComponent(() => import('@/components/common/UserSelect.vue')),
+  IconSelect: defineAsyncComponent(() => import('@/components/common/IconSelect.vue')),
+  CronInput: defineAsyncComponent(() => import('@/components/Crontab/CronInput.vue')),
+  UploadFile: defineAsyncComponent(() => import('@/components/common/UploadFile.vue')),
+  ImageCropper: defineAsyncComponent(() => import('@/components/common/ImageCropper.vue')),
+  Editor: defineAsyncComponent(() => import('@/components/common/Editor.vue')),
 }
 
 const COMPONENTS_WITH_CLEARABLE = new Set([
-  'NInput', 'NSelect', 'NDatePicker', 'NCascader', 'NTreeSelect',
+  'NInput', 'NSelect', 'NDatePicker', 'NTimePicker', 'NInputNumber', 'NCascader', 'NTreeSelect',
+  'NAutoComplete', 'NMention', 'NColorPicker', 'DeptSelect', 'IconSelect',
 ])
 
 const warnedComponents = new Set<string>()
@@ -73,6 +134,7 @@ const emit = defineEmits<{
 }>()
 
 const themeVars = useThemeVars()
+const message = useMessage()
 const panelBgStyle = computed(() => ({
   backgroundColor: themeVars.value.cardColor,
 }))
@@ -80,6 +142,7 @@ const panelBgStyle = computed(() => ({
 const slots = useSlots()
 const searchFormRef = ref<InstanceType<typeof NForm>>()
 const fieldsRef = ref<HTMLElement>()
+const sqlSearchRefs = ref<Record<string, SqlSearchExpose>>({})
 
 const resolvedConfig = computed(() => {
   if (props.fields.length)
@@ -286,19 +349,32 @@ function renderFieldControl(item: SearchConfigItem, index?: number) {
 
   const commonProps = {
     class: 'w-full',
-    type: resolveType(item, index),
+    ...(componentName === 'NInput' ? { type: resolveType(item, index) } : {}),
     options: resolveOptions(item, index),
     ...(COMPONENTS_WITH_CLEARABLE.has(componentName) ? { clearable: true } : {}),
     ...pickControlBind(bind),
     ...resolveEvents(item, index),
+    ...(componentName === 'DeptSelect' ? { mode: 'select' } : {}),
   }
 
-  if (componentName === 'NDatePicker') {
+  if (componentName === 'NDatePicker' || componentName === 'NTimePicker') {
     return (
       <Component
         {...commonProps}
         v-model:value={model[`${fieldKey}${dateSuffix}`]}
         v-model:formatted-value={model[fieldKey]}
+      >
+        {renderControlSlots(item.slot, item, fieldKey)}
+      </Component>
+    )
+  }
+
+  if (componentName === 'SqlSearch') {
+    return (
+      <Component
+        {...commonProps}
+        ref={(el: Element | ComponentPublicInstance | null) => setSqlSearchRef(fieldKey, el)}
+        v-model:value={model[fieldKey]}
       >
         {renderControlSlots(item.slot, item, fieldKey)}
       </Component>
@@ -370,16 +446,70 @@ function renderSearchField(item: SearchConfigItem, index: number) {
   )
 }
 
+function setSqlSearchRef(fieldKey: string, el: Element | ComponentPublicInstance | null) {
+  if (el && typeof el === 'object' && 'validate' in el)
+    sqlSearchRefs.value[fieldKey] = el as unknown as SqlSearchExpose
+  else
+    delete sqlSearchRefs.value[fieldKey]
+}
+
+function collectSqlSearchPayload(payload: Record<string, unknown>): boolean {
+  for (const item of visibleFields.value) {
+    if (typeof item.key !== 'string')
+      continue
+    const componentName = resolveComponentName(item)
+    if (componentName !== 'SqlSearch')
+      continue
+
+    const bind = resolveBind(item)
+    const ref = sqlSearchRefs.value[item.key]
+    if (!ref)
+      continue
+
+    const mode = (bind.validationMode as string) ?? 'lenient'
+    const ok = ref.validate()
+    if (!ok && mode === 'strict') {
+      message.warning(sqlSearchLabels.validateFail)
+      return false
+    }
+
+    const paramsKey = (bind.paramsKey as string) || `${item.key}Params`
+    const sqlKey = (bind.sqlKey as string) || `${item.key}Sql`
+    const parameterizedKey = (bind.parameterizedKey as string) || `${item.key}Parameterized`
+
+    const params = mode === 'strict' ? ref.toParams() : (ref.toParams() ?? ref.toParamsPruned())
+    if (params)
+      payload[paramsKey] = params
+
+    const sql = ref.getSql()
+    if (sql)
+      payload[sqlKey] = sql
+
+    const parameterized = ref.getParameterizedSql()
+    if (parameterized.sql)
+      payload[parameterizedKey] = parameterized
+  }
+  return true
+}
+
 function getList() {
-  emit('search', searchModel.value)
+  const payload = { ...searchModel.value }
+  if (!collectSqlSearchPayload(payload))
+    return
+  emit('search', payload)
 }
 
 function resetForm() {
   for (const item of resolvedConfig.value) {
-    if (typeof item.key === 'string')
-      searchModel.value[item.key] = null
-    else
+    if (typeof item.key === 'string') {
+      if (resolveComponentName(item) === 'SqlSearch')
+        sqlSearchRefs.value[item.key]?.reset()
+      else
+        searchModel.value[item.key] = null
+    }
+    else {
       item.key.forEach(k => { searchModel.value[k] = null })
+    }
   }
   emit('resetForm')
   searchModel.value.pageNum = 1

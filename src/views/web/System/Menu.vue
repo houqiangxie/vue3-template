@@ -1,5 +1,5 @@
 <template>
-  <div class="system-page">
+  <div>
     <SearchPanel
       v-model:search-model="searchModel"
       :fields="menuSearchFields"
@@ -16,7 +16,7 @@
     </SearchPanel>
 
     <CommonTable
-      class="system-page__table"
+      class="page-container__table"
       flex-height
       col-setting-key="system-menu"
       :data="tableData"

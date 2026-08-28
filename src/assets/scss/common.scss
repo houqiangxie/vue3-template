@@ -2,28 +2,42 @@
     box-sizing: border-box;
 }
 
-/* System CRUD 页统一布局（SearchPanel + CommonTable） */
-.system-page {
+/*
+ * 页面内容区：挂在 layout（.main-view > .page-container）。
+ * RouterView / Transition / KeepAlive 不产生 DOM，页面根节点即直接子元素。
+ */
+.page-container {
   flex: 1 1 0%;
   height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  width: 100%;
   background: #f5f7fa;
+
+  > * {
+    flex: 1 1 0%;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 }
 
-.system-page__table {
+.page-container__table {
   flex: 1 1 0%;
   min-height: 0;
 }
 
-.system-page--split {
+.page-container--split,
+.page-container > .page-container--split {
   flex-direction: row;
   gap: 0;
 }
 
-.system-page__aside {
+.page-container__aside {
   width: 240px;
   flex-shrink: 0;
   display: flex;
@@ -34,23 +48,23 @@
   overflow: hidden;
 }
 
-.system-page__aside-title {
+.page-container__aside-title {
   margin-bottom: 8px;
   font-size: 14px;
   font-weight: 600;
   color: #333;
 }
 
-.system-page__aside-search {
+.page-container__aside-search {
   margin-bottom: 8px;
 }
 
-.system-page__aside .n-tree {
+.page-container__aside .n-tree {
   flex: 1;
   overflow: auto;
 }
 
-.system-page__main {
+.page-container__main {
   flex: 1 1 0%;
   min-width: 0;
   min-height: 0;
@@ -60,14 +74,14 @@
 }
 
 /* AuthUser / DictData 等子页顶栏 */
-.system-page__sub-header {
+.page-container__sub-header {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 12px 16px 0;
 }
 
-.system-page__sub-header-title {
+.page-container__sub-header-title {
   font-size: 15px;
   font-weight: 600;
   color: #1f2937;

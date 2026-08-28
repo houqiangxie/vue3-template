@@ -1,0 +1,24 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        VITE_baseUrl: /api
+        VITE_BUILD_URL: /
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  # 可选：本地联调时将前端 /api 代理到真实后端
+  # 取消注释并设置 BACKEND_URL 后使用 docker compose --profile api up
+  api-proxy:
+    profiles: ["api"]
+    image: nginx:1.27-alpine
+    volumes:
+      - ./docker/nginx-api-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal:8080}
+    ports:
+      - "8081:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

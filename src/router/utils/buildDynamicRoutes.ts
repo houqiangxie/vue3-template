@@ -145,8 +145,8 @@ export function resolveViewComponent(
   if (isIFrameComponent(raw))
     return () => import('@/views/common/IFrame.vue')
 
-  // 兼容旧菜单：Index 模块目录统一指向 Index/index.vue
-  const normalizedComponent = raw === 'Index' ? 'Index/index' : raw
+  // 首页叶子：Index / index → views/{web|app}/index.vue（勿再映射到已移除的 Index/index）
+  const normalizedComponent = (raw === 'Index' || raw === 'index') ? 'index' : raw
 
   const normalizedBase = baseDir.endsWith('/') ? baseDir : `${baseDir}/`
   const directKey = `${normalizedBase}${normalizedComponent}.vue`
@@ -154,12 +154,22 @@ export function resolveViewComponent(
   if (modules[directKey])
     return modules[directKey]
 
+  // Windows 下 glob key 偶发大小写不一致，做一次不区分大小写精确匹配
+  const directKeyCi = Object.keys(modules).find(
+    k => k.toLowerCase() === directKey.toLowerCase(),
+  )
+  if (directKeyCi)
+    return modules[directKeyCi]
+
   const indexKey = `${normalizedBase}${normalizedComponent}/index.vue`
   if (modules[indexKey])
     return modules[indexKey]
 
   const suffix = `/${normalizedComponent}.vue`
-  const matchedKey = Object.keys(modules).find(k => k.endsWith(suffix))
+  // 优先取 baseDir 下路径最短的匹配，避免 component=index 误命中 System/index.vue
+  const matchedKey = Object.keys(modules)
+    .filter(k => k.startsWith(normalizedBase) && k.endsWith(suffix))
+    .sort((a, b) => a.length - b.length)[0]
   return matchedKey ? modules[matchedKey] : undefined
 }
 

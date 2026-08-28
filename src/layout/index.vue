@@ -60,7 +60,7 @@
             <AppLoadingBar />
           </div>
           <div class="main-view">
-            <div class="main-view-inner">
+            <div class="page-container">
               <MainView />
             </div>
           </div>
@@ -86,6 +86,7 @@
   import { PageHeader } from './components/Header';
   import AppLoadingBar from '@/components/common/AppLoadingBar.vue';
   import { websiteConfig } from '@/config/website.config';
+  import { startAppMessageChannel, stopAppMessageChannel } from '@/utils/appWebSocket';
 
   const designStore = useDesignSettingStore();
   const settingStore = useProjectSettingStore();
@@ -180,10 +181,12 @@
   onMounted(() => {
     checkMobileMode();
     window.addEventListener('resize', watchWidth);
+    //startAppMessageChannel();
   });
 
   onUnmounted(() => {
     window.removeEventListener('resize', watchWidth);
+    stopAppMessageChannel();
   });
 </script>
 
@@ -289,15 +292,6 @@
     overflow: hidden;
     padding: 10px;
     box-sizing: border-box;
-  }
-
-  .main-view-inner {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    width: 100%;
   }
 
   .layout-footer {

@@ -16,7 +16,6 @@ const {
   crumbsSetting,
   watermark,
   lockScreen,
-  permissionMode,
   isPageAnimate,
   pageAnimateType,
 } = projectSetting;
@@ -83,7 +82,6 @@ interface ProjectSettingState {
   crumbsSetting: ICrumbsSetting;
   watermark: IWatermarkSetting;
   lockScreen: ILockScreenSetting;
-  permissionMode: string;
   isPageAnimate: boolean;
   pageAnimateType: string;
   isMobile: boolean;
@@ -105,7 +103,6 @@ function cloneDefaults(): PersistedState {
     crumbsSetting: { ...crumbsSetting },
     watermark: { ...watermark },
     lockScreen: { ...lockScreen },
-    permissionMode,
     isPageAnimate,
     pageAnimateType,
   };
@@ -178,7 +175,6 @@ export const useProjectSettingStore = defineStore('app-project-setting', {
       crumbsSetting: { ...defaults.crumbsSetting, ...(persisted.crumbsSetting ?? {}) },
       watermark: { ...defaults.watermark, ...(persisted.watermark ?? {}) },
       lockScreen: { ...defaults.lockScreen, ...(persisted.lockScreen ?? {}) },
-      permissionMode: persisted.permissionMode ?? defaults.permissionMode,
       isPageAnimate: persisted.isPageAnimate ?? defaults.isPageAnimate,
       pageAnimateType: persisted.pageAnimateType ?? defaults.pageAnimateType,
       isMobile: false,
@@ -262,7 +258,6 @@ export const useProjectSettingStore = defineStore('app-project-setting', {
       if (data.crumbsSetting) this.crumbsSetting = { ...defaults.crumbsSetting, ...data.crumbsSetting };
       if (data.watermark) this.watermark = { ...defaults.watermark, ...data.watermark };
       if (data.lockScreen) this.lockScreen = { ...defaults.lockScreen, ...data.lockScreen };
-      if (data.permissionMode != null) this.permissionMode = data.permissionMode;
       if (data.isPageAnimate != null) this.isPageAnimate = data.isPageAnimate;
       if (data.pageAnimateType != null) this.pageAnimateType = data.pageAnimateType;
       this._persist();
@@ -285,7 +280,6 @@ export const useProjectSettingStore = defineStore('app-project-setting', {
       this.crumbsSetting = { ...defaults.crumbsSetting };
       this.watermark = { ...defaults.watermark };
       this.lockScreen = { ...defaults.lockScreen };
-      this.permissionMode = defaults.permissionMode;
       this.isPageAnimate = defaults.isPageAnimate;
       this.pageAnimateType = defaults.pageAnimateType;
       this._persist();

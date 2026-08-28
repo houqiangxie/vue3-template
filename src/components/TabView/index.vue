@@ -149,6 +149,17 @@ watch(
 .tab-view__pane {
   height: 100%;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tab-view__pane > :deep(*) {
+  flex: 1 1 0%;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 </style>

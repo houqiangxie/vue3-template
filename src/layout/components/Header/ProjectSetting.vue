@@ -549,17 +549,6 @@
           />
         </div>
         <div class="drawer-setting-item">
-          <div class="drawer-setting-item-title">权限模式</div>
-          <div class="drawer-setting-item-select">
-            <n-select
-              v-model:value="settingStore.permissionMode"
-              :options="permissionOptions"
-              size="small"
-            />
-          </div>
-        </div>
-
-        <div class="drawer-setting-item">
           <n-alert type="warning" :show-icon="false">
             该功能主要用于实时预览各种布局效果，更多完整配置在 projectSetting.ts 中设置
           </n-alert>
@@ -671,11 +660,6 @@
   const localeOptions = [
     { label: '简体中文', value: 'zh-CN' },
     { label: 'English', value: 'en-US' },
-  ];
-
-  const permissionOptions = [
-    { label: '前端固定', value: 'FIXED' },
-    { label: '后端动态', value: 'BACKEND' },
   ];
 
   type NavTheme = 'dark' | 'light' | 'header-dark';

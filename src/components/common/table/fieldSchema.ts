@@ -2,6 +2,7 @@ import type { Component, VNode } from 'vue'
 import type { DataTableColumns, FormItemRule } from 'naive-ui'
 import { NTag } from 'naive-ui'
 import { h } from 'vue'
+import { createDefaultSqlSearchValue } from '@/components/common/SqlSearch/utils'
 import TableAction from './TableAction.vue'
 import type { TableActionsResolver } from './types'
 
@@ -15,12 +16,35 @@ export type HiddenValue = boolean | ((model: Record<string, unknown>) => boolean
 export type VisibleValue = HiddenValue
 
 export type NaiveComponentName =
-  | 'NInput' | 'NSelect' | 'NDatePicker' | 'NUpload' | 'NInputNumber'
-  | 'NDynamicInput' | 'NSwitch' | 'NCheckboxGroup' | 'NRadioGroup'
+  | 'NInput' | 'NSelect' | 'NDatePicker' | 'NTimePicker' | 'NUpload' | 'NInputNumber'
+  | 'NDynamicInput' | 'NDynamicTags' | 'NSwitch' | 'NCheckboxGroup' | 'NRadioGroup'
   | 'NRadio' | 'NRadioButton' | 'NCheckbox' | 'NTransfer' | 'NCascader'
   | 'NTreeSelect' | 'NSlider' | 'NColorPicker' | 'NRate'
+  | 'NAutoComplete' | 'NMention' | 'NInputOtp'
   | 'Checkbox' | 'Radio' | 'RadioButton'
-  | 'Editor' | 'IconSelect' | 'UserSelect' | 'CronInput' | 'UploadFile' | 'file'
+  | 'Editor' | 'IconSelect' | 'UserSelect' | 'DeptSelect'
+  | 'CronInput' | 'SqlSearch' | 'UploadFile' | 'ImageCropper' | 'file'
+
+/** 表单值为数组的组件（无显式 defaultValue 时使用 []） */
+export const ARRAY_VALUE_COMPONENTS = new Set<string>([
+  'NDynamicInput',
+  'NDynamicTags',
+  'NCheckboxGroup',
+  'NTransfer',
+  'UploadFile',
+  'file',
+])
+
+export function resolveComponentDefaultValue(
+  component?: NaiveComponentName | string | Array<NaiveComponentName | string>,
+): unknown | undefined {
+  const name = Array.isArray(component) ? String(component[0]) : String(component || '')
+  if (ARRAY_VALUE_COMPONENTS.has(name))
+    return []
+  if (name === 'SqlSearch')
+    return createDefaultSqlSearchValue()
+  return undefined
+}
 
 export interface FieldOption {
   label: string
@@ -60,7 +84,7 @@ export interface FieldBind {
   message?: string
   label?: string
   title?: string
-  pattern?: RegExp
+  pattern?: RegExp | string
   patternType?: string
   fileType?: FormItemRule['type']
   extendRule?: FormItemRule
@@ -79,8 +103,16 @@ export interface FieldBind {
   [key: string]: unknown
 }
 
+/** 设计器导出的 form 表达式字段（defineFields 时会编译为函数） */
+export interface FormFieldDesignExprs {
+  visibleExpr?: string
+  hiddenExpr?: string
+  renderExpr?: string
+  onChangeExpr?: string
+}
+
 /** 表单场景扩展（CommonForm） */
-export interface FormFieldConfig {
+export interface FormFieldConfig extends FormFieldDesignExprs {
   required?: boolean | boolean[]
   hidden?: HiddenValue
   visible?: HiddenValue
@@ -88,6 +120,8 @@ export interface FormFieldConfig {
   notValidate?: boolean
   defaultValue?: unknown
   span?: number
+  /** 栅格起始列（1 起），与 span 配合定位 */
+  colStart?: number
   class?: string
   showFeedback?: boolean
   cols?: number
@@ -137,10 +171,14 @@ export interface TableFieldConfig {
    * 有自定义 render 且无法从 format 推导时建议提供
    */
   exportText?: (value: unknown, row: Record<string, unknown>) => string
+  /** 设计器导出的导出文案模板，defineFields 时编译为 exportText */
+  exportTextValue?: string
   /** 内置格式化：option 映射 / date / datetime */
   format?: 'option' | 'date' | 'datetime' | ((value: unknown, row: Record<string, unknown>) => string)
   /** option 映射时的颜色 */
   tagType?: (value: unknown) => 'default' | 'error' | 'primary' | 'info' | 'success' | 'warning'
+  /** 设计器导出的固定 tag 类型，defineFields 时编译为 tagType */
+  tagTypeValue?: 'default' | 'error' | 'primary' | 'info' | 'success' | 'warning' | string
 }
 
 /**
@@ -165,6 +203,18 @@ export interface UnifiedFieldConfig {
   form?: false | FormFieldConfig
   search?: false | SearchFieldConfig
   table?: false | TableFieldConfig
+  /** 设计器字典类型提示；运行时需自行 useDict 填充 options，或导出前先加载选项 */
+  dictType?: string
+  /** 设计器可视化联动规则（仅文档/往返用，运行时以 form.visibleExpr 为准） */
+  visibilityRule?: unknown
+  /**
+   * form === false 时的联动表达式往返字段（设计器用）
+   * form 启用时应写在 form.visibleExpr 等字段中
+   */
+  visibleExpr?: string
+  hiddenExpr?: string
+  renderExpr?: string
+  onChangeExpr?: string
 }
 
 /** CommonForm 直接传入的表单 config 项（与 toFormConfig 输出一致） */
@@ -192,6 +242,8 @@ export type FormConfigItem = {
   showFeedback?: boolean
   /** 占几列，如 2 表示跨两列 */
   span?: number
+  /** 栅格起始列（1 起） */
+  colStart?: number
 }
 
 /** @deprecated 请使用 FormConfigItem */
@@ -265,6 +317,7 @@ export function toFormConfig(fields: UnifiedFieldConfig[]): FormConfigItem[] {
         notValidate: form.notValidate,
         defaultValue: form.defaultValue,
         span: form.span,
+        colStart: form.colStart,
         class: form.class,
         showFeedback: form.showFeedback,
         cols: form.cols,
@@ -426,6 +479,36 @@ export function withExportColumnFlags(cols: DataTableColumns): DataTableColumns 
   }) as DataTableColumns
 }
 
+/** toTableColumns / FormBuilder 共用：已显式处理的 table 键，其余透传为列扩展 */
+export const TABLE_COLUMN_HANDLED_KEYS = new Set([
+  'width',
+  'minWidth',
+  'maxWidth',
+  'fixed',
+  'align',
+  'sortable',
+  'ellipsis',
+  'allowExport',
+  'render',
+  'actions',
+  'actionsMax',
+  'format',
+  'tagType',
+  'exportText',
+  'tagTypeValue',
+  'exportTextValue',
+])
+
+function pickExtraTableColumnProps(table: TableFieldConfig): Record<string, unknown> {
+  const extra: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(table)) {
+    if (TABLE_COLUMN_HANDLED_KEYS.has(key) || value == null || typeof value === 'function')
+      continue
+    extra[key] = value
+  }
+  return extra
+}
+
 /** 转为 Naive UI DataTable columns */
 export function toTableColumns(fields: UnifiedFieldConfig[]): DataTableColumns {
   return fields
@@ -446,6 +529,7 @@ export function toTableColumns(fields: UnifiedFieldConfig[]): DataTableColumns {
         sorter: table.sortable ? 'default' : undefined,
         ellipsis: table.ellipsis,
         allowExport: table.allowExport ?? !isActions,
+        ...pickExtraTableColumnProps(table),
         render: (row: Record<string, unknown>, index: number) => {
           if (table.render)
             return table.render(row, index)
@@ -471,7 +555,7 @@ export function extractSearchDefaults(fields: UnifiedFieldConfig[]): Record<stri
     const search = field.search === false ? {} : (field.search ?? {})
     const bind = mergeBind(field.bind, search.bind) as FieldBind | FieldBind[] | undefined
     const bindDefault = Array.isArray(bind) ? bind[0]?.defaultValue : bind?.defaultValue
-    const defaultValue = search.defaultValue ?? bindDefault
+    const defaultValue = search.defaultValue ?? bindDefault ?? resolveArrayAwareDefault(field.component, bind)
 
     if (Array.isArray(field.key)) {
       field.key.forEach((k, i) => {
@@ -485,6 +569,28 @@ export function extractSearchDefaults(fields: UnifiedFieldConfig[]): Record<stri
     }
   }
   return defaults
+}
+
+function resolveMergedBindMultiple(bind: FieldBind | FieldBind[] | undefined): boolean | undefined {
+  const single = Array.isArray(bind) ? bind[0] : bind
+  return single?.multiple
+}
+
+/** 多选类组件默认 []（含 UserSelect 默认多选） */
+function resolveArrayAwareDefault(
+  component: UnifiedFieldConfig['component'],
+  bind: FieldBind | FieldBind[] | undefined,
+): unknown | undefined {
+  const base = resolveComponentDefaultValue(component)
+  if (base !== undefined)
+    return base
+  const name = Array.isArray(component) ? String(component[0]) : String(component || '')
+  const multiple = resolveMergedBindMultiple(bind)
+  if (multiple === true)
+    return []
+  if (name === 'UserSelect' && multiple !== false)
+    return []
+  return undefined
 }
 
 /** 从统一配置提取表单默认值 */
@@ -496,7 +602,7 @@ export function extractFormDefaults(fields: UnifiedFieldConfig[]): Record<string
     const form = field.form === false ? {} : (field.form ?? {})
     const bind = mergeBind(field.bind, form.bind) as FieldBind | FieldBind[] | undefined
     const bindDefault = Array.isArray(bind) ? bind[0]?.defaultValue : bind?.defaultValue
-    const defaultValue = form.defaultValue ?? bindDefault
+    const defaultValue = form.defaultValue ?? bindDefault ?? resolveArrayAwareDefault(field.component, bind)
 
     if (Array.isArray(field.key)) {
       field.key.forEach((k, i) => {
@@ -512,7 +618,92 @@ export function extractFormDefaults(fields: UnifiedFieldConfig[]): Record<string
   return defaults
 }
 
-/** 创建页面级统一字段配置（便于 IDE 提示） */
+function compileDesignExpr(
+  expr: string,
+  fallback = false,
+): (model: Record<string, unknown>) => boolean {
+  const trimmed = expr.trim()
+  if (!trimmed)
+    return () => true
+  try {
+    // eslint-disable-next-line no-new-func
+    return new Function('model', `return (${trimmed})`) as (model: Record<string, unknown>) => boolean
+  }
+  catch {
+    return () => fallback
+  }
+}
+
+function hydrateFieldDesignExprs(field: UnifiedFieldConfig): UnifiedFieldConfig {
+  if (field.bind && typeof field.bind === 'object' && !Array.isArray(field.bind)) {
+    const bind = { ...field.bind } as FieldBind
+    if (typeof bind.pattern === 'string' && bind.pattern) {
+      try {
+        bind.pattern = new RegExp(bind.pattern)
+      }
+      catch {
+        delete bind.pattern
+      }
+    }
+    field.bind = bind
+  }
+
+  if (field.form != null && field.form !== false) {
+    const form = { ...field.form }
+    if (form.visibleExpr && typeof form.visible !== 'function') {
+      form.visible = compileDesignExpr(form.visibleExpr, false)
+      delete form.visibleExpr
+    }
+    if (form.hiddenExpr && typeof form.hidden !== 'function') {
+      form.hidden = compileDesignExpr(form.hiddenExpr, false)
+      delete form.hiddenExpr
+    }
+    if (form.renderExpr?.trim() && typeof form.render !== 'function') {
+      try {
+        // eslint-disable-next-line no-new-func
+        form.render = new Function('item', 'model', 'curData', `return (${form.renderExpr})`) as FormFieldConfig['render']
+      }
+      catch {
+        // ignore
+      }
+      delete form.renderExpr
+    }
+    if (form.onChangeExpr?.trim()) {
+      try {
+        // eslint-disable-next-line no-new-func
+        const handler = new Function('value', 'model', 'item', form.onChangeExpr) as (...args: unknown[]) => void
+        form.on = { ...(form.on || {}), change: handler }
+      }
+      catch {
+        // ignore
+      }
+      delete form.onChangeExpr
+    }
+    field.form = form
+  }
+
+  if (field.table != null && field.table !== false) {
+    const table = { ...field.table }
+    if (table.tagTypeValue && typeof table.tagType !== 'function') {
+      const type = table.tagTypeValue as 'default' | 'error' | 'primary' | 'info' | 'success' | 'warning'
+      table.tagType = () => type
+      delete table.tagTypeValue
+    }
+    if (table.exportTextValue && typeof table.exportText !== 'function') {
+      const template = table.exportTextValue
+      table.exportText = (value: unknown) => template.replace(/\{value\}/g, String(value ?? ''))
+      delete table.exportTextValue
+    }
+    field.table = table
+  }
+
+  return field
+}
+
+/**
+ * 创建页面级统一字段配置（便于 IDE 提示）
+ * 会将设计器导出的 visibleExpr / tagTypeValue 等编译为运行时函数
+ */
 export function defineFields(fields: UnifiedFieldConfig[]) {
-  return fields
+  return fields.map(field => hydrateFieldDesignExprs({ ...field }))
 }

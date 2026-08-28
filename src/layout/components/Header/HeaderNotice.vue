@@ -3,11 +3,14 @@ import { BellOutlined } from '@vicons/antd'
 import { NBadge, NEmpty, NIcon, NList, NListItem, NPopover, NSpin, NTag, NThing } from 'naive-ui'
 import { listNotice } from '@/api/system/notice'
 import type { SysNotice } from '@/api/system/types'
+import { useNotificationStore } from '@/store/notification'
 
 const router = useRouter()
+const notificationStore = useNotificationStore()
 const loading = ref(false)
 const notices = ref<SysNotice[]>([])
-const unread = computed(() => notices.value.length)
+
+const unread = computed(() => notificationStore.unreadCount + notices.value.length)
 
 async function loadNotices() {
   loading.value = true
@@ -24,8 +27,10 @@ async function loadNotices() {
 }
 
 function onShow(show: boolean) {
-  if (show)
+  if (show) {
     loadNotices()
+    notificationStore.markAllRead()
+  }
 }
 
 function goNoticePage() {
@@ -34,8 +39,16 @@ function goNoticePage() {
   })
 }
 
-function typeLabel(type: SysNotice['noticeType']) {
+function typeLabel(type: SysNotice['noticeType'] | string) {
   return type === '2' ? '公告' : '通知'
+}
+
+function wsTypeLabel(type: string) {
+  if (type === 'warning')
+    return '预警'
+  if (type === 'system')
+    return '系统'
+  return '推送'
 }
 </script>
 
@@ -61,10 +74,28 @@ function typeLabel(type: SysNotice['noticeType']) {
       </template>
 
       <div class="header-notice">
-        <div class="header-notice__title">通知公告</div>
+        <div class="header-notice__title">
+          通知公告
+          <NTag v-if="notificationStore.connected" size="small" :bordered="false" type="success">
+            {{ notificationStore.transport === 'ws' ? '实时' : '轮询' }}
+          </NTag>
+        </div>
         <NSpin :show="loading">
-          <NList v-if="notices.length" hoverable clickable>
-            <NListItem v-for="item in notices" :key="item.noticeId" @click="goNoticePage">
+          <NList v-if="notificationStore.messages.length || notices.length" hoverable clickable>
+            <NListItem
+              v-for="item in notificationStore.messages"
+              :key="item.id"
+              @click="notificationStore.markRead(item.id)"
+            >
+              <NThing :title="item.title" :description="item.content || item.time">
+                <template #header-extra>
+                  <NTag size="small" :type="item.type === 'warning' ? 'warning' : 'info'" :bordered="false">
+                    {{ wsTypeLabel(item.type) }}
+                  </NTag>
+                </template>
+              </NThing>
+            </NListItem>
+            <NListItem v-for="item in notices" :key="`notice-${item.noticeId}`" @click="goNoticePage">
               <NThing :title="item.noticeTitle" :description="item.createTime">
                 <template #header-extra>
                   <NTag size="small" :type="item.noticeType === '2' ? 'warning' : 'info'" :bordered="false">
@@ -107,6 +138,9 @@ function typeLabel(type: SysNotice['noticeType']) {
 }
 
 .header-notice__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 4px 4px 10px;
   font-size: 14px;
   font-weight: 600;

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { fileViewerRenderers } from '@file-viewer/vite-plugin';
 import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
+import * as vueCompiler from 'vue/compiler-sfc';
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
@@ -90,12 +91,14 @@ export default ({ command, mode }: ConfigEnv) => {
         }
       },
     },
-    vue(),
+    vue({ compiler: vueCompiler }),
     vueJsx(),
-    // 按需复制预览资源，排除 ppt（CJK 字体约 16MB）；路径已含 vendor/，勿再设 baseDir
+    // 按需装配 renderer；排除 ppt（CJK 字体约 16MB）
+    // public/vendor 已入库，dev 不再每次全量 copy（Windows 易 EBUSY / 启动慢）
+    // 升级 @file-viewer 后若资源有变：临时改 mode: 'both' 跑一次 dev，或 mode 保持 build 后跑一次 prod
     fileViewerRenderers({
       formats: ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv'],
-      copyAssets: true,
+      copyAssets: { mode: 'build' },
       chunkStrategy: 'renderer',
     }),
     Components({
@@ -181,7 +184,12 @@ export default ({ command, mode }: ConfigEnv) => {
       host: process.env.VITE_DEV_HOST || '0.0.0.0',
       watch: {
         // Windows EBUSY on large/locked files under public/vendor (fonts, pdf assets)
-        ignored: ['**/public/vendor/**'],
+        // auto-import / components dts writes can race plugin-vue compiler init on HMR
+        ignored: [
+          '**/public/vendor/**',
+          '**/src/auto-import.d.ts',
+          '**/src/components.d.ts',
+        ],
       },
       proxy: useMock
         ? undefined

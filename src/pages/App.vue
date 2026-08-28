@@ -4,6 +4,7 @@
     :date-locale="naiveDateLocale"
     :theme="getDarkTheme ? darkTheme : lightTheme"
     :theme-overrides="themeOverrides"
+    :hljs="hljs"
   >
     <component
       :is="themeShell"
@@ -11,10 +12,12 @@
     >
       <n-dialog-provider>
         <n-message-provider>
-          <RegisterMessage />
-          <AppWatermark />
-          <AppLockScreen />
-          <router-view />
+          <n-notification-provider>
+            <RegisterMessage />
+            <AppWatermark />
+            <AppLockScreen />
+            <router-view />
+          </n-notification-provider>
         </n-message-provider>
       </n-dialog-provider>
     </component>
@@ -34,6 +37,7 @@ import {
 
 import AppWatermark from '@/components/common/AppWatermark.vue';
 import AppLockScreen from '@/components/common/AppLockScreen.vue';
+import { hljs } from '@/utils/hljs';
 
 import { useAppThemeOverrides } from '@/hooks/setting/useAppThemeOverrides';
 import { useAppThemeEffects } from '@/hooks/setting/useAppThemeEffects';

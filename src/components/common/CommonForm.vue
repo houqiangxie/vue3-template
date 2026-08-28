@@ -2,6 +2,8 @@
 import type { Component, VNode } from 'vue'
 import type { FormItemRule } from 'naive-ui'
 import {
+  ARRAY_VALUE_COMPONENTS,
+  resolveComponentDefaultValue,
   toFormConfig,
   type FieldBind,
   type FormConfigItem,
@@ -11,6 +13,7 @@ import {
   type VisibleValue,
 } from './table/fieldSchema'
 import {
+  NAutoComplete,
   NCheckbox,
   NCheckboxGroup,
   NColorPicker,
@@ -18,12 +21,15 @@ import {
   NDatePicker,
   NCascader,
   NDynamicInput,
+  NDynamicTags,
   NEllipsis,
   NFormItem,
   NGrid,
   NGridItem,
   NInput,
   NInputNumber,
+  NInputOtp,
+  NMention,
   NRadio,
   NRadioButton,
   NRadioGroup,
@@ -31,6 +37,7 @@ import {
   NSelect,
   NSlider,
   NSwitch,
+  NTimePicker,
   NTransfer,
   NTreeSelect,
   NUpload,
@@ -125,9 +132,11 @@ const NAIVE_COMPONENTS: Record<string, Component> = {
   NInput,
   NSelect,
   NDatePicker,
+  NTimePicker,
   NUpload,
   NInputNumber,
   NDynamicInput,
+  NDynamicTags,
   NSwitch,
   NCheckboxGroup,
   NRadioGroup,
@@ -140,20 +149,29 @@ const NAIVE_COMPONENTS: Record<string, Component> = {
   NSlider,
   NColorPicker,
   NRate,
+  NAutoComplete,
+  NMention,
+  NInputOtp,
 }
 
 const CUSTOM_COMPONENTS: Record<string, Component> = {
   file: defineAsyncComponent(() => import('@/components/common/UploadFile.vue')),
   UploadFile: defineAsyncComponent(() => import('@/components/common/UploadFile.vue')),
+  ImageCropper: defineAsyncComponent(() => import('@/components/common/ImageCropper.vue')),
   Editor: defineAsyncComponent(() => import('@/components/common/Editor.vue')),
   IconSelect: defineAsyncComponent(() => import('@/components/common/IconSelect.vue')),
   UserSelect: defineAsyncComponent(() => import('@/components/common/UserSelect.vue')),
+  DeptSelect: defineAsyncComponent(() => import('@/components/common/DeptSelect.vue')),
   CronInput: defineAsyncComponent(() => import('@/components/Crontab/CronInput.vue')),
+  SqlSearch: defineAsyncComponent(() => import('@/components/common/SqlSearch/index.vue')),
 }
 
 const COMPONENTS_WITH_CLEARABLE = new Set([
-  'NInput', 'NSelect', 'NDatePicker', 'NInputNumber', 'NCascader', 'NTreeSelect',
+  'NInput', 'NSelect', 'NDatePicker', 'NTimePicker', 'NInputNumber', 'NCascader', 'NTreeSelect',
+  'NAutoComplete', 'NMention', 'NColorPicker', 'DeptSelect', 'IconSelect',
 ])
+
+const COMPONENTS_WITH_TYPE = new Set(['NInput'])
 
 const BIND_META_KEYS = new Set([
   'required', 'hidden', 'visible', 'hiddenClear', 'notValidate', 'defaultValue', 'message', 'label', 'title',
@@ -317,6 +335,10 @@ function clearFieldValue(fieldKey: string, item: FormConfigItem, index?: number)
     delete model[`${fieldKey}${dateSuffix}`]
     return
   }
+  if (ARRAY_VALUE_COMPONENTS.has(componentName)) {
+    model[fieldKey] = []
+    return
+  }
   model[fieldKey] = undefined
 }
 
@@ -392,6 +414,8 @@ function inferFieldType(item: FormConfigItem, value: unknown, componentName: str
   if (bind.multiple)
     return 'array'
   switch (componentName) {
+    case 'NDynamicInput':
+    case 'NDynamicTags':
     case 'NCheckboxGroup':
     case 'NTransfer':
     case 'UploadFile':
@@ -399,6 +423,8 @@ function inferFieldType(item: FormConfigItem, value: unknown, componentName: str
       return 'array'
     case 'UserSelect':
       return bind.multiple === false ? 'string' : 'array'
+    case 'DeptSelect':
+      return bind.multiple ? 'array' : 'number'
     case 'NRate':
     case 'NInputNumber':
     case 'NSlider':
@@ -468,14 +494,16 @@ function initDefaultValues(items: FormConfigItem[]) {
     if (Array.isArray(item.key)) {
       item.key.forEach((key, index) => {
         const bind = resolveBind(item, index)
-        const defaultValue = bind.defaultValue ?? item.defaultValue
+        const componentName = resolveComponentName(item, index)
+        const defaultValue = bind.defaultValue ?? item.defaultValue ?? resolveComponentDefaultValue(componentName)
         if (defaultValue !== undefined && model[key] === undefined)
           model[key] = defaultValue
       })
     }
     else {
       const bind = resolveBind(item)
-      const defaultValue = bind.defaultValue ?? item.defaultValue
+      const componentName = resolveComponentName(item)
+      const defaultValue = bind.defaultValue ?? item.defaultValue ?? resolveComponentDefaultValue(componentName)
       if (defaultValue !== undefined && model[item.key] === undefined)
         model[item.key] = defaultValue
     }
@@ -489,9 +517,16 @@ function hasCustomRender(item: FormConfigItem, bind: FieldBind) {
 }
 
 function fieldGridStyle(item: FormConfigItem) {
+  const span = item.span ? Math.min(item.span, props.cols) : 1
+  const colStart = item.colStart
+  if (colStart != null && colStart >= 1) {
+    const start = Math.min(colStart, props.cols)
+    const effectiveSpan = Math.min(span, props.cols - start + 1)
+    return { gridColumn: `${start} / span ${effectiveSpan}` }
+  }
   if (!item.span || item.span <= 1)
     return undefined
-  return { gridColumn: `span ${Math.min(item.span, props.cols)}` }
+  return { gridColumn: `span ${span}` }
 }
 
 function renderLabel(item: FormConfigItem, bind: FieldBind) {
@@ -591,16 +626,18 @@ function renderFieldControl(item: FormConfigItem, index?: number) {
 
   const commonProps = {
     class: 'w-full',
-    type,
+    ...(COMPONENTS_WITH_TYPE.has(componentName) ? { type } : {}),
     options,
     ...(props.size ? { size: props.size } : {}),
     ...(COMPONENTS_WITH_CLEARABLE.has(componentName) ? { clearable: true } : {}),
     ...pickControlBind(bind),
     ...controlState,
     ...events,
+    // 表单内强制下拉模式，避免误用左侧 panel
+    ...(componentName === 'DeptSelect' ? { mode: 'select' } : {}),
   }
 
-  if (componentName === 'NDatePicker') {
+  if (componentName === 'NDatePicker' || componentName === 'NTimePicker') {
     return (
       <Component
         {...commonProps}

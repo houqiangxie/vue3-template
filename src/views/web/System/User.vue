@@ -1,12 +1,12 @@
-﻿<template>
-  <div class="system-page system-page--split">
+<template>
+  <div class="page-container--split">
     <DeptSelect
       v-model:value="selectedDeptId"
       mode="panel"
       @change="onDeptChange"
     />
 
-    <div class="system-page__main">
+    <div class="page-container__main">
       <SearchPanel
         v-model:search-model="searchModel"
         :fields="searchFields"
@@ -44,7 +44,7 @@
       </SearchPanel>
 
       <CommonTable
-        class="system-page__table"
+        class="page-container__table"
         flex-height
         selectable
         col-setting-key="system-user"

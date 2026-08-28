@@ -1,5 +1,5 @@
 import type { MenuItem } from '@/router/utils/types'
-import { get } from '@/utils/fetch'
+import { get, post } from '@/utils/fetch'
 
 export interface UserInfo {
   userId: number
@@ -22,4 +22,15 @@ export function getInfo() {
 /** 获取当前用户动态路由菜单 */
 export function getRouters() {
   return get<MenuItem[]>('/getRouters')
+}
+
+export interface RefreshTokenResult {
+  token: string
+  refreshToken?: string
+  expiresIn?: number
+}
+
+/** 使用 refreshToken 换取新的 access token */
+export function refreshToken(refreshTokenValue: string) {
+  return post<RefreshTokenResult>('/auth/refresh', { refreshToken: refreshTokenValue })
 }

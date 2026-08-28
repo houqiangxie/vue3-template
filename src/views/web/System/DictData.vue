@@ -1,13 +1,13 @@
-﻿<template>
-  <div class="system-page">
-    <div class="system-page__sub-header">
+<template>
+  <div>
+    <div class="page-container__sub-header">
       <n-button quaternary @click="goBack">
         <template #icon>
           <n-icon size="16"><ArrowBackOutline /></n-icon>
         </template>
         返回
       </n-button>
-      <span class="system-page__sub-header-title">
+      <span class="page-container__sub-header-title">
         字典数据
         <template v-if="dictName"> - {{ dictName }}</template>
         <template v-else-if="currentDictType"> - {{ currentDictType }}</template>
@@ -39,7 +39,7 @@
     </SearchPanel>
 
     <CommonTable
-      class="system-page__table"
+      class="page-container__table"
       flex-height
       selectable
       col-setting-key="system-dict-data"

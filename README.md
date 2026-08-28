@@ -136,9 +136,18 @@ cp .env.example .env.dev.local
 | `VITE_BUILD_URL`                           | 部署 publicPath / base        |
 | `VITE_LOGIN_AES_KEY` / `VITE_LOGIN_AES_IV` | 登录密码 AES（本地 `.env.*.local`） |
 | `VITE_ALLOW_QUERY_TOKEN`                   | 是否允许 URL `?token=`（生产默认关闭）  |
+| `VITE_WS_URL`                              | WebSocket 地址；`false` 关闭 WS       |
 
 
 完整本地覆盖示例见 `.env.example`。
+
+## 部署
+
+Docker 与 Nginx 部署说明见 **[DEPLOY.md](./DEPLOY.md)**，包含：
+
+- 多阶段 Docker 构建与 `docker compose up`
+- Web / App 双入口 Nginx 配置
+- API 网关、WebSocket、Token 刷新对接说明
 
 ## Electron
 

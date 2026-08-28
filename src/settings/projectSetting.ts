@@ -66,8 +66,6 @@ const setting = {
     // 空闲超时（分钟）
     timeout: 30,
   },
-  // 权限模式 FIXED | BACKEND
-  permissionMode: 'FIXED',
   // 是否开启路由动画
   isPageAnimate: true,
   // 路由动画类型

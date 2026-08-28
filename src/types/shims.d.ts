@@ -22,11 +22,12 @@ declare module 'vue-router' {
 }
 
 // 扩展全局 window（Naive UI 脱离上下文的 API）
-import type { MessageApi, DialogApi } from 'naive-ui';
+import type { MessageApi, DialogApi, NotificationApi } from 'naive-ui';
 declare global {
   interface Window {
     $message: MessageApi;
     $dialog: DialogApi;
+    $notification: NotificationApi;
   }
 }
 

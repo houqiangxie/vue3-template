@@ -7,9 +7,19 @@ export default class Socket {
     url: string
     data?: unknown
     callback?: (data: unknown) => void
+    onOpen?: () => void
+    onClose?: () => void
+    onError?: () => void
   }
 
-  constructor(param: { url: string, data?: unknown, callback?: (data: unknown) => void } = { url: '' }) {
+  constructor(param: {
+    url: string
+    data?: unknown
+    callback?: (data: unknown) => void
+    onOpen?: () => void
+    onClose?: () => void
+    onError?: () => void
+  } = { url: '' }) {
     this.websocket = null
     this.isConnect = false
     this.timer = null
@@ -20,6 +30,7 @@ export default class Socket {
   connect() {
     if (typeof WebSocket === 'undefined') {
       console.warn('[websocket] 当前环境不支持 WebSocket')
+      this.param.onError?.()
       return
     }
     this.websocket = new WebSocket(this.param.url)
@@ -33,14 +44,17 @@ export default class Socket {
     this.isActivelyClose = false
     this.websocket.onclose = () => {
       this.isConnect = false
+      param.onClose?.()
       if (!this.isActivelyClose)
         this.resetSocket(param)
     }
     this.websocket.onerror = () => {
+      param.onError?.()
       this.resetSocket(param)
     }
     this.websocket.onopen = () => {
       this.isConnect = true
+      param.onOpen?.()
       if (param.data)
         this.send(param.data)
     }
@@ -49,7 +63,7 @@ export default class Socket {
         param.callback?.(JSON.parse(e.data))
       }
       catch {
-        // ignore non-JSON payloads
+        param.callback?.(e.data)
       }
     }
   }
@@ -73,6 +87,11 @@ export default class Socket {
 
   close() {
     this.isActivelyClose = true
+    if (this.timer) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
     this.websocket?.close()
+    this.websocket = null
   }
 }

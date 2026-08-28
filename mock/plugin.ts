@@ -1,40 +1,11 @@
-import type { Plugin } from 'vite'
+import type { Plugin, ViteDevServer } from 'vite'
 import type { MockRoute } from './utils'
 import { matchPath, parseQuery, readBody, sendJson, sendStream } from './utils'
-import { aiRoutes } from './handlers/ai'
-import { authRoutes } from './handlers/auth'
-import { configRoutes } from './handlers/config'
-import { deptRoutes } from './handlers/dept'
-import { dictRoutes } from './handlers/dict'
-import { jobRoutes } from './handlers/job'
-import { logininforRoutes } from './handlers/logininfor'
-import { menuRoutes } from './handlers/menu'
-import { noticeRoutes } from './handlers/notice'
-import { onlineRoutes } from './handlers/online'
-import { operlogRoutes } from './handlers/operlog'
-import { postRoutes } from './handlers/post'
-import { roleRoutes } from './handlers/role'
-import { userRoutes } from './handlers/user'
 
-const routes: MockRoute[] = [
-  ...authRoutes,
-  ...userRoutes,
-  ...roleRoutes,
-  ...menuRoutes,
-  ...deptRoutes,
-  ...dictRoutes,
-  ...noticeRoutes,
-  ...postRoutes,
-  ...configRoutes,
-  ...operlogRoutes,
-  ...logininforRoutes,
-  ...jobRoutes,
-  ...onlineRoutes,
-  ...aiRoutes,
-]
 /**
  * 开发环境 Mock 插件：拦截 /api/*，业务代码无需改动。
  * 通过 VITE_USE_MOCK=true 启用；关闭后走 Vite proxy 真实接口。
+ * 每次请求通过 ssrLoadModule 加载路由，修改 mock/handlers 后无需整服重启。
  */
 export function mockApiPlugin(apiPrefix = '/api'): Plugin {
   return {
@@ -50,6 +21,19 @@ export function mockApiPlugin(apiPrefix = '/api'): Plugin {
         const qIndex = pathnameWithQuery.indexOf('?')
         const pathname = (qIndex >= 0 ? pathnameWithQuery.slice(0, qIndex) : pathnameWithQuery) || '/'
         const query = parseQuery(pathnameWithQuery)
+
+        let routes: MockRoute[]
+        try {
+          routes = await loadMockRoutes(server)
+        }
+        catch (error: any) {
+          sendJson(res, {
+            code: 500,
+            data: null,
+            message: error?.message || 'Mock 路由加载失败',
+          })
+          return
+        }
 
         for (const route of routes) {
           if (route.method !== method)
@@ -72,6 +56,10 @@ export function mockApiPlugin(apiPrefix = '/api'): Plugin {
             if (payload?.__raw) {
               res.statusCode = 200
               res.setHeader('Content-Type', payload.contentType || 'text/plain')
+              if (payload.headers) {
+                for (const [key, value] of Object.entries(payload.headers as Record<string, string>))
+                  res.setHeader(key, value)
+              }
               res.end(payload.body)
               return
             }
@@ -101,4 +89,10 @@ export function mockApiPlugin(apiPrefix = '/api'): Plugin {
       })
     },
   }
+}
+
+async function loadMockRoutes(server: ViteDevServer): Promise<MockRoute[]> {
+  const mod = await server.ssrLoadModule('/mock/routes.ts')
+  const getMockRoutes = mod.getMockRoutes as () => MockRoute[]
+  return getMockRoutes()
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="system-page ai-chat">
+  <div class="ai-chat">
     <n-card :bordered="false" class="ai-chat__card" content-style="padding: 0; height: 100%;">
       <div class="ai-chat__layout">
         <header class="ai-chat__header">
@@ -91,7 +91,7 @@
 <script setup lang="ts">
 import { useAiChat } from '@/hooks/useAiChat'
 
-defineOptions({ name: 'Index-AiChat' })
+defineOptions({ name: 'Ai-AiChat' })
 
 const {
   messageList,

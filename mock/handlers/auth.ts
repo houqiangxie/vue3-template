@@ -33,6 +33,8 @@ export const authRoutes: MockRoute[] = [
       // mock 任意账号密码均可登录；admin 拥有全部权限
       return ok({
         token: `mock-token-${username}`,
+        refreshToken: `mock-refresh-${username}`,
+        expiresIn: 7200,
         username,
       })
     },
@@ -57,6 +59,21 @@ export const authRoutes: MockRoute[] = [
     method: 'GET',
     path: '/getRouters',
     handler: () => ok(routerMenus),
+  },
+  {
+    method: 'POST',
+    path: '/auth/refresh',
+    handler: (req) => {
+      const refreshToken = String(req.body?.refreshToken || '')
+      if (!refreshToken.startsWith('mock-refresh-'))
+        return fail('refresh token 无效或已过期', 401)
+      const username = refreshToken.slice('mock-refresh-'.length) || 'admin'
+      return ok({
+        token: `mock-token-${username}`,
+        refreshToken: `mock-refresh-${username}`,
+        expiresIn: 7200,
+      })
+    },
   },
 ]
 

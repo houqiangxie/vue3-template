@@ -11,7 +11,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useMessage,useDialog  } from 'naive-ui';
+import { useMessage, useDialog, useNotification } from 'naive-ui';
 window.$message = useMessage();
 window.$dialog = useDialog();
+window.$notification = useNotification();
 </script>

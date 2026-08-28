@@ -224,3 +224,122 @@ export interface SysUserOnline {
   os?: string
   loginTime?: string
 }
+
+/** 服务监控 */
+export interface ServerCpu {
+  cpuNum: number
+  used: number
+  sys: number
+  free: number
+}
+
+export interface ServerMem {
+  total: number
+  used: number
+  free: number
+  usage: number
+}
+
+export interface ServerJvm {
+  total: number
+  max: number
+  free: number
+  version: string
+  home: string
+  name?: string
+  startTime?: string
+  runTime?: string
+  usage: number
+  used: number
+}
+
+export interface ServerSys {
+  computerName: string
+  computerIp: string
+  userDir: string
+  osName: string
+  osArch: string
+}
+
+export interface ServerSysFile {
+  dirName: string
+  sysTypeName: string
+  typeName: string
+  total: string
+  free: string
+  used: string
+  usage: number
+}
+
+export interface ServerInfo {
+  cpu: ServerCpu
+  mem: ServerMem
+  jvm: ServerJvm
+  sys: ServerSys
+  sysFiles: ServerSysFile[]
+}
+
+/** 缓存监控 */
+export interface CacheCommandStat {
+  name: string
+  value: string
+}
+
+export interface CacheInfo {
+  info: Record<string, string>
+  dbSize: number
+  commandStats: CacheCommandStat[]
+}
+
+export interface CacheName {
+  cacheName: string
+  remark?: string
+}
+
+export interface CacheKV {
+  cacheName: string
+  cacheKey: string
+  cacheValue: string
+}
+
+/** 代码生成表 */
+export interface GenTable {
+  tableId: number
+  tableName: string
+  tableComment?: string
+  className?: string
+  tplCategory?: string
+  packageName?: string
+  moduleName?: string
+  businessName?: string
+  functionName?: string
+  functionAuthor?: string
+  genType?: '0' | '1'
+  genPath?: string
+  options?: string
+  createTime?: string
+  updateTime?: string
+  remark?: string
+}
+
+/** 代码生成列 */
+export interface GenTableColumn {
+  columnId: number
+  tableId: number
+  columnName: string
+  columnComment?: string
+  columnType?: string
+  javaType?: string
+  javaField?: string
+  isPk?: '0' | '1'
+  isIncrement?: '0' | '1'
+  isRequired?: '0' | '1'
+  isInsert?: '0' | '1'
+  isEdit?: '0' | '1'
+  isList?: '0' | '1'
+  isQuery?: '0' | '1'
+  queryType?: string
+  htmlType?: string
+  dictType?: string
+  sort?: number
+}

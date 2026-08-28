@@ -4,6 +4,8 @@ import { CloudUploadOutline } from '@vicons/ionicons5'
 import CommonModal from '@/components/common/modal/CommonModal.vue'
 
 const props = withDefaults(defineProps<{
+  /** field=表单预览触发器；modal=仅弹窗 */
+  mode?: 'field' | 'modal'
   title?: string
   /** 裁剪宽高比，默认 1 */
   aspectRatio?: number
@@ -12,12 +14,19 @@ const props = withDefaults(defineProps<{
   /** 输出类型 */
   mimeType?: string
   quality?: number
+  disabled?: boolean
+  readonly?: boolean
+  placeholder?: string
 }>(), {
+  mode: 'field',
   title: '图片裁剪',
   aspectRatio: 1,
   outputSize: 200,
   mimeType: 'image/jpeg',
   quality: 0.92,
+  disabled: false,
+  readonly: false,
+  placeholder: '点击上传并裁剪',
 })
 
 const emit = defineEmits<{
@@ -25,7 +34,11 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+/** 弹窗显隐（外部可控；表单场景内部自行打开） */
 const show = defineModel<boolean>('show', { default: false })
+/** 表单值：裁剪结果 dataUrl */
+const value = defineModel<string | null>('value', { default: null })
+
 const { message } = useConfirm()
 
 const sourceUrl = ref('')
@@ -36,6 +49,8 @@ const offset = ref({ x: 0, y: 0 })
 const dragging = ref(false)
 const lastPos = ref({ x: 0, y: 0 })
 const frameSize = 280
+
+const interactive = computed(() => !props.disabled && !props.readonly)
 
 const imgStyle = computed(() => {
   const { w, h } = imgNatural.value
@@ -54,10 +69,10 @@ const imgStyle = computed(() => {
 
 watch(show, (v) => {
   if (!v)
-    reset()
+    resetSource()
 })
 
-function reset() {
+function resetSource() {
   if (sourceUrl.value)
     URL.revokeObjectURL(sourceUrl.value)
   sourceUrl.value = ''
@@ -65,6 +80,18 @@ function reset() {
   scale.value = 1
   offset.value = { x: 0, y: 0 }
   imgNatural.value = { w: 0, h: 0 }
+}
+
+function openCropper() {
+  if (!interactive.value)
+    return
+  show.value = true
+}
+
+function clearValue() {
+  if (!interactive.value)
+    return
+  value.value = null
 }
 
 function onFileChange(options: { file: { file?: File | null } }) {
@@ -156,6 +183,7 @@ async function handleConfirm() {
   const dataUrl = canvas.toDataURL(props.mimeType, props.quality)
   const ext = props.mimeType === 'image/png' ? 'png' : 'jpg'
   const file = new File([blob], `avatar.${ext}`, { type: props.mimeType })
+  value.value = dataUrl
   emit('confirm', { blob, dataUrl, file })
   show.value = false
 }
@@ -167,6 +195,33 @@ function handleCancel() {
 </script>
 
 <template>
+  <div v-if="mode === 'field'" class="image-cropper-field">
+    <div
+      class="image-cropper-field__trigger"
+      :class="{ 'image-cropper-field__trigger--disabled': !interactive }"
+      @click="openCropper"
+    >
+      <img
+        v-if="value"
+        :src="value"
+        class="image-cropper-field__preview"
+        alt="crop preview"
+      >
+      <div v-else class="image-cropper-field__placeholder">
+        <NIcon size="28" depth="3"><CloudUploadOutline /></NIcon>
+        <span>{{ placeholder }}</span>
+      </div>
+    </div>
+    <NButton
+      v-if="value && interactive"
+      size="tiny"
+      quaternary
+      @click.stop="clearValue"
+    >
+      清除
+    </NButton>
+  </div>
+
   <CommonModal
     v-model:show="show"
     :title="title"
@@ -211,7 +266,7 @@ function handleCancel() {
         <div class="image-cropper__tools">
           <span>缩放</span>
           <NSlider v-model:value="scale" :min="1" :max="3" :step="0.01" style="flex: 1" />
-          <NButton size="tiny" quaternary @click="reset">重选</NButton>
+          <NButton size="tiny" quaternary @click="resetSource">重选</NButton>
         </div>
       </template>
     </NSpace>
@@ -219,6 +274,48 @@ function handleCancel() {
 </template>
 
 <style scoped>
+.image-cropper-field {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.image-cropper-field__trigger {
+  width: 96px;
+  height: 96px;
+  border: 1px dashed var(--n-border-color, #d0d0d0);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--n-color, #fafafa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-cropper-field__trigger--disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.image-cropper-field__preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-cropper-field__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--n-text-color-3, #999);
+  padding: 8px;
+  text-align: center;
+  line-height: 1.3;
+}
+
 .image-cropper__frame {
   margin: 0 auto;
   overflow: hidden;

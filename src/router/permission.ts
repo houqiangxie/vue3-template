@@ -55,6 +55,10 @@ export default (router: Router, viewModules: ViewModules, viewsBaseDir: string):
     const token = (local as any).token?.token as string | undefined
     const permissionStore = usePermissionStore()
 
+    const publicRouteNames = new Set(['Login', 'Error403', 'Error404', 'Error500'])
+    if (publicRouteNames.has(String(to.name)))
+      return true
+
     if (token && !permissionStore.routesLoaded && to.name !== 'Login') {
       try {
         await permissionStore.setupRoutes(router, viewModules, viewsBaseDir)

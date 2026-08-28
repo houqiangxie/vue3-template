@@ -1,5 +1,5 @@
-﻿<template>
-  <div class="system-page">
+<template>
+  <div>
     <SearchPanel
       v-model:search-model="searchModel"
       :fields="jobFields"
@@ -19,7 +19,7 @@
     </SearchPanel>
 
     <CommonTable
-      class="system-page__table"
+      class="page-container__table"
       flex-height
       col-setting-key="system-job"
       :data="tableData"

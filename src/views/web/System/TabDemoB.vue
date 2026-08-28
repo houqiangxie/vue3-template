@@ -1,5 +1,5 @@
 <template>
-  <div class="system-page">
+  <div>
     <n-card :bordered="false" title="扩展信息">
       <n-descriptions label-placement="left" :column="1" bordered size="small">
         <n-descriptions-item label="父菜单 component">

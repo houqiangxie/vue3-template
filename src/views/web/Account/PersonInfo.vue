@@ -1,5 +1,5 @@
 <template>
-  <div class="system-page person-info">
+  <div class="person-info">
     <n-card title="个人信息" :bordered="false" class="person-info__card">
       <n-spin :show="loading">
         <n-alert v-if="error" type="error" :title="error" class="person-info__alert" />

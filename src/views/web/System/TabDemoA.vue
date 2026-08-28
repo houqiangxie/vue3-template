@@ -1,5 +1,5 @@
 <template>
-  <div class="system-page">
+  <div>
     <n-card :bordered="false" title="基础信息">
       <n-form label-placement="left" label-width="88" :show-feedback="false">
         <n-form-item label="示例名称">

@@ -23,6 +23,8 @@ export interface MockRawPayload {
   __raw: true
   body: string | Buffer
   contentType?: string
+  /** 额外响应头，如 Content-Disposition */
+  headers?: Record<string, string>
 }
 
 /** SSE / 分片流式响应 */

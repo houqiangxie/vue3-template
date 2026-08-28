@@ -146,6 +146,7 @@
   import HeaderSearch from './HeaderSearch.vue';
   import HeaderNotice from './HeaderNotice.vue';
   import type { MenuItem } from '@/router/utils/types';
+  import { stopAppMessageChannel } from '@/utils/appWebSocket';
   import * as AntdIcons from '@vicons/antd';
   import {
     MenuFoldOutlined,
@@ -366,6 +367,7 @@
 
   const avatarSelect = (key: string) => {
     if (key === 'logout') {
+      stopAppMessageChannel();
       storage.remove(TABS_ROUTES);
       permissionStore.clearRoutes(router);
       permissionStore.setPermissions([]);

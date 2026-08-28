@@ -20,6 +20,8 @@ export interface RequestConfig {
   joinUrl?: boolean
   unwanted?: boolean
   isNotAuth?: boolean
+  /** 内部标记：token 刷新后重试，避免死循环 */
+  _retried?: boolean
   responseType?: 'json' | 'text' | 'blob' | 'arrayBuffer'
   requestKey?: string
   headers?: Record<string, string>
@@ -184,16 +186,28 @@ export function toQueryString(data: Record<string, unknown>): string {
   return params.toString()
 }
 
+interface TokenStorage {
+  token?: string
+  refreshToken?: string
+  expiresAt?: number
+  userName?: string
+}
+
 /** history 模式下构造登录地址，兼容 web（BASE/）与 app（BASE/app/）双入口 */
+function getRouterBase(): { routerBase: string, isApp: boolean } {
+  const base = String(import.meta.env.BASE_URL || '/').replace(/\/$/, '')
+  const appRoot = `${base}/app`
+  const isApp = location.pathname === appRoot || location.pathname.startsWith(`${appRoot}/`)
+  const routerBase = isApp ? `${appRoot}/` : `${base}/`
+  return { routerBase, isApp }
+}
+
 function buildLoginRedirectUrl(): string | null {
   const { pathname, search, hash } = location
   if (/\/login\/?$/.test(pathname) || /(?:^|[?&])returnUrl=/.test(search))
     return null
 
-  const base = String(import.meta.env.BASE_URL || '/').replace(/\/$/, '')
-  const appRoot = `${base}/app`
-  const isApp = pathname === appRoot || pathname.startsWith(`${appRoot}/`)
-  const routerBase = isApp ? `${appRoot}/` : `${base}/`
+  const { routerBase } = getRouterBase()
 
   let relative = '/'
   if (pathname.startsWith(routerBase))
@@ -226,6 +240,57 @@ function redirectToLogin() {
   else {
     location.href = loginUrl
   }
+}
+
+function navigateToErrorPage(code: '403' | '404' | '500') {
+  const { routerBase } = getRouterBase()
+  const target = `${routerBase}${code}`
+  const current = location.pathname.replace(/\/$/, '')
+  if (current.endsWith(`/${code}`))
+    return
+  location.href = target
+}
+
+let refreshingPromise: Promise<boolean> | null = null
+
+async function tryRefreshToken(): Promise<boolean> {
+  const tokenData = (local as { token?: TokenStorage }).token
+  if (!tokenData?.refreshToken)
+    return false
+
+  if (refreshingPromise)
+    return refreshingPromise
+
+  refreshingPromise = (async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_baseUrl || '/api'
+      const res = await fetch(`${baseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json;charset=utf-8' },
+        body: JSON.stringify({ refreshToken: tokenData.refreshToken }),
+      })
+      const json = await res.json() as ApiResponse<{ token: string, refreshToken?: string, expiresIn?: number }>
+      if ((res.status === 401 || json.code === 401) || json.code !== 0 || !json.data?.token)
+        return false
+
+      const expiresIn = json.data.expiresIn ?? 7200
+      ;(local as { token?: TokenStorage }).token = {
+        ...tokenData,
+        token: json.data.token,
+        refreshToken: json.data.refreshToken ?? tokenData.refreshToken,
+        expiresAt: Date.now() + expiresIn * 1000,
+      }
+      return true
+    }
+    catch {
+      return false
+    }
+    finally {
+      refreshingPromise = null
+    }
+  })()
+
+  return refreshingPromise
 }
 
 function notifyError(config: RequestConfig, message: string) {
@@ -278,9 +343,11 @@ async function request<T = unknown>(
   config: RequestConfig = {},
 ): Promise<ApiResponse<T>> {
   const loadingStore = useLoadingStore()
-  const token = local.token?.token as string | undefined
+  const tokenData = (local as { token?: TokenStorage }).token
+  const token = tokenData?.token
   const controller = new AbortController()
   const { signal } = controller
+  const relativePath = path
   path = (config?.unwanted ? '' : import.meta.env.VITE_baseUrl) + path
 
   const configTemp: PendingConfig = {
@@ -381,8 +448,18 @@ async function request<T = unknown>(
       // blob / text / arrayBuffer：不做业务 code 解包
       if (responseType !== 'json') {
         if (response.status === 401 && !configTemp.withoutCheck) {
+          if (!configTemp._retried && await tryRefreshToken())
+            return request(method, relativePath, data, { ...config, _retried: true })
           redirectToLogin()
           return reject(new ApiError('未登录或登录已过期', 401, true, raw))
+        }
+        if (response.status === 403 && !configTemp.withoutCheck) {
+          navigateToErrorPage('403')
+          return reject(new ApiError('没有访问权限', 403, true, raw))
+        }
+        if (response.status === 500 && !configTemp.withoutCheck) {
+          navigateToErrorPage('500')
+          return reject(new ApiError('服务器异常', 500, true, raw))
         }
         if (response.status >= 200 && response.status < 300)
           return resolve(raw as ApiResponse<T>)
@@ -393,11 +470,19 @@ async function request<T = unknown>(
       const res = raw as ApiResponse<T>
 
       if ((response.status === 401 || res.code === 401) && !configTemp.withoutCheck) {
+        if (!configTemp._retried && await tryRefreshToken())
+          return request(method, relativePath, data, { ...config, _retried: true })
         redirectToLogin()
         return reject(new ApiError(res.message || res.msg || '未登录或登录已过期', 401, true, res))
       }
-      if (res.code === 403)
-        window.history.go(-1)
+      if (response.status === 403 || res.code === 403) {
+        navigateToErrorPage('403')
+        return reject(new ApiError(res.message || res.msg || '没有访问权限', 403, true, res))
+      }
+      if (response.status === 500 && !configTemp.withoutCheck) {
+        navigateToErrorPage('500')
+        return reject(new ApiError('服务器异常', 500, true, res))
+      }
 
       if (configTemp.withoutCheck)
         return resolve(res)

@@ -1,5 +1,5 @@
-﻿<template>
-  <div class="system-page">
+<template>
+  <div>
     <SearchPanel
       v-model:search-model="searchModel"
       :fields="postFields"
@@ -25,7 +25,7 @@
     </SearchPanel>
 
     <CommonTable
-      class="system-page__table"
+      class="page-container__table"
       flex-height
       selectable
       col-setting-key="system-post"

@@ -171,7 +171,26 @@ const loginSubmit = async () => {
     const res: any = await post('/ManageUser/login', params)
     const { code, data } = res
     if (code === 0) {
-      local.token = data?.token != null ? data : { token: data }
+      const expiresIn = Number(data?.expiresIn) || 7200
+      let accessToken = ''
+      let refreshTokenValue: string | undefined
+      let userName = form.username
+
+      if (typeof data === 'string') {
+        accessToken = data
+      }
+      else if (data?.token != null) {
+        accessToken = typeof data.token === 'string' ? data.token : String(data.token)
+        refreshTokenValue = data.refreshToken
+        userName = data.username ?? form.username
+      }
+
+      local.token = {
+        token: accessToken,
+        refreshToken: refreshTokenValue,
+        expiresAt: Date.now() + expiresIn * 1000,
+        userName,
+      }
       window.$message?.success('登录成功')
       router.replace(resolveReturnUrl(route.query?.returnUrl as string))
     }
