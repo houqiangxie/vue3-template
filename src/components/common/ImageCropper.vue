@@ -2,6 +2,7 @@
 import { NButton, NSlider, NSpace, NUpload, NUploadDragger, NP, NIcon } from 'naive-ui'
 import { CloudUploadOutline } from '@vicons/ionicons5'
 import CommonModal from '@/components/common/modal/CommonModal.vue'
+import { getBodyCssZoom } from '@/utils/bodyZoom'
 
 const props = withDefaults(defineProps<{
   /** field=表单预览触发器；modal=仅弹窗 */
@@ -128,8 +129,9 @@ function onPointerDown(e: PointerEvent) {
 function onPointerMove(e: PointerEvent) {
   if (!dragging.value)
     return
-  const dx = e.clientX - lastPos.value.x
-  const dy = e.clientY - lastPos.value.y
+  const zoom = getBodyCssZoom()
+  const dx = (e.clientX - lastPos.value.x) / zoom
+  const dy = (e.clientY - lastPos.value.y) / zoom
   lastPos.value = { x: e.clientX, y: e.clientY }
   offset.value = { x: offset.value.x + dx, y: offset.value.y + dy }
 }

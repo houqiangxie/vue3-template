@@ -14,8 +14,6 @@ import type {
   SqlSearchValue,
   SqlValidationMode,
 } from './types'
-import { operatorLabels } from './labels'
-
 let idSeq = 0
 
 const DEFAULT_COLUMN_PATTERN = /^[a-zA-Z_][\w.]*$/
@@ -66,8 +64,6 @@ export const DEFAULT_SQL_SEARCH_FIELDS: SqlSearchFieldDef[] = [
   { key: 'createTime', label: '创建时间', type: 'datetime' },
   { key: 'enabled', label: '是否启用', type: 'boolean' },
 ]
-
-export { operatorLabels }
 
 const OPERATORS_BY_TYPE: Record<SqlFieldType, SqlCompareOperator[]> = {
   string: ['eq', 'neq', 'like', 'notLike', 'startsWith', 'endsWith', 'in', 'notIn', 'isNull', 'isNotNull'],

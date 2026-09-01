@@ -1,6 +1,6 @@
 import type { Plugin, ViteDevServer } from 'vite'
-import type { MockRoute } from './utils'
-import { matchPath, parseQuery, readBody, sendJson, sendStream } from './utils'
+import type { MockRoute } from './utils.ts'
+import { matchPath, parseQuery, readBody, sendJson, sendStream } from './utils.ts'
 
 /**
  * 开发环境 Mock 插件：拦截 /api/*，业务代码无需改动。

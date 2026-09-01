@@ -5,6 +5,7 @@
       'tabs-view-default-background': !getDarkTheme,
       'tabs-view-dark-background': getDarkTheme,
       ['tabs-style-' + tabsStyle]: true,
+      'tabs-view--fixed': tabsFixed,
     }"
     :style="tabsViewStyle"
   >
@@ -93,7 +94,7 @@
     nextTick,
   } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import { storage } from '@/utils/Storage';
+  import { local } from 'ux-web-storage';
   import type { RouteItem } from '@/store/tabsView';
   import { usePageReload } from '@/hooks/usePageReload';
   import { useMessage, useThemeVars } from 'naive-ui';
@@ -107,7 +108,8 @@
     LeftOutlined,
     RightOutlined,
   } from '@vicons/antd';
-  import { renderIcon } from '@/utils/layout';
+  import { renderIcon, resolveCustomBg } from '@/utils/layout';
+  import { useT } from '@/hooks/useT';
   export default defineComponent({
     name: 'TabsView',
     components: { DownOutlined, CloseOutlined, LeftOutlined, RightOutlined, Draggable },
@@ -118,6 +120,7 @@
       const designStore = useDesignSettingStore();
       const settingStore = useProjectSettingStore();
       const message = useMessage();
+      const { t } = useT();
       const route = useRoute();
       const router = useRouter();
       const tabsViewStore = useTabsViewStore();
@@ -148,33 +151,36 @@
       };
 
       const tabsStyle = computed(() => settingStore.multiTabsSetting.style || 'card');
+      const tabsFixed = computed(() => settingStore.multiTabsSetting.fixed !== false);
       const showTabsMenu = computed(() => settingStore.multiTabsSetting.showContextMenu !== false);
 
       const tabsViewStyle = computed(() => {
-        const bg = settingStore.multiTabsSetting.bgColor;
-        if (getDarkTheme.value || !bg) return undefined;
-        const normalized = bg.trim().toLowerCase();
-        if (normalized === '#fff' || normalized === '#ffffff') return undefined;
-        return { backgroundColor: bg };
+        if (getDarkTheme.value)
+          return undefined;
+        const bg = resolveCustomBg(
+          settingStore.multiTabsSetting.bgFollowTheme,
+          settingStore.multiTabsSetting.bgColor,
+        );
+        return bg ? { backgroundColor: bg } : undefined;
       });
 
       const TabsMenuOptions = computed(() => {
         const isDisabled = tabsList.value.length <= 1;
         return [
-          { label: '刷新当前', key: '1', icon: renderIcon(ReloadOutlined) },
-          { label: '关闭当前', key: '2', disabled: isCurrent.value || isDisabled, icon: renderIcon(CloseOutlined) },
-          { label: '关闭其他', key: '3', disabled: isDisabled, icon: renderIcon(ColumnWidthOutlined) },
-          { label: '关闭全部', key: '4', disabled: isDisabled, icon: renderIcon(MinusOutlined) },
+          { label: t('layout.tabsRefresh', '刷新当前'), key: '1', icon: renderIcon(ReloadOutlined) },
+          { label: t('layout.tabsClose', '关闭当前'), key: '2', disabled: isCurrent.value || isDisabled, icon: renderIcon(CloseOutlined) },
+          { label: t('layout.tabsCloseOther', '关闭其他'), key: '3', disabled: isDisabled, icon: renderIcon(ColumnWidthOutlined) },
+          { label: t('layout.tabsCloseAll', '关闭全部'), key: '4', disabled: isDisabled, icon: renderIcon(MinusOutlined) },
         ];
       });
 
-      // ---- 初始化标签页（从 localStorage 恢复）----
+      // ---- 初始化标签页（从 local 恢复）----
       let cacheRoutes: RouteItem[] = [];
       const simpleRoute = getSimpleRoute(route);
       try {
         if (settingStore.multiTabsSetting.persist) {
-          const routesStr = storage.get(TABS_ROUTES) as string | null | undefined;
-          cacheRoutes = routesStr ? JSON.parse(routesStr) : [simpleRoute];
+          const cached = local[TABS_ROUTES] as RouteItem[] | undefined;
+          cacheRoutes = Array.isArray(cached) ? cached : [simpleRoute];
         } else {
           cacheRoutes = [simpleRoute];
         }
@@ -208,9 +214,12 @@
           // 只有当当前路由是 matched 数组中的最后一个时才添加（即叶子节点）
           // 并且排除掉带有重定向的中间级路由
           const lastMatched = route.matched[route.matched.length - 1];
-          const isLeaf = route.matched.length > 0 && lastMatched.name === name;
-          const hasRedirect = route.redirect || route.meta?.redirect || lastMatched.redirect;
-          
+          const isLeaf = route.matched.length > 0 && lastMatched?.name === name;
+          // RouteLocation 无 redirect；只看 matched 记录 / 自定义 meta
+          const hasRedirect = Boolean(
+            lastMatched?.redirect ?? (route.meta as { redirect?: unknown } | undefined)?.redirect,
+          );
+
           if (!isLeaf || hasRedirect) return;
 
           state.activeKey = fullPath as string;
@@ -223,10 +232,10 @@
       // 页面刷新前保存标签
       const saveTabsBeforeUnload = () => {
         if (!settingStore.multiTabsSetting.persist) {
-          storage.remove(TABS_ROUTES);
+          delete local[TABS_ROUTES];
           return;
         }
-        storage.set(TABS_ROUTES, JSON.stringify(tabsList.value));
+        local[TABS_ROUTES] = tabsList.value;
       };
 
       // ---- 关闭操作 ----
@@ -395,6 +404,7 @@
         reloadPage,
         tabsViewStyle,
         tabsStyle,
+        tabsFixed,
         showTabsMenu,
         TabsMenuOptions,
         closeHandleSelect,
@@ -519,8 +529,14 @@
     }
   }
 
-  .tabs-view-default-background { background: #f5f7f9; }
-  .tabs-view-dark-background    { background: #101014; }
+  .tabs-view-default-background { background: v-bind(getCardColor); }
+  .tabs-view-dark-background    { background: v-bind(getCardColor); }
+
+  .tabs-view--fixed {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
 
   .tabs-style-simple {
     .tabs-card-scroll-item {

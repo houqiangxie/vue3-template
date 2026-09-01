@@ -9,11 +9,11 @@ import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import UnoCSS from 'unocss/vite';
-import lightningcss from 'vite-plugin-lightningcss';
 import viteCompression from 'vite-plugin-compression';
 import electron from 'vite-plugin-electron/simple';
 import { defineConfig, loadEnv, type ConfigEnv } from 'vite';
-import { mockApiPlugin } from './mock/plugin';
+import { mockApiPlugin } from './mock/plugin.ts';
+import { vueucBodyZoomPlugin } from './scripts/vite-plugin-vueuc-body-zoom.ts';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const isElectron = process.env.ELECTRON === 'true';
@@ -61,6 +61,8 @@ export default ({ command, mode }: ConfigEnv) => {
   }
 
   const plugins = [
+    // body.zoom：vueuc 浮层 / 弹窗拖动 / 表格列宽；exclude naive-ui 保证 transform 生效
+    vueucBodyZoomPlugin(),
     {
       name: 'rewrite-middleware',
       configureServer(serve) {
@@ -119,9 +121,6 @@ export default ({ command, mode }: ConfigEnv) => {
       dirs: ['src/utils/**', 'src/store/**', 'src/hooks/**'],
     }),
     UnoCSS(),
-    lightningcss({
-      browserslist: '>= 0.25%',
-    }),
   ];
 
   if (isElectron) {
@@ -231,6 +230,8 @@ export default ({ command, mode }: ConfigEnv) => {
           manualChunks(id) {
             if (!id.includes('node_modules'))
               return
+            if (id.includes('vue-i18n'))
+              return 'vue-i18n'
             if (id.includes('naive-ui'))
               return 'naive-ui'
             if (id.includes('@file-viewer'))
@@ -253,6 +254,7 @@ export default ({ command, mode }: ConfigEnv) => {
       },
     },
     css: {
+      transformer: 'lightningcss',
       preprocessorOptions: {
         scss: {
           additionalData: `@use "@/assets/scss/variables.scss" as *;`,

@@ -1,23 +1,25 @@
 import type { GlobalThemeOverrides } from 'naive-ui';
+import { local } from 'ux-web-storage';
 import { darken, lighten } from '@/utils/layout';
 
-/** 与 naive-ui NThemeEditor 使用同一持久化键，保证编辑结果可互通 */
+/** 与 naive-ui NThemeEditor 使用同一持久化键 */
 export const NAIVE_THEME_EDITOR_KEY = 'naive-ui-theme-overrides';
 
 export function readThemeEditorOverrides(): GlobalThemeOverrides {
   try {
-    return JSON.parse(localStorage.getItem(NAIVE_THEME_EDITOR_KEY) || '{}') as GlobalThemeOverrides;
+    const cached = local[NAIVE_THEME_EDITOR_KEY] as GlobalThemeOverrides | undefined;
+    return cached && typeof cached === 'object' ? cached : {};
   } catch {
     return {};
   }
 }
 
 export function writeThemeEditorOverrides(overrides: GlobalThemeOverrides) {
-  localStorage.setItem(NAIVE_THEME_EDITOR_KEY, JSON.stringify(overrides ?? {}));
+  local[NAIVE_THEME_EDITOR_KEY] = overrides ?? {};
 }
 
 export function clearThemeEditorOverrides() {
-  localStorage.removeItem(NAIVE_THEME_EDITOR_KEY);
+  delete local[NAIVE_THEME_EDITOR_KEY];
 }
 
 export function deepMergeThemeOverrides(

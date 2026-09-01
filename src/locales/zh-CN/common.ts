@@ -1,0 +1,17 @@
+export default {
+  confirm: '确定',
+  cancel: '取消',
+  save: '保存',
+  delete: '删除',
+  search: '搜索',
+  reset: '重置',
+  export: '导出',
+  import: '导入',
+  refresh: '刷新',
+  loading: '加载中…',
+  success: '操作成功',
+  failed: '操作失败',
+  localeZhCN: '简体中文',
+  localeEnUS: 'English',
+  fileLoadFailed: '文件加载失败',
+}

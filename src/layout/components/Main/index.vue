@@ -16,15 +16,20 @@
   import { computed } from 'vue';
   import { useRoute } from 'vue-router';
   import { usePageReload } from '@/hooks/usePageReload';
+  import { systemReduceMotion } from '@/hooks/setting/useAppThemeEffects';
 
   const route = useRoute();
   const tabsViewStore = useTabsViewStore();
   const settingStore = useProjectSettingStore();
   const { viewKey, reloadingName, pageAlive } = usePageReload();
 
-  const getTransitionName = computed(() =>
-    settingStore.isPageAnimate ? settingStore.pageAnimateType : '',
-  );
+  const getTransitionName = computed(() => {
+    if (!settingStore.isPageAnimate)
+      return '';
+    if (settingStore.respectReducedMotion && systemReduceMotion.value)
+      return '';
+    return settingStore.pageAnimateType;
+  });
 
   /**
    * keep-alive 缓存列表：随标签开闭同步。

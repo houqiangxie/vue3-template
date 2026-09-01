@@ -4,30 +4,17 @@ import { NButton, NForm, NModal, NSpace } from 'naive-ui'
 import CommonForm from '../CommonForm.vue'
 import CommonTable from '../table/CommonTable.vue'
 import type { ModalConfig, ModalSection } from './modalSchema'
+import { hexLuminance, resolveCustomBg } from '@/utils/layout'
+import { compensateViewportCssSize } from '@/utils/bodyZoom'
 
 const settingStore = useProjectSettingStore()
 
-function hexLuminance(hex: string): number {
-  const raw = hex.replace('#', '')
-  if (raw.length !== 6)
-    return 1
-  const r = Number.parseInt(raw.slice(0, 2), 16) / 255
-  const g = Number.parseInt(raw.slice(2, 4), 16) / 255
-  const b = Number.parseInt(raw.slice(4, 6), 16) / 255
-  const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
-  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
-}
-
-const modalHeaderBg = computed(() => {
-  const bg = settingStore.modalSetting.headerBgColor
-  if (!bg)
-    return ''
-  const normalized = bg.trim().toLowerCase()
-  // 默认白色：浅色/深色主题均跟随 Naive UI 主题
-  if (normalized === '#fff' || normalized === '#ffffff')
-    return ''
-  return bg
-})
+const modalHeaderBg = computed(() =>
+  resolveCustomBg(
+    settingStore.modalSetting.bgFollowTheme,
+    settingStore.modalSetting.headerBgColor,
+  ),
+)
 
 const modalHeaderOnDark = computed(() => {
   const bg = modalHeaderBg.value
@@ -108,7 +95,10 @@ const hasConfiguredSections = computed(() => sections.value.length > 0)
 const hasForm = computed(() => formSections.value.length > 0)
 
 function toCssSize(value: number | string) {
-  return typeof value === 'number' ? `${value}px` : value
+  if (typeof value === 'number')
+    return `${value}px`
+  // body.zoom 下 vh/vw 需除以 --app-body-zoom，否则弹窗可视高度偏小
+  return compensateViewportCssSize(String(value))
 }
 
 const modalStyle = computed(() => ({

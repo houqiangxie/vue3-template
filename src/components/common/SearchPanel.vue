@@ -41,7 +41,7 @@ import {
   useThemeVars,
 } from 'naive-ui'
 import { ChevronDownOutline, ChevronUpOutline, RefreshOutline, SearchOutline } from '@vicons/ionicons5'
-import { sqlSearchLabels } from '@/components/common/SqlSearch/labels'
+import { useSqlSearchLabels } from '@/components/common/SqlSearch/labels'
 import { useSearchPanelCollapse } from '@/hooks/useSearchPanelCollapse'
 import { toSearchConfig, type FieldBind, type FieldRenderFn, type SearchConfigItem, type UnifiedFieldConfig } from './table/fieldSchema'
 
@@ -135,6 +135,7 @@ const emit = defineEmits<{
 
 const themeVars = useThemeVars()
 const message = useMessage()
+const sqlSearchLabels = useSqlSearchLabels()
 const panelBgStyle = computed(() => ({
   backgroundColor: themeVars.value.cardColor,
 }))
@@ -469,7 +470,7 @@ function collectSqlSearchPayload(payload: Record<string, unknown>): boolean {
     const mode = (bind.validationMode as string) ?? 'lenient'
     const ok = ref.validate()
     if (!ok && mode === 'strict') {
-      message.warning(sqlSearchLabels.validateFail)
+      message.warning(sqlSearchLabels.value.validateFail)
       return false
     }
 

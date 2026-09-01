@@ -11,7 +11,7 @@
 | 构建  | Vite 8、TypeScript、UnoCSS、Sass                      |
 | UI  | Naive UI（Web）、Vant（App）                            |
 | 桌面  | Electron + electron-updater                        |
-| 其它  | unplugin-auto-import / components、file-viewer |
+| 其它  | unplugin-auto-import / components、file-viewer、vue-i18n（可选） |
 
 
 ## 快速开始
@@ -59,6 +59,7 @@ cp .env.example .env.dev.local
 | `pnpm dev:mock`                                | 强制本地 Mock                     |
 | `pnpm dev:api`                                 | 强制代理真实接口                      |
 | `pnpm dev:electron`                            | Electron 开发模式                 |
+| `pnpm dev:i18n`                                | 开发并启用 vue-i18n 业务文案          |
 | `pnpm build` / `pnpm prod` / `pnpm build:test` | 按 mode 构建 Web                 |
 | `pnpm build:electron`                          | 构建并打包桌面端                      |
 | `pnpm typecheck`                               | `vue-tsc --noEmit`            |
@@ -97,8 +98,8 @@ cp .env.example .env.dev.local
 
 ### 双端 MPA
 
-- Web：`index.html` → `src/pages/web.ts`，Naive UI + 后台布局
-- App：`app/index.html` → `src/pages/app.ts`，偏移动端
+- Web：`index.html` → `src/pages/web.ts`，Naive UI + 后台布局（`layout/index.vue` + 项目配置）
+- App：`app/index.html` → `src/pages/app.ts`，仅作 H5 预留（`layout/AppLayout.vue` 轻量壳，不兼容后台布局配置）
 - 公共启动逻辑在 `src/pages/createBootstrap.ts`
 
 
@@ -137,9 +138,28 @@ cp .env.example .env.dev.local
 | `VITE_LOGIN_AES_KEY` / `VITE_LOGIN_AES_IV` | 登录密码 AES（本地 `.env.*.local`） |
 | `VITE_ALLOW_QUERY_TOKEN`                   | 是否允许 URL `?token=`（生产默认关闭）  |
 | `VITE_WS_URL`                              | WebSocket 地址；`false` 关闭 WS       |
+| `VITE_ENABLE_I18N`                         | `true` 启用 vue-i18n 业务文案；默认不加载 |
 
 
 完整本地覆盖示例见 `.env.example`。
+
+## 业务国际化（可选）
+
+默认**不启用** vue-i18n，页面文案以代码中的中文 fallback 为准，零额外包体积。
+
+启用方式（`.env.dev.local` 或构建环境）：
+
+```bash
+VITE_ENABLE_I18N=true
+```
+
+使用约定：
+
+- 组件内：`const { t } = useT()`，模板/脚本写 `t('login.submit', '登录')`（第二参数为未启用 i18n 或缺翻译时的兜底）
+- 模块/工具：`import { t } from '@/i18n'`
+- 语言包：`src/locales/zh-CN/`、`src/locales/en-US/` 按模块拆分；切换「界面语言」时与 Naive UI locale 同步
+
+已接入示例：登录页、错误页、SqlSearch、项目设置语言选项。其余页面可按需逐步替换硬编码文案。
 
 ## 部署
 

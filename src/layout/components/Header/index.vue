@@ -44,34 +44,32 @@
           <template #trigger>
             <n-icon size="18"><ReloadOutlined /></n-icon>
           </template>
-          <span>刷新页面</span>
+          <span>{{ t('layout.refreshPage', '刷新页面') }}</span>
         </n-tooltip>
       </div>
       <n-breadcrumb v-if="showCrumbs">
-        <template v-for="routeItem in breadcrumbList" :key="routeItem.name">
+        <template v-for="(routeItem, index) in breadcrumbList" :key="routeItem.name">
           <n-breadcrumb-item v-if="routeItem.meta?.title">
             <n-dropdown
-              v-if="routeItem.children && routeItem.children.length"
               :options="routeItem.children"
+              :disabled="!routeItem.children.length"
               @select="dropdownSelect"
             >
-              <span class="link-text">
-                <component
+              <span
+                class="link-text"
+                :class="{ 'link-text--nav': routeItem.navigable }"
+                @click.stop="onCrumbClick(routeItem, index)"
+              >
+                <n-icon
                   v-if="showCrumbsIcon && routeItem.meta?.icon"
-                  :is="routeItem.meta.icon"
+                  :size="14"
                   class="breadcrumb-icon"
-                />
+                >
+                  <component :is="routeItem.meta.icon" />
+                </n-icon>
                 {{ routeItem.meta.title }}
               </span>
             </n-dropdown>
-            <span v-else class="link-text">
-              <component
-                v-if="showCrumbsIcon && routeItem.meta?.icon"
-                :is="routeItem.meta.icon"
-                class="breadcrumb-icon"
-              />
-              {{ routeItem.meta.title }}
-            </span>
           </n-breadcrumb-item>
         </template>
       </n-breadcrumb>
@@ -82,6 +80,12 @@
       <HeaderSearch v-if="showSearch" />
       <HeaderNotice v-if="showNotice" />
       <div
+        v-if="showLocale"
+        class="layout-header-trigger layout-header-trigger-min"
+      >
+        <LocaleSwitcher mode="icon" />
+      </div>
+      <div
         v-if="isHorizontalHeader && showReload"
         class="layout-header-trigger layout-header-trigger-min"
         @click="reloadPage"
@@ -90,21 +94,26 @@
           <template #trigger>
             <n-icon size="18"><ReloadOutlined /></n-icon>
           </template>
-          <span>刷新页面</span>
+          <span>{{ t('layout.refreshPage', '刷新页面') }}</span>
         </n-tooltip>
       </div>
       <div
         v-if="showFullscreen"
         class="layout-header-trigger layout-header-trigger-min"
+        @click="toggleFullScreen"
       >
         <n-tooltip placement="bottom">
           <template #trigger>
             <n-icon size="18">
-              <FullscreenExitOutlined v-if="isFullscreen" @click="toggleFullScreen" />
-              <FullscreenOutlined v-else @click="toggleFullScreen" />
+              <FullscreenExitOutlined v-if="isFullscreen" />
+              <FullscreenOutlined v-else />
             </n-icon>
           </template>
-          <span>{{ isFullscreen ? '退出全屏' : '全屏' }}</span>
+          <span>{{
+            isFullscreen
+              ? t('layout.exitFullscreen', '退出全屏')
+              : t('layout.fullscreen', '全屏')
+          }}</span>
         </n-tooltip>
       </div>
 
@@ -126,7 +135,7 @@
           <template #trigger>
             <n-icon size="18" style="font-weight: bold"><SettingOutlined /></n-icon>
           </template>
-          <span>项目配置</span>
+          <span>{{ t('layout.projectConfig', '项目配置') }}</span>
         </n-tooltip>
       </div>
     </div>
@@ -140,14 +149,17 @@
   import { useRoute, useRouter } from 'vue-router';
   import { usePageReload } from '@/hooks/usePageReload';
   import { websiteConfig } from '@/config/website.config';
-  import { storage } from '@/utils/Storage';
   import { AsideMenu } from '@/layout/components/Menu';
   import ProjectSetting from './ProjectSetting.vue';
   import HeaderSearch from './HeaderSearch.vue';
   import HeaderNotice from './HeaderNotice.vue';
+  import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue';
   import type { MenuItem } from '@/router/utils/types';
+  import { resolveAntdIcon } from '@/config/menu/resolveMenuIcon';
   import { stopAppMessageChannel } from '@/utils/appWebSocket';
-  import * as AntdIcons from '@vicons/antd';
+  import { hexLuminance, resolveCustomBg } from '@/utils/layout';
+  import { useT } from '@/hooks/useT';
+  import { I18N_ENABLED } from '@/i18n/config';
   import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
@@ -157,6 +169,13 @@
     SettingOutlined,
   } from '@vicons/antd';
 
+  type TokenInfo = {
+    token?: string
+    userName?: string
+    refreshToken?: string
+    expiresAt?: number
+  };
+
   const props = defineProps<{ collapsed?: boolean; inverted?: boolean }>();
   const emit = defineEmits(['update:collapsed']);
 
@@ -165,6 +184,7 @@
   const permissionStore = usePermissionStore();
   const route = useRoute();
   const router = useRouter();
+  const { t } = useT();
   const showSetting = ref(false);
   const isFullscreen = ref(false);
 
@@ -175,26 +195,19 @@
   const showLogo = computed(() => settingStore.showLogo);
   const showFullscreen = computed(() => settingStore.headerSetting.showFullscreen);
   const showUserInfo = computed(() => settingStore.headerSetting.showUserInfo);
-  const showSearch = computed(() => settingStore.headerSetting.showSearch !== false);
-  const showNotice = computed(() => settingStore.headerSetting.showNotice !== false);
-
-  function hexLuminance(hex: string): number {
-    const raw = hex.replace('#', '');
-    if (raw.length !== 6) return 1;
-    const r = parseInt(raw.slice(0, 2), 16) / 255;
-    const g = parseInt(raw.slice(2, 4), 16) / 255;
-    const b = parseInt(raw.slice(4, 6), 16) / 255;
-    const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-    return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
-  }
+  const showSearch = computed(() => settingStore.headerSetting.showSearch);
+  const showNotice = computed(() => settingStore.headerSetting.showNotice);
+  const showLocale = computed(
+    () => I18N_ENABLED && settingStore.headerSetting.showLocale,
+  );
 
   const customHeaderBg = computed(() => {
-    if (designStore.darkTheme) return '';
-    const bg = settingStore.headerSetting.bgColor;
-    if (!bg) return '';
-    const normalized = bg.trim().toLowerCase();
-    if (normalized === '#fff' || normalized === '#ffffff') return '';
-    return bg;
+    if (designStore.darkTheme)
+      return '';
+    return resolveCustomBg(
+      settingStore.headerSetting.bgFollowTheme,
+      settingStore.headerSetting.bgColor,
+    );
   });
 
   const headerOnDark = computed(() => {
@@ -227,13 +240,18 @@
   );
 
   // ---- 用户信息 ----
-  const username = computed(() => (local as any).token?.userName ?? '用户');
+  const username = computed(() => {
+    const name = (local as { token?: TokenInfo }).token?.userName;
+    return name || t('layout.defaultUser', '用户');
+  });
   const usernameShort = computed(() => {
-    const name = username.value as string;
+    const name = username.value;
     return name ? name.charAt(0).toUpperCase() : 'U';
   });
 
   // ---- 面包屑（按菜单树回溯，补全 ParentView 扁平后丢失的目录）----
+  const DIRECTORY_COMPONENTS = new Set(['ParentView', 'Layout', 'ParentView/index']);
+
   function findMenuTrail(
     menus: MenuItem[],
     targetName: string,
@@ -252,23 +270,74 @@
     return null;
   }
 
-  function menuSiblingsAsOptions(menu: MenuItem, parent?: MenuItem) {
-    const siblings = (parent?.children ?? []).filter(
-      m => m.name !== menu.name && !m.hidden && m.meta?.title,
-    );
-    return siblings.map(m => ({
-      label: m.meta?.title,
-      key: m.name,
-    }));
+  function isDirectoryMenu(menu: MenuItem) {
+    const comp = menu.component?.replace(/^\/+/, '') ?? '';
+    if (menu.children?.length) {
+      if (!comp || DIRECTORY_COMPONENTS.has(comp))
+        return true;
+      if (menu.type === 1 || menu.type === 'M')
+        return true;
+    }
+    return false;
   }
 
-  function resolveCrumbIcon(icon?: unknown) {
-    if (!icon || typeof icon !== 'string')
-      return icon;
-    return (AntdIcons as Record<string, unknown>)[icon] ?? icon;
+  function menuToOptions(menus: MenuItem[]) {
+    return menus
+      .filter(m => !m.hidden && m.meta?.title)
+      .map(m => ({
+        label: m.meta?.title,
+        key: m.name,
+      }));
   }
 
-  const breadcrumbList = computed(() => {
+  /** 目录：下拉子菜单；页面：下拉同级菜单，便于切换 */
+  function crumbDropdownOptions(menu: MenuItem, parent?: MenuItem) {
+    if (menu.children?.length)
+      return menuToOptions(menu.children);
+    const siblings = (parent?.children ?? []).filter(m => m.name !== menu.name);
+    return menuToOptions(siblings);
+  }
+
+  function firstLeafMenu(menu: MenuItem): MenuItem | null {
+    if (!isDirectoryMenu(menu))
+      return menu.name ? menu : null;
+    for (const child of menu.children ?? []) {
+      if (child.hidden)
+        continue;
+      const leaf = firstLeafMenu(child);
+      if (leaf)
+        return leaf;
+    }
+    return null;
+  }
+
+  function resolveNavigateTarget(menu: MenuItem): string | null {
+    if (/^https?:/.test(menu.path))
+      return menu.path;
+
+    if (menu.redirect && menu.redirect !== 'noRedirect')
+      return menu.redirect;
+
+    if (isDirectoryMenu(menu)) {
+      const leaf = firstLeafMenu(menu);
+      return leaf?.name ?? null;
+    }
+
+    return menu.name || null;
+  }
+
+  type CrumbItem = {
+    name: string
+    path?: string
+    meta: Record<string, unknown>
+    label?: string
+    key: string
+    navigable: boolean
+    navigateTarget: string | null
+    children: { label?: unknown; key: string }[]
+  };
+
+  const breadcrumbList = computed((): CrumbItem[] => {
     const menus = permissionStore.userMenuList as MenuItem[];
     const routeName = route.name ? String(route.name) : '';
     const activeMenu = route.meta?.activeMenu ? String(route.meta.activeMenu) : '';
@@ -298,46 +367,77 @@
         });
       }
 
-      return items
-        .filter(m => m.meta?.title && m.meta?.breadcrumb !== false)
-        .map((menu) => {
-          const trailIdx = trail.findIndex(m => m.name === menu.name);
-          const rawParent = trailIdx > 0
-            ? trail[trailIdx - 1]
-            : (trailIdx < 0 ? trail[trail.length - 1] : undefined);
-          return {
-            name: menu.name,
-            meta: {
-              ...menu.meta,
-              icon: resolveCrumbIcon(menu.meta?.icon),
-            },
-            label: menu.meta?.title,
-            key: menu.name,
-            disabled: false,
-            children: menuSiblingsAsOptions(menu, rawParent),
-          };
-        });
+      const visible = items.filter(m => m.meta?.title && m.meta?.breadcrumb !== false);
+      return visible.map((menu, index) => {
+        const trailIdx = trail.findIndex(m => m.name === menu.name);
+        const rawParent = trailIdx > 0
+          ? trail[trailIdx - 1]
+          : (trailIdx < 0 ? trail[trail.length - 1] : undefined);
+        const isLast = index === visible.length - 1;
+        const navigateTarget = resolveNavigateTarget(menu);
+        const sameAsCurrent = !!navigateTarget
+          && (navigateTarget === routeName || navigateTarget === route.path);
+        return {
+          name: menu.name,
+          path: menu.path,
+          meta: {
+            ...menu.meta,
+            icon: resolveAntdIcon(menu.meta?.icon),
+          },
+          label: menu.meta?.title,
+          key: menu.name,
+          navigable: !isLast && !!navigateTarget && !sameAsCurrent,
+          navigateTarget,
+          children: crumbDropdownOptions(menu, rawParent),
+        };
+      });
     }
 
     // 回退：仍用 matched（静态页 / 菜单尚未加载）
-    return route.matched
-      .filter(item => item.meta?.title && item.meta?.breadcrumb !== false)
-      .map(item => ({
-        name: item.name,
+    const matched = route.matched
+      .filter(item => item.meta?.title && item.meta?.breadcrumb !== false);
+    return matched.map((item, index) => {
+      const name = String(item.name ?? '');
+      const isLast = index === matched.length - 1;
+      return {
+        name,
+        path: item.path,
         meta: {
           ...item.meta,
-          icon: resolveCrumbIcon(item.meta?.icon),
+          icon: resolveAntdIcon(item.meta?.icon),
         },
-        label: item.meta?.title,
-        key: item.name as string,
-        disabled: false,
+        label: item.meta?.title as string | undefined,
+        key: name,
+        navigable: !isLast && !!name && name !== routeName,
+        navigateTarget: name || null,
         children: [] as { label?: unknown; key: string }[],
-      }));
+      };
+    });
   });
 
+  function pushByTarget(target: string) {
+    if (/^https?:/.test(target)) {
+      window.open(target);
+      return;
+    }
+    if (target.startsWith('/'))
+      router.push(target);
+    else
+      router.push({ name: target });
+  }
+
   const dropdownSelect = (key: string | number) => {
-    router.push({ name: String(key) });
+    pushByTarget(String(key));
   };
+
+  function onCrumbClick(item: CrumbItem, index: number) {
+    if (!item.navigable || !item.navigateTarget)
+      return;
+    // 有下拉时仅末级以外可点；避免与下拉抢交互时仍允许显式点击跳转
+    if (index === breadcrumbList.value.length - 1)
+      return;
+    pushByTarget(item.navigateTarget);
+  }
 
   const { reloadPage } = usePageReload();
 
@@ -363,21 +463,14 @@
     document.removeEventListener('fullscreenchange', onFullscreenChange);
   });
 
-  const avatarOptions = [{ label: '退出登录', key: 'logout' }];
+  const avatarOptions = computed(() => [
+    { label: t('layout.logout', '退出登录'), key: 'logout' },
+  ]);
 
   const avatarSelect = (key: string) => {
     if (key === 'logout') {
       stopAppMessageChannel();
-      storage.remove(TABS_ROUTES);
-      permissionStore.clearRoutes(router);
-      permissionStore.setPermissions([]);
-      permissionStore.setRoles([]);
-      permissionStore.setMenus([]);
-      try {
-        (local as any).removeItem?.('token');
-        (local as any).clearItem?.('token');
-        delete (local as any).token;
-      } catch {}
+      permissionStore.logout(router);
       router.push({ name: 'Login' });
     }
   };
@@ -430,8 +523,52 @@
         }
       }
 
-      .n-breadcrumb {
-        display: inline-block;
+      :deep(.n-breadcrumb) {
+        line-height: 1;
+      }
+
+      :deep(.n-breadcrumb > ul) {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      :deep(.n-breadcrumb-item) {
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+      }
+
+      :deep(.n-breadcrumb-item__link) {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+      }
+
+      :deep(.n-breadcrumb-item__separator) {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+      }
+
+      .link-text {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        line-height: 1;
+        font-size: 14px;
+
+        &--nav {
+          cursor: pointer;
+
+          &:hover {
+            color: var(--n-primary-color);
+          }
+        }
+      }
+
+      .breadcrumb-icon {
+        flex-shrink: 0;
       }
 
       :deep(.n-menu) {

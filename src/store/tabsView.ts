@@ -74,6 +74,18 @@ export const useTabsViewStore = defineStore('app-tabs-view', {
       this.cachedViews = []
     },
 
+    /**
+     * 按当前已注册路由过滤标签（换账号 / 权限变更后去掉无权限页）
+     */
+    filterAccessibleTabs(isAccessible: (tab: RouteItem) => boolean) {
+      this.tabsList = this.tabsList.filter(
+        item => !!item?.meta?.affix || isAccessible(item),
+      )
+      // affix 也必须有权限，否则仍可能点进无权限页
+      this.tabsList = this.tabsList.filter(isAccessible)
+      this.syncCachedViews()
+    },
+
     initTabs(routes: RouteItem[]) {
       const uniqueTabs: RouteItem[] = []
       const seen = new Set<string>()

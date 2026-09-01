@@ -54,12 +54,32 @@ export default (router: Router, viewModules: ViewModules, viewsBaseDir: string):
 
     const token = (local as any).token?.token as string | undefined
     const permissionStore = usePermissionStore()
+    const routeName = String(to.name ?? '')
 
-    const publicRouteNames = new Set(['Login', 'Error403', 'Error404', 'Error500'])
-    if (publicRouteNames.has(String(to.name)))
+    // 错误页始终可访问（无需登录）
+    const errorRouteNames = new Set(['Error403', 'Error404', 'Error500'])
+    if (errorRouteNames.has(routeName))
       return true
 
-    if (token && !permissionStore.routesLoaded && to.name !== 'Login') {
+    // 已登录访问登录页 → 跳默认首页
+    if (routeName === 'Login') {
+      if (!token)
+        return true
+
+      if (!permissionStore.routesLoaded)
+        await permissionStore.setupRoutes(router, viewModules, viewsBaseDir)
+
+      const homeName = permissionStore.defaultRouteName
+      if (homeName)
+        return { name: homeName, replace: true }
+
+      return { path: '/', replace: true }
+    }
+
+    if (!token)
+      return `/login?returnUrl=${encodeURIComponent(to.fullPath)}`
+
+    if (!permissionStore.routesLoaded) {
       try {
         await permissionStore.setupRoutes(router, viewModules, viewsBaseDir)
         // 动态路由刚注册完，必须重新匹配；访问根路径时直达默认首页
@@ -78,23 +98,6 @@ export default (router: Router, viewModules: ViewModules, viewsBaseDir: string):
         return '/login'
       }
     }
-
-    if (to.name === 'Login') {
-      if (token) {
-        if (!permissionStore.routesLoaded)
-          await permissionStore.setupRoutes(router, viewModules, viewsBaseDir)
-
-        const homeName = permissionStore.defaultRouteName
-        if (homeName)
-          return { name: homeName, replace: true }
-
-        return { path: '/', replace: true }
-      }
-      return true
-    }
-
-    if (!token)
-      return `/login?returnUrl=${encodeURIComponent(to.fullPath)}`
 
     return true
   })

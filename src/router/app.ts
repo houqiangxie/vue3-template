@@ -31,7 +31,8 @@ const router = createRouter({
     {
       path: '/',
       name: 'Layout',
-      component: () => import('@/layout/index.vue'),
+      // H5 预留壳，不复用 web 后台 layout（侧栏 / 多页签 / 项目配置等）
+      component: () => import('@/layout/AppLayout.vue'),
       children: [],
     },
   ],

@@ -1,0 +1,75 @@
+/* App / WebApp 共用壳层与滚动条 */
+
+/*
+ * body.zoom 反向补偿系统/浏览器缩放时，布局坐标系被缩小，
+ * 100vh/100vw 会按 zoom 比例变矮/变窄，需除以 --app-body-zoom 铺满可视区域。
+ * 变量由 src/utils/bodyZoom.ts 写入；未启用时默认为 1。
+ *
+ * 补偿后布局尺寸 > 视口「未缩放」尺寸，必须 overflow:hidden，
+ * 否则会出现整页滚动条；内部滚动由 layout / 表格自行处理。
+ */
+:root {
+  --app-body-zoom: 1;
+  --app-vw: calc(100vw / var(--app-body-zoom));
+  --app-vh: calc(100vh / var(--app-body-zoom));
+  --app-dvh: calc(100dvh / var(--app-body-zoom));
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  box-sizing: border-box;
+  width: var(--app-vw);
+  height: var(--app-vh);
+  height: var(--app-dvh);
+  margin: 0;
+  overflow: hidden;
+}
+
+#webApp {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-shell {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 灰/色弱只作用于业务壳，锁屏与水印在壳外不受 invert 影响 */
+html.gray-mode .app-shell {
+  filter: grayscale(100%);
+}
+
+html.color-weak .app-shell {
+  filter: invert(80%);
+}
+
+html.gray-mode.color-weak .app-shell {
+  filter: grayscale(100%) invert(80%);
+}
+
+.n-scrollbar-rail__scrollbar {
+  z-index: 999;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+  background: #aaa;
+}
+
+::-webkit-scrollbar-track {
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0);
+}

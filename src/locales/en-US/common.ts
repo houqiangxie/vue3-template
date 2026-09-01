@@ -1,0 +1,17 @@
+export default {
+  confirm: 'Confirm',
+  cancel: 'Cancel',
+  save: 'Save',
+  delete: 'Delete',
+  search: 'Search',
+  reset: 'Reset',
+  export: 'Export',
+  import: 'Import',
+  refresh: 'Refresh',
+  loading: 'Loading…',
+  success: 'Success',
+  failed: 'Failed',
+  localeZhCN: '简体中文',
+  localeEnUS: 'English',
+  fileLoadFailed: 'Failed to load file',
+}

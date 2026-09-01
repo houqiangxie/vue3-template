@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FieldOption } from '@/components/common/table/fieldSchema'
 import type { SqlCompareOperator, SqlFieldType } from './types'
-import { sqlSearchLabels } from './labels'
+import { useSqlSearchLabels } from './labels'
 import {
   normalizeBooleanValue,
   operatorNeedsArrayValue,
@@ -49,10 +49,12 @@ const booleanSelectValue = computed(() => {
   return bool ? 'true' : 'false'
 })
 
-const booleanOptions = [
-  { label: sqlSearchLabels.booleanTrue, value: 'true' },
-  { label: sqlSearchLabels.booleanFalse, value: 'false' },
-]
+const sqlSearchLabels = useSqlSearchLabels()
+
+const booleanOptions = computed(() => [
+  { label: sqlSearchLabels.value.booleanTrue, value: 'true' },
+  { label: sqlSearchLabels.value.booleanFalse, value: 'false' },
+])
 
 function onBooleanChange(v: string | null) {
   if (v === 'true')

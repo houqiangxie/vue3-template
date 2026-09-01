@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { NButton, NResult } from 'naive-ui'
+import { useT } from '@/hooks/useT'
 import { websiteConfig } from '@/config/website.config'
 
 const props = withDefaults(defineProps<{
@@ -12,26 +13,27 @@ const props = withDefaults(defineProps<{
 
 const router = useRouter()
 const permissionStore = usePermissionStore()
+const { t } = useT()
 
 const preset = computed(() => {
   switch (props.status) {
     case '403':
       return {
         status: '403' as const,
-        title: props.title || '403 禁止访问',
-        description: props.description || '抱歉，您没有权限访问此页面。',
+        title: props.title || t('error.forbiddenTitle', '403 禁止访问'),
+        description: props.description || t('error.forbiddenDesc', '抱歉，您没有权限访问此页面。'),
       }
     case '500':
       return {
         status: '500' as const,
-        title: props.title || '500 服务器错误',
-        description: props.description || '服务器开小差了，请稍后再试或联系管理员。',
+        title: props.title || t('error.serverErrorTitle', '500 服务器错误'),
+        description: props.description || t('error.serverErrorDesc', '服务器开小差了，请稍后再试或联系管理员。'),
       }
     default:
       return {
         status: '404' as const,
-        title: props.title || '404 页面不存在',
-        description: props.description || '抱歉，您访问的页面不存在或已被移除。',
+        title: props.title || t('error.notFoundTitle', '404 页面不存在'),
+        description: props.description || t('error.notFoundDesc', '抱歉，您访问的页面不存在或已被移除。'),
       }
   }
 })
@@ -64,10 +66,10 @@ function goBack() {
         <template #footer>
           <div class="error-page__actions">
             <NButton type="primary" @click="goHome">
-              返回首页
+              {{ t('error.backHome', '返回首页') }}
             </NButton>
             <NButton @click="goBack">
-              返回上一页
+              {{ t('error.backPrev', '返回上一页') }}
             </NButton>
           </div>
         </template>
@@ -81,7 +83,8 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: var(--app-vh, 100vh);
+  min-height: var(--app-dvh, 100dvh);
   padding: 24px;
   background: linear-gradient(160deg, #f0f5ff 0%, #f5f7f9 45%, #eef2f7 100%);
 }

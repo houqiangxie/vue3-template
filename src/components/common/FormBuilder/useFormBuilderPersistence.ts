@@ -1,4 +1,5 @@
 import type { Ref } from 'vue'
+import { local } from 'ux-web-storage'
 import type { UnifiedFieldConfig } from '@/components/common/table/fieldSchema'
 import type { BuilderField, FormBuilderDraft, FormBuilderSaveStatus } from './types'
 import {
@@ -19,7 +20,7 @@ interface HistoryEntry {
 
 function readAutoSavePref(): boolean {
   try {
-    return localStorage.getItem(AUTO_SAVE_PREF_KEY) === '1'
+    return local[AUTO_SAVE_PREF_KEY] === '1'
   }
   catch {
     return false
@@ -28,7 +29,7 @@ function readAutoSavePref(): boolean {
 
 function writeAutoSavePref(enabled: boolean) {
   try {
-    localStorage.setItem(AUTO_SAVE_PREF_KEY, enabled ? '1' : '0')
+    local[AUTO_SAVE_PREF_KEY] = enabled ? '1' : '0'
   }
   catch {
     // ignore quota / private mode
@@ -44,7 +45,7 @@ function isDraftV1(draft: FormBuilderDraft): draft is FormBuilderDraft & { versi
 }
 
 export interface FormBuilderPersistenceOptions {
-  /** 是否自动读写 localStorage 草稿，默认 false（也可传入外部 ref 受控） */
+  /** 是否自动读写本地草稿，默认 false（也可传入外部 ref 受控） */
   autoSave?: Ref<boolean> | boolean
 }
 
@@ -136,7 +137,7 @@ export function useFormBuilderPersistence(
       selectedUid: selectedUid.value,
     }
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(draft))
+      local[STORAGE_KEY] = draft
       saveStatus.value = 'saved'
       return true
     }
@@ -148,7 +149,7 @@ export function useFormBuilderPersistence(
 
   function clearDraft() {
     try {
-      localStorage.removeItem(STORAGE_KEY)
+      delete local[STORAGE_KEY]
     }
     catch {
       // ignore
@@ -194,11 +195,8 @@ export function useFormBuilderPersistence(
 
   function loadDraft(): boolean {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (!raw)
-        return false
-      const draft = JSON.parse(raw) as FormBuilderDraft
-      if (!draft.fields?.length)
+      const draft = local[STORAGE_KEY] as FormBuilderDraft | undefined
+      if (!draft?.fields?.length)
         return false
       skipHistory = true
       if (isDraftV1(draft)) {

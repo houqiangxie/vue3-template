@@ -31,10 +31,10 @@ declare global {
   }
 }
 
-// 扩展 Vue 组件实例全局属性
-import type { Emitter } from 'mitt';
-declare module '@vue/runtime-core' {
-  interface ComponentCustomProperties {
-    $emitter: Emitter<Record<string, any>>;
-  }
+interface ImportMetaEnv {
+  readonly VITE_ENABLE_I18N?: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
 }

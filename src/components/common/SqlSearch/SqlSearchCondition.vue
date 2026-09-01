@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SqlSearchCondition as SqlSearchConditionType } from './types'
 import { SQL_SEARCH_CONTEXT_KEY } from './context'
-import { operatorLabels, sqlSearchLabels } from './labels'
+import { useOperatorLabels, useSqlSearchLabels } from './labels'
 import SqlSearchValueInput from './SqlSearchValueInput.vue'
 import {
   cloneCondition,
@@ -37,6 +37,9 @@ const {
   tree,
 } = ctx
 
+const sqlSearchLabels = useSqlSearchLabels()
+const operatorLabels = useOperatorLabels()
+
 const currentField = computed(() =>
   fieldMap.value.get(props.condition.field),
 )
@@ -47,7 +50,7 @@ const fieldType = computed(() =>
 
 const operatorOptions = computed(() =>
   getOperatorsForField(currentField.value).map(op => ({
-    label: operatorLabels[op],
+    label: operatorLabels.value[op],
     value: op,
   })),
 )

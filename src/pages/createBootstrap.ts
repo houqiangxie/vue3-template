@@ -2,8 +2,9 @@ import type { App } from 'vue'
 import type { Router } from 'vue-router'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import emitter from '@/utils/emitter'
 import { setupDirectives } from '@/directive'
+
+import { setupI18n } from '@/i18n/setup'
 
 export interface BootstrapOptions {
   rootComponent: Parameters<typeof createApp>[0]
@@ -15,7 +16,7 @@ export interface BootstrapOptions {
 }
 
 /**
- * web / app 共用启动流程
+ * 多入口共用启动流程（web 后台 / app H5 预留）
  */
 export async function createBootstrap(options: BootstrapOptions) {
   const {
@@ -27,13 +28,13 @@ export async function createBootstrap(options: BootstrapOptions) {
   } = options
 
   const app = createApp(rootComponent)
-  app.config.globalProperties.$emitter = emitter
 
   const pinia = createPinia()
   app.use(pinia)
   app.use(router)
   setupDirectives(app)
 
+  await setupI18n(app)
   await setup?.(app)
   await router.isReady()
 

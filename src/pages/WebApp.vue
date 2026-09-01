@@ -17,7 +17,9 @@
             <AppUpdater v-if="inElectron" />
             <AppWatermark />
             <AppLockScreen />
-            <router-view />
+            <div class="app-shell">
+              <router-view />
+            </div>
           </n-notification-provider>
         </n-message-provider>
       </n-dialog-provider>
@@ -41,6 +43,7 @@ import AppLockScreen from '@/components/common/AppLockScreen.vue';
 import { isElectron } from '@/utils/electron';
 import { hljs } from '@/utils/hljs';
 
+import { I18N_ENABLED } from '@/i18n/config';
 import { useAppThemeOverrides } from '@/hooks/setting/useAppThemeOverrides';
 import { useAppThemeEffects } from '@/hooks/setting/useAppThemeEffects';
 
@@ -72,25 +75,11 @@ const themeShell = computed(() =>
   designStore.showThemeEditor ? AsyncThemeEditor : Passthrough,
 );
 
-const naiveLocale = computed(() => (projectStore.locale === 'en-US' ? enUS : zhCN));
-const naiveDateLocale = computed(() => (projectStore.locale === 'en-US' ? dateEnUS : dateZhCN));
+/** 未启用业务 i18n 时界面走中文 fallback，Naive 组件（含 NThemeEditor）同步强制中文 */
+const naiveLocale = computed(() =>
+  I18N_ENABLED && projectStore.locale === 'en-US' ? enUS : zhCN,
+);
+const naiveDateLocale = computed(() =>
+  I18N_ENABLED && projectStore.locale === 'en-US' ? dateEnUS : dateZhCN,
+);
 </script>
-
-<style lang="scss">
-.n-scrollbar-rail__scrollbar {
-  z-index: 999;
-}
-
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-thumb {
-  border-radius: 5px;
-  background: #aaa;
-}
-::-webkit-scrollbar-track {
-  border-radius: 0;
-  background: rgba(0, 0, 0, 0);
-}
-</style>

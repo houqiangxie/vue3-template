@@ -7,19 +7,23 @@
         v-model:value="password"
         type="password"
         show-password-on="click"
-        placeholder="点击解锁（隐私遮罩，非密码校验）"
+        :placeholder="t('layout.lockPlaceholder', '点击解锁（隐私遮罩，非密码校验）')"
         @keyup.enter="unlock"
       />
-      <n-button type="primary" block @click="unlock">解锁</n-button>
+      <n-button type="primary" block @click="unlock">{{ t('layout.unlock', '解锁') }}</n-button>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
   import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+  import { session } from 'ux-web-storage';
+
+  import { useT } from '@/hooks/useT';
 
   const LOCK_KEY = '__app_locked__';
   const settingStore = useProjectSettingStore();
+  const { t } = useT();
 
   const locked = ref(false);
   const password = ref('');
@@ -51,7 +55,7 @@
     locked.value = true;
     password.value = '';
     try {
-      sessionStorage.setItem(LOCK_KEY, '1');
+      session[LOCK_KEY] = '1';
     } catch {}
     clearTimer();
   }
@@ -60,7 +64,7 @@
     locked.value = false;
     password.value = '';
     try {
-      sessionStorage.removeItem(LOCK_KEY);
+      delete session[LOCK_KEY];
     } catch {}
     resetTimer();
   }
@@ -85,7 +89,7 @@
 
   onMounted(() => {
     try {
-      if (sessionStorage.getItem(LOCK_KEY) === '1' && settingStore.lockScreen.enabled) {
+      if (session[LOCK_KEY] === '1' && settingStore.lockScreen.enabled) {
         locked.value = true;
       }
     } catch {}

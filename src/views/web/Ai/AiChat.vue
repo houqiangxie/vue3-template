@@ -109,7 +109,7 @@ const {
 
 <style scoped>
 .ai-chat {
-  height: calc(100vh - 140px);
+  height: calc(var(--app-vh, 100vh) - 140px);
   min-height: 520px;
 }
 

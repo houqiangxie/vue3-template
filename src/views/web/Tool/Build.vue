@@ -418,6 +418,7 @@ import {
   resolveFieldKey,
   rewriteModelKeyRefs,
 } from '@/components/common/FormBuilder/utils'
+import { getBodyCssZoom } from '@/utils/bodyZoom'
 
 const GRID_GAP = 10
 
@@ -596,10 +597,13 @@ function snapFieldColStart(field: BuilderField, el: HTMLElement, clientX?: numbe
   if (!metrics)
     return
   const { grid, colWidth } = metrics
+  const zoom = getBodyCssZoom()
+  // clientWidth=布局坐标；getBoundingClientRect/clientX=视觉坐标，统一除以 zoom
   const gridRect = grid.getBoundingClientRect()
   const elRect = el.getBoundingClientRect()
-  const snapX = clientX ?? elRect.left + elRect.width / 2
-  const colStart = resolveColStartFromClientX(snapX, gridRect, colWidth, GRID_GAP, formCols.value)
+  const snapX = (clientX ?? elRect.left + elRect.width / 2) / zoom
+  const layoutGridRect = { left: gridRect.left / zoom } as DOMRect
+  const colStart = resolveColStartFromClientX(snapX, layoutGridRect, colWidth, GRID_GAP, formCols.value)
   applyFieldGridPlacement(field, colStart, getFieldSpan(field, formCols.value))
 }
 
@@ -639,7 +643,8 @@ function onGridResizeMove(e: MouseEvent) {
   if (!metrics)
     return
   const { colWidth } = metrics
-  const delta = Math.round((e.clientX - gridResizing.value.startX) / colWidth)
+  const zoom = getBodyCssZoom()
+  const delta = Math.round((e.clientX - gridResizing.value.startX) / zoom / colWidth)
   const field = fields.value.find(f => f.uid === gridResizing.value!.uid)
   if (!field || field.form === false)
     return
@@ -1283,9 +1288,5 @@ onUnmounted(() => {
   opacity: 0.85;
 }
 
-@media (max-width: 1100px) {
-  .form-builder__body {
-    grid-template-columns: 1fr;
-  }
-}
+
 </style>

@@ -6,6 +6,7 @@ import { NSpin } from 'naive-ui'
 import { computed, ref, shallowRef, watch, type Component } from 'vue'
 import CommonModal from './modal/CommonModal.vue'
 import { fetchPreviewFile } from '@/utils/file'
+import { useT } from '@/hooks/useT'
 
 const props = withDefaults(defineProps<{
   title?: string
@@ -17,6 +18,8 @@ const props = withDefaults(defineProps<{
 })
 
 const show = defineModel<boolean>('show', { default: false })
+const designStore = useDesignSettingStore()
+const { t } = useT()
 
 const previewFile = ref<File | null>(null)
 const loading = ref(false)
@@ -27,7 +30,7 @@ const officePreset = shallowRef<unknown>(null)
 const viewerOptions = computed(() => ({
   preset: officePreset.value,
   rendererMode: 'replace' as const,
-  theme: 'light' as const,
+  theme: (designStore.darkTheme ? 'dark' : 'light') as 'dark' | 'light',
   toolbar: { position: 'bottom-right' as const },
 }))
 
@@ -69,7 +72,9 @@ async function loadPreview(url: string, filename: string) {
   catch (e) {
     if (seq !== loadSeq)
       return
-    error.value = e instanceof Error ? e.message : '文件加载失败'
+    error.value = e instanceof Error
+      ? e.message
+      : t('common.fileLoadFailed', '文件加载失败')
   }
   finally {
     if (seq === loadSeq)
@@ -109,6 +114,7 @@ watch(
       <div v-else-if="show && previewFile && FileViewerComp" class="file-preview-modal__viewer">
         <component
           :is="FileViewerComp"
+          :key="designStore.darkTheme ? 'dark' : 'light'"
           :file="previewFile"
           :filename="filename"
           :options="viewerOptions"
@@ -122,12 +128,12 @@ watch(
 .file-preview-modal__spin {
   margin: -16px;
   width: calc(100% + 32px);
-  height: min(80vh, 720px);
+  height: min(calc(80vh / var(--app-body-zoom, 1)), 720px);
 }
 
 .file-preview-modal__viewer {
   width: 100%;
-  height: min(80vh, 720px);
+  height: min(calc(80vh / var(--app-body-zoom, 1)), 720px);
 }
 
 .file-preview-modal__error {
@@ -135,7 +141,7 @@ watch(
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: min(80vh, 720px);
+  height: min(calc(80vh / var(--app-body-zoom, 1)), 720px);
   color: var(--n-text-color-3);
 }
 </style>

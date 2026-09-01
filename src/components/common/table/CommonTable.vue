@@ -1,7 +1,7 @@
 <!--
  * 表格组件：支持 columns 或统一 fields 配置
  * flexHeight：跟随父级 flex 高度（父级需 flex-1 / h-full 且有确定高度）
- * colSettingKey：开启列设置（拖拽排序 + 显隐，持久化到 localStorage）
+ * colSettingKey：开启列设置（拖拽排序 + 显隐，持久化到 local）
  * csvExport：默认开启 CSV 导出（与列设置合并为一个工具按钮）
  * loading / emptyText：统一加载与空状态；首次加载展示骨架
  * virtualScroll：虚拟滚动；未显式开启时，flexHeight 且行数 ≥ 40 自动开启

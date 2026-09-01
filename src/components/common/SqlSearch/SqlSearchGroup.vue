@@ -2,7 +2,7 @@
 import type { SqlSearchGroup as SqlSearchGroupType, SqlSearchNode } from './types'
 import Draggable from 'vuedraggable'
 import { SQL_SEARCH_CONTEXT_KEY } from './context'
-import { sqlSearchLabels } from './labels'
+import { useSqlSearchLabels } from './labels'
 import SqlSearchCondition from './SqlSearchCondition.vue'
 import {
   isSqlSearchCondition,
@@ -28,10 +28,12 @@ if (!ctx)
 
 const { tree, disabled } = ctx
 
-const logicOptions = [
-  { label: sqlSearchLabels.logicAnd, value: 'and' },
-  { label: sqlSearchLabels.logicOr, value: 'or' },
-]
+const sqlSearchLabels = useSqlSearchLabels()
+
+const logicOptions = computed(() => [
+  { label: sqlSearchLabels.value.logicAnd, value: 'and' },
+  { label: sqlSearchLabels.value.logicOr, value: 'or' },
+])
 
 const collapsed = ref(false)
 

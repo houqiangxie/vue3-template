@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SqlSearchCompileOptions, SqlSearchFieldDef, SqlSearchValue, SqlValidationMode } from './types'
 import { SQL_SEARCH_CONTEXT_KEY } from './context'
-import { sqlSearchLabels } from './labels'
+import { useSqlSearchLabels } from './labels'
 import SqlSearchGroup from './SqlSearchGroup.vue'
 import { useSqlSearchTree } from './useSqlSearchTree'
 import {
@@ -52,6 +52,7 @@ const modelValue = defineModel<SqlSearchValue>('value')
 
 const validated = ref(false)
 const tree = useSqlSearchTree(modelValue)
+const sqlSearchLabels = useSqlSearchLabels()
 
 const resolvedFields = computed(() => props.fields ?? [])
 

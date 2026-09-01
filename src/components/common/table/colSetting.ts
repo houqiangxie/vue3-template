@@ -1,6 +1,7 @@
 import type { UnifiedFieldConfig } from './fieldSchema'
 import { isFieldInScene } from './fieldSchema'
 import type { ColSettingItem } from './types'
+import { local } from 'ux-web-storage'
 
 const STORAGE_PREFIX = '__table_col_setting__'
 
@@ -34,11 +35,8 @@ export function isColSettingField(field: UnifiedFieldConfig): boolean {
 /** 读取本地列设置 */
 export function loadColSetting(storageKey: string): ColSettingItem[] | null {
   try {
-    const raw = localStorage.getItem(`${STORAGE_PREFIX}${storageKey}`)
-    if (!raw)
-      return null
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed as ColSettingItem[] : null
+    const cached = local[`${STORAGE_PREFIX}${storageKey}`] as ColSettingItem[] | undefined
+    return Array.isArray(cached) ? cached : null
   }
   catch {
     return null
@@ -47,12 +45,12 @@ export function loadColSetting(storageKey: string): ColSettingItem[] | null {
 
 /** 保存本地列设置 */
 export function saveColSetting(storageKey: string, items: ColSettingItem[]) {
-  localStorage.setItem(`${STORAGE_PREFIX}${storageKey}`, JSON.stringify(items))
+  local[`${STORAGE_PREFIX}${storageKey}`] = items
 }
 
 /** 清除本地列设置 */
 export function clearColSetting(storageKey: string) {
-  localStorage.removeItem(`${STORAGE_PREFIX}${storageKey}`)
+  delete local[`${STORAGE_PREFIX}${storageKey}`]
 }
 
 /** 根据当前 fields 构建列设置列表（合并本地缓存的顺序与显隐） */

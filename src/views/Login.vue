@@ -1,5 +1,9 @@
 <template>
   <div class="login-page">
+    <div class="login-page__locale">
+      <LocaleSwitcher mode="compact" />
+    </div>
+
     <div class="login-page__bg" aria-hidden="true">
       <span class="login-page__orb login-page__orb--a" />
       <span class="login-page__orb login-page__orb--b" />
@@ -25,7 +29,7 @@
         <n-form-item path="username" :rule="rules.username">
           <n-input
             v-model:value="form.username"
-            placeholder="请输入账号"
+            :placeholder="t('login.usernamePlaceholder', '请输入账号')"
             maxlength="64"
             clearable
             :input-props="{ autocomplete: 'username' }"
@@ -40,7 +44,7 @@
           <n-input
             v-model:value="form.password"
             type="password"
-            placeholder="请输入密码"
+            :placeholder="t('login.passwordPlaceholder', '请输入密码')"
             maxlength="64"
             show-password-on="click"
             :input-props="{ autocomplete: 'current-password' }"
@@ -55,7 +59,7 @@
           <div class="login-page__captcha">
             <n-input
               v-model:value="form.code"
-              placeholder="请输入验证码"
+              :placeholder="t('login.captchaPlaceholder', '请输入验证码')"
               maxlength="8"
               :input-props="{ autocomplete: 'off' }"
             >
@@ -66,11 +70,11 @@
             <button
               type="button"
               class="login-page__captcha-btn"
-              title="点击刷新验证码"
+              :title="t('login.captchaRefreshTitle', '点击刷新验证码')"
               @click="getCode"
             >
-              <img v-if="codeUrl" :src="codeUrl" alt="验证码" />
-              <span v-else>加载中</span>
+              <img v-if="codeUrl" :src="codeUrl" :alt="t('login.captchaAlt', '验证码')" />
+              <span v-else>{{ t('login.captchaLoading', '加载中') }}</span>
             </button>
           </div>
         </n-form-item>
@@ -83,7 +87,7 @@
           :loading="loading"
           @click="loginSubmit"
         >
-          登录
+          {{ t('login.submit', '登录') }}
         </n-button>
       </n-form>
     </div>
@@ -97,11 +101,18 @@
  * 客户端加密不能替代 HTTPS / 服务端认证。
  */
 import {
+  computed,
+  reactive,
+  ref,
+} from 'vue'
+import {
   LockClosedOutline,
   PersonOutline,
   ShieldCheckmarkOutline,
 } from '@vicons/ionicons5'
 import type { FormInst, FormItemRule } from 'naive-ui'
+import { useT } from '@/hooks/useT'
+import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import { websiteConfig } from '@/config/website.config'
 import { aesEncryptCbcHex } from '@/utils/aes'
 
@@ -143,12 +154,13 @@ const form = reactive({
   uuid: '',
 })
 const loading = ref(false)
+const { t } = useT()
 
-const rules: Record<string, FormItemRule> = {
-  username: { required: true, message: '请输入账号', trigger: ['blur', 'input'] },
-  password: { required: true, message: '请输入密码', trigger: ['blur', 'input'] },
-  code: { required: true, message: '请输入验证码', trigger: ['blur', 'input'] },
-}
+const rules = computed<Record<string, FormItemRule>>(() => ({
+  username: { required: true, message: t('login.usernameRequired', '请输入账号'), trigger: ['blur', 'input'] },
+  password: { required: true, message: t('login.passwordRequired', '请输入密码'), trigger: ['blur', 'input'] },
+  code: { required: true, message: t('login.captchaRequired', '请输入验证码'), trigger: ['blur', 'input'] },
+}))
 
 const getCode = () => {
   form.code = ''
@@ -185,17 +197,20 @@ const loginSubmit = async () => {
         userName = data.username ?? form.username
       }
 
+      // 换号 / 重新登录前清掉上一会话菜单与 tab，避免权限串号
+      usePermissionStore().resetSession(router)
+
       local.token = {
         token: accessToken,
         refreshToken: refreshTokenValue,
         expiresAt: Date.now() + expiresIn * 1000,
         userName,
       }
-      window.$message?.success('登录成功')
+      window.$message?.success(t('login.success', '登录成功'))
       router.replace(resolveReturnUrl(route.query?.returnUrl as string))
     }
     else {
-      window.$message?.error(data?.message || res?.message || '登录失败，请重试')
+      window.$message?.error(data?.message || res?.message || t('login.failed', '登录失败，请重试'))
       getCode()
     }
   }
@@ -218,12 +233,24 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: var(--app-vh, 100vh);
+  min-height: var(--app-dvh, 100dvh);
   padding: 24px;
   overflow: hidden;
   background: #07111f;
   color: #e8eef7;
+}
+
+.login-page__locale {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 2;
+  color: rgba(232, 238, 247, 0.88);
+
+  :deep(.locale-switcher__text) {
+    color: rgba(232, 238, 247, 0.88);
+  }
 }
 
 .login-page__bg {
@@ -243,8 +270,8 @@ onMounted(() => {
 .login-page__orb--a {
   top: -12%;
   left: -8%;
-  width: 52vw;
-  height: 52vw;
+  width: calc(52vw / var(--app-body-zoom, 1));
+  height: calc(52vw / var(--app-body-zoom, 1));
   max-width: 520px;
   max-height: 520px;
   background: radial-gradient(circle, #1768ac 0%, transparent 70%);
@@ -253,8 +280,8 @@ onMounted(() => {
 .login-page__orb--b {
   right: -10%;
   bottom: -18%;
-  width: 48vw;
-  height: 48vw;
+  width: calc(48vw / var(--app-body-zoom, 1));
+  height: calc(48vw / var(--app-body-zoom, 1));
   max-width: 480px;
   max-height: 480px;
   background: radial-gradient(circle, #1c90dc 0%, transparent 70%);

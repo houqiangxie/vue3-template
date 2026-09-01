@@ -56,7 +56,7 @@ import type { ColSettingItem } from './types'
 import { clearColSetting, saveColSetting } from './colSetting'
 
 const props = defineProps<{
-  /** localStorage 键名，用于持久化 */
+  /** local 键名，用于持久化 */
   storageKey: string
 }>()
 

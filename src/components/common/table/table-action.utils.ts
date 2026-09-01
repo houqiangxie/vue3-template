@@ -5,19 +5,13 @@ import type {
   TableActionPopconfirmConfig,
 } from './types'
 
-/** 权限检查（可在 setup 外调用） */
+import { matchAny, SUPER_PERMISSION } from '@/store/permission'
+
+/** 权限检查（可在 setup 外调用）；未传 perm 视为公开 */
 export function hasPermission(perm?: string | string[]): boolean {
   if (!perm)
     return true
-  const permissionStore = usePermissionStore()
-  const perms = permissionStore.userPermissions
-  // 权限尚未加载或为空：默认拒绝（fail-closed），避免未鉴权时按钮全开
-  if (!perms.length)
-    return false
-  if (perms.includes('*:*:*'))
-    return true
-  const required = Array.isArray(perm) ? perm : [perm]
-  return required.some(p => perms.includes(p))
+  return matchAny(usePermissionStore().userPermissions, perm, SUPER_PERMISSION)
 }
 
 /** 解析操作唯一 key，优先 key / label，否则用索引兜底 */
