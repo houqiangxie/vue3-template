@@ -245,6 +245,16 @@ function buildRouteMeta(menu: MenuItem) {
   }
 }
 
+/** iframe 叶子路由挂上 catch-all，便于主应用 URL 与子应用 path 同步 */
+function withIframeCatchAll(routePath: string): string {
+  const base = routePath.replace(/\/$/, '') || '/'
+  if (base.includes(':'))
+    return routePath
+  if (base === '/')
+    return '/:iframePath(.*)*'
+  return `${base}/:iframePath(.*)*`
+}
+
 function resolveRedirect(menu: MenuItem, childRoutes: RouteRecordRaw[]) {
   if (menu.redirect && menu.redirect !== 'noRedirect') {
     const byName = childRoutes.find(r => r.name === menu.redirect)
@@ -312,11 +322,14 @@ function createLeafRoute(
   if (isIFrameComponent(menu.component)) {
     const iframeUrl = menu.meta?.iFrameUrl
       || (menu.redirect && menu.redirect !== 'noRedirect' ? menu.redirect : undefined)
-    if (iframeUrl) {
-      route.meta = {
-        ...route.meta,
-        iFrameUrl: iframeUrl,
-      }
+    const basePath = routePath.replace(/\/$/, '') || '/'
+    route.path = withIframeCatchAll(routePath)
+    route.meta = {
+      ...route.meta,
+      // iframe 页默认缓存，切换系统时不销毁，便于多 iframe 复用
+      keepAlive: resolveKeepAlive({ ...menu, isCache: menu.isCache ?? '1' }),
+      iFrameBasePath: basePath,
+      ...(iframeUrl ? { iFrameUrl: iframeUrl } : {}),
     }
   }
 

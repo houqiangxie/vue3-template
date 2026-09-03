@@ -18,13 +18,13 @@
     <CommonTable
       class="page-container__table"
       flex-height
+      tree
       col-setting-key="system-menu"
       :data="tableData"
       :fields="tableFields"
       :show-pagination="false"
       :row-key="(row: Record<string, unknown>) => row.menuId as number"
       :loading="loading"
-      :table-props="{ defaultExpandAll: true }"
     />
 
     <!-- 新增/编辑 -->

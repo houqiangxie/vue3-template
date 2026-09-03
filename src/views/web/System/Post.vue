@@ -27,6 +27,7 @@
     <CommonTable
       class="page-container__table"
       flex-height
+      show-index
       selectable
       col-setting-key="system-post"
       v-model:checked-row-keys="checkedIds"
@@ -37,6 +38,7 @@
       :item-count="total"
       :row-key="(row: Record<string, unknown>) => row.postId as number"
       :loading="loading"
+      :summary="{ labelKey: '__index', columns: { postSort: 'sum' } }"
       @update:page="onPageChange"
       @update:page-size="onPageSizeChange"
     />
@@ -98,6 +100,7 @@ const postFields = defineFields([
     table: {
       width: 80,
       format: 'option',
+      filter: 'local',
       tagType: val => (val === '1' ? 'success' : 'error'),
     },
   },

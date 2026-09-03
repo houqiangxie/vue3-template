@@ -173,6 +173,8 @@ function buildVueFile(fields: BuilderField[], config: CrudExportConfig): string 
     <CommonTable
       class="page-container__table"
       flex-height
+      remote
+      show-index
       selectable
       col-setting-key="${colSettingKey}"
       v-model:checked-row-keys="checkedIds"
@@ -185,6 +187,8 @@ function buildVueFile(fields: BuilderField[], config: CrudExportConfig): string 
       :loading="loading"
       @update:page="onPageChange"
       @update:page-size="onPageSizeChange"
+      @update:sorter="onSorterChange"
+      @update:filters="onFiltersChange"
     />
 
     <CommonModal
@@ -223,6 +227,8 @@ const {
   handleSearch,
   onPageChange,
   onPageSizeChange,
+  onSorterChange,
+  onFiltersChange,
   formVisible,
   formData,
   isEdit,

@@ -1,8 +1,12 @@
 <!--
  * 表格组件：支持 columns 或统一 fields 配置
  * flexHeight：跟随父级 flex 高度（父级需 flex-1 / h-full 且有确定高度）
+ * showIndex：序号列（分页时连续编号）
+ * remote：远程分页/排序/筛选（sortable / filter 列不再本地处理）
+ * expand：展开行（prop / #expand 插槽）；tree：树表 childrenKey / defaultExpandAll
+ * summary：合计行；clearCheckedOnDataChange：数据变更时是否清空勾选
  * colSettingKey：开启列设置（拖拽排序 + 显隐，持久化到 local）
- * csvExport：默认开启 CSV 导出（与列设置合并为一个工具按钮）
+ * csvExport / toolbarActions / #toolbar / #toolbar-extra：工具栏
  * loading / emptyText：统一加载与空状态；首次加载展示骨架
  * virtualScroll：虚拟滚动；未显式开启时，flexHeight 且行数 ≥ 40 自动开启
  -->
@@ -48,13 +52,17 @@
         :class="{ 'h-full': flexHeight }"
         :flex-height="flexHeight"
         :virtual-scroll="effectiveVirtualScroll"
+        :remote="remote"
         :columns="resolvedColumns"
         :data="data"
         :pagination="showPagination ? pagination : false"
         :row-key="rowKey"
+        :summary="resolvedSummary"
         v-bind="mergedTableProps"
         :loading="overlayLoading"
         :get-csv-cell="getCsvCell"
+        @update:sorter="onUpdateSorter"
+        @update:filters="onUpdateFilters"
       >
         <template #empty>
           <slot name="empty">
@@ -65,34 +73,39 @@
     </div>
 
     <div v-if="showToolbar" class="common-table__toolbar">
-      <n-dropdown
-        v-if="isToolbarDropdown"
-        trigger="hover"
-        placement="bottom-end"
-        :options="toolbarDropdownOptions"
-        @select="onToolbarSelect"
-      >
-        <n-button quaternary circle size="small">
-          <template #icon>
-            <n-icon size="16">
-              <component :is="toolbarIcon" />
-            </n-icon>
-          </template>
-        </n-button>
-      </n-dropdown>
-      <n-button
-        v-else
-        quaternary
-        circle
-        size="small"
-        @click="onToolbarSingleClick"
-      >
-        <template #icon>
-          <n-icon size="16">
-            <component :is="toolbarIcon" />
-          </n-icon>
-        </template>
-      </n-button>
+      <slot name="toolbar">
+        <div class="common-table__toolbar-inner">
+          <slot name="toolbar-extra" />
+          <n-dropdown
+            v-if="isToolbarDropdown"
+            trigger="hover"
+            placement="bottom-end"
+            :options="toolbarDropdownOptions"
+            @select="onToolbarSelect"
+          >
+            <n-button quaternary circle size="small">
+              <template #icon>
+                <n-icon size="16">
+                  <component :is="toolbarIcon" />
+                </n-icon>
+              </template>
+            </n-button>
+          </n-dropdown>
+          <n-button
+            v-else-if="cleanedToolbarActions.length === 1"
+            quaternary
+            circle
+            size="small"
+            @click="onToolbarSingleClick"
+          >
+            <template #icon>
+              <n-icon size="16">
+                <component :is="toolbarIcon" />
+              </n-icon>
+            </template>
+          </n-button>
+        </div>
+      </slot>
     </div>
 
     <ColSetting
@@ -106,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import type { DataTableColumns, DataTableInst, DataTableProps, DropdownOption } from 'naive-ui'
+import type { DataTableColumns, DataTableInst, DataTableProps, DataTableSortState, DropdownOption } from 'naive-ui'
 import { useThemeVars } from 'naive-ui'
 import { DownloadOutline, OptionsOutline } from '@vicons/ionicons5'
 import { toTableColumns, type UnifiedFieldConfig, escapeCsvCell, formatExportCellValue, isFieldInScene, resolveColumnKey, withExportColumnFlags } from './fieldSchema'
@@ -121,9 +134,16 @@ import type {
   TableActionItem,
   TableCsvExportConfig,
   TableCsvExportOptions,
+  TableExpandConfig,
+  TableFilterState,
+  TableSortState,
+  TableSummaryCell,
+  TableSummaryConfig,
+  TableTreeConfig,
 } from './types'
 
 const themeVars = useThemeVars()
+const slots = useSlots()
 
 const props = withDefaults(defineProps<{
   data: Record<string, unknown>[]
@@ -132,7 +152,7 @@ const props = withDefaults(defineProps<{
   /** 统一字段配置，自动生成 columns */
   fields?: UnifiedFieldConfig[]
   rowKey?: DataTableProps['rowKey']
-  tableProps?: Omit<DataTableProps, 'columns' | 'data' | 'pagination' | 'rowKey' | 'flexHeight' | 'loading' | 'virtualScroll'>
+  tableProps?: Omit<DataTableProps, 'columns' | 'data' | 'pagination' | 'rowKey' | 'flexHeight' | 'loading' | 'virtualScroll' | 'remote' | 'summary'>
   page?: number
   pageSize?: number
   /** 服务端分页总条数 */
@@ -146,8 +166,38 @@ const props = withDefaults(defineProps<{
   flexHeight?: boolean
   /** 虚拟滚动；未传时：flexHeight 且当前页 ≥ 40 行自动开启 */
   virtualScroll?: boolean
-  /** 开启多选列 */
+  /**
+   * 远程模式：分页 / 排序 / 筛选由外部处理
+   * （配合 @update:sorter / @update:filters + usePageList）
+   */
+  remote?: boolean
+  /** 显示序号列（分页时按全局连续编号） */
+  showIndex?: boolean
+  /** 序号列标题，默认「#」 */
+  indexTitle?: string
+  /** 序号列宽度 */
+  indexWidth?: number
+  /** 开启选择列（默认多选 checkbox） */
   selectable?: boolean
+  /**
+   * 选择列是否多选；false 时为单选（radio），对应 Naive UI selection.multiple
+   * 仅在 selectable 开启时生效，默认 true
+   */
+  selectionMultiple?: boolean
+  /** 按行禁用勾选（仅 selectable 时生效） */
+  selectionDisabled?: (row: Record<string, unknown>) => boolean
+  /**
+   * 展开行：true / 对象注入 type=expand 列；也可只提供 #expand 插槽
+   */
+  expand?: boolean | TableExpandConfig
+  /**
+   * 树表配置
+   * - true：childrenKey=children + defaultExpandAll
+   * - 对象：自定义 childrenKey / defaultExpandAll / indent
+   */
+  tree?: boolean | TableTreeConfig
+  /** 合计行（函数或 { label, columns: { key: 'sum'|'count'|'avg'|fn } }） */
+  summary?: TableSummaryConfig
   /**
    * 列设置持久化 key
    * 传入后开启列拖拽排序与显隐配置
@@ -160,6 +210,8 @@ const props = withDefaults(defineProps<{
    * - 对象：自定义 fileName / permission / actions
    */
   csvExport?: boolean | TableCsvExportConfig
+  /** 额外工具栏操作（与导出 / 列设置合并） */
+  toolbarActions?: TableActionItem[]
   /** 加载态（替代 table-props.loading） */
   loading?: boolean
   /** 空状态文案 */
@@ -167,7 +219,8 @@ const props = withDefaults(defineProps<{
   /** 首次加载（loading 且无数据）骨架行数 */
   skeletonRows?: number
   /**
-   * 数据变更时自动清空勾选（分页/搜索刷新后常见需求），默认 true
+   * 数据变更时自动清空勾选（分页 / 搜索刷新后常见需求），默认 true
+   * 跨页批量勾选时设为 false
    */
   clearCheckedOnDataChange?: boolean
   /**
@@ -185,9 +238,19 @@ const props = withDefaults(defineProps<{
   tableProps: () => ({}),
   flexHeight: true,
   virtualScroll: false,
+  remote: false,
+  showIndex: false,
+  indexTitle: '#',
+  indexWidth: 60,
   selectable: false,
+  selectionMultiple: true,
+  selectionDisabled: undefined,
+  expand: undefined,
+  tree: undefined,
+  summary: undefined,
   colSettingKey: undefined,
   csvExport: true,
+  toolbarActions: () => [],
   loading: false,
   emptyText: '暂无数据',
   skeletonRows: 8,
@@ -198,9 +261,13 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   'update:page': [page: number]
   'update:pageSize': [pageSize: number]
+  /** 排序变更（remote 时配合 usePageList.onSorterChange） */
+  'update:sorter': [sorter: TableSortState | TableSortState[] | null]
+  /** 筛选变更（remote 时配合 usePageList.onFiltersChange） */
+  'update:filters': [filters: TableFilterState]
 }>()
 
-/** 多选行 key；selectable 时由表格托管，页面用 v-model:checked-row-keys */
+/** 选中行 key（单选时最多 1 个）；selectable 时由表格托管，页面用 v-model:checked-row-keys */
 const checkedRowKeys = defineModel<Array<string | number>>('checkedRowKeys', {
   default: () => [],
 })
@@ -208,7 +275,6 @@ const checkedRowKeys = defineModel<Array<string | number>>('checkedRowKeys', {
 const tableRef = ref<DataTableInst | null>(null)
 const enableColSetting = computed(() => Boolean(props.colSettingKey && props.fields.length))
 const enableCsvExport = computed(() => props.csvExport !== false)
-const showToolbar = computed(() => cleanedToolbarActions.value.length > 0)
 
 /** 首次加载：loading 且无数据 → 骨架；已有数据再刷新 → 表格 loading 遮罩 */
 const showSkeleton = computed(() => props.loading && props.data.length === 0)
@@ -224,7 +290,7 @@ const csvExportConfig = computed<TableCsvExportConfig>(() => {
 })
 const csvExportFileName = computed(() => csvExportConfig.value.fileName ?? 'export')
 
-/** 导出 + 列设置合并为同一组操作，多项时一个下拉 */
+/** 导出 + 列设置 + 自定义操作合并为同一组，多项时一个下拉 */
 const toolbarActions = computed<TableActionItem[]>(() => {
   const actions: TableActionItem[] = []
   const exportPerm = csvExportConfig.value.permission
@@ -254,6 +320,12 @@ const toolbarActions = computed<TableActionItem[]>(() => {
         },
       )
     }
+  }
+
+  if (props.toolbarActions?.length) {
+    if (actions.length)
+      actions.push({ key: 'toolbar-custom-divider', label: '', divider: true })
+    actions.push(...props.toolbarActions)
   }
 
   if (enableColSetting.value) {
@@ -289,6 +361,10 @@ const cleanedToolbarActions = computed(() => {
     result.pop()
   return result
 })
+
+const showToolbar = computed(() =>
+  Boolean(slots.toolbar || slots['toolbar-extra'] || cleanedToolbarActions.value.length),
+)
 
 const isToolbarDropdown = computed(() => cleanedToolbarActions.value.length > 1)
 
@@ -373,16 +449,73 @@ function withDefaultResizable(cols: DataTableColumns): DataTableColumns {
   }) as DataTableColumns
 }
 
+function createIndexColumn(): DataTableColumns[number] {
+  return {
+    key: '__index',
+    title: props.indexTitle,
+    width: props.indexWidth,
+    align: 'center',
+    allowExport: false,
+    render: (_row, index) => {
+      if (!props.showPagination)
+        return index + 1
+      return (pagination.page - 1) * pagination.pageSize + index + 1
+    },
+  }
+}
+
+function resolveExpandConfig(): TableExpandConfig | null {
+  if (props.expand === true)
+    return {}
+  if (props.expand && typeof props.expand === 'object')
+    return props.expand
+  if (slots.expand)
+    return {}
+  return null
+}
+
+function createExpandColumn(): DataTableColumns[number] | null {
+  const cfg = resolveExpandConfig()
+  if (!cfg)
+    return null
+  return {
+    type: 'expand' as const,
+    width: cfg.width,
+    expandable: cfg.expandable
+      ? (row: Record<string, unknown>) => cfg.expandable!(row)
+      : undefined,
+    renderExpand: (row: Record<string, unknown>, index: number) => {
+      if (slots.expand)
+        return slots.expand({ row, index })
+      return cfg.render?.(row, index) ?? ''
+    },
+  }
+}
+
 const resolvedColumns = computed<DataTableColumns>(() => {
   const cols = withDefaultResizable(
     props.fields.length
-      ? toTableColumns(displayFields.value)
+      ? toTableColumns(displayFields.value, { remote: props.remote })
       : (props.columns ?? []),
   )
-  const withSelection = props.selectable
-    ? [{ type: 'selection' as const }, ...cols]
-    : cols
-  return withExportColumnFlags(withSelection)
+
+  const prefix: DataTableColumns = []
+  if (props.selectable) {
+    prefix.push({
+      type: 'selection' as const,
+      multiple: props.selectionMultiple,
+      disabled: props.selectionDisabled
+        ? (row: Record<string, unknown>) => props.selectionDisabled!(row)
+        : undefined,
+    })
+  }
+  const expandCol = createExpandColumn()
+  if (expandCol)
+    prefix.push(expandCol)
+  if (props.showIndex)
+    prefix.push(createIndexColumn())
+
+  return withExportColumnFlags([...prefix, ...cols])
 })
 
 const skeletonColCount = computed(() => {
@@ -432,9 +565,98 @@ watch(() => props.page, (val) => { pagination.page = val })
 watch(() => props.pageSize, (val) => { pagination.pageSize = val })
 watch(() => props.itemCount, (val) => { pagination.itemCount = val })
 
-/** selectable 时注入勾选；loading 由独立 prop 控制 */
+const resolvedTree = computed<TableTreeConfig | null>(() => {
+  if (!props.tree)
+    return null
+  if (props.tree === true) {
+    return { childrenKey: 'children', defaultExpandAll: true }
+  }
+  return {
+    childrenKey: props.tree.childrenKey ?? 'children',
+    defaultExpandAll: props.tree.defaultExpandAll,
+    indent: props.tree.indent,
+  }
+})
+
+function normalizeSorter(
+  sorter: DataTableSortState | DataTableSortState[] | null,
+): TableSortState | TableSortState[] | null {
+  if (!sorter)
+    return null
+  if (Array.isArray(sorter)) {
+    return sorter.map(s => ({
+      columnKey: s.columnKey,
+      order: s.order,
+    }))
+  }
+  return {
+    columnKey: sorter.columnKey,
+    order: sorter.order,
+  }
+}
+
+function onUpdateSorter(sorter: DataTableSortState | DataTableSortState[] | null) {
+  emit('update:sorter', normalizeSorter(sorter))
+}
+
+function onUpdateFilters(filters: Record<string, string | number | Array<string | number> | null>) {
+  emit('update:filters', filters as TableFilterState)
+}
+
+function resolveAggregate(
+  pageData: Record<string, unknown>[],
+  key: string,
+  mode: 'sum' | 'count' | 'avg' | ((rows: Record<string, unknown>[]) => import('vue').VNodeChild),
+): import('vue').VNodeChild {
+  if (typeof mode === 'function')
+    return mode(pageData)
+  if (mode === 'count')
+    return pageData.length
+  const nums = pageData
+    .map(row => Number(row[key]))
+    .filter(n => Number.isFinite(n))
+  if (!nums.length)
+    return ''
+  const sum = nums.reduce((a, b) => a + b, 0)
+  if (mode === 'sum')
+    return sum
+  return Number((sum / nums.length).toFixed(2))
+}
+
+const resolvedSummary = computed(() => {
+  const cfg = props.summary
+  if (!cfg)
+    return undefined
+  if (typeof cfg === 'function')
+    return cfg
+
+  return (pageData: Record<string, unknown>[]) => {
+    const row: Record<string, TableSummaryCell> = {}
+    const labelKey = cfg.labelKey
+      ?? (props.showIndex ? '__index' : Object.keys(cfg.columns)[0])
+    if (labelKey) {
+      row[labelKey] = { value: cfg.label ?? '合计' }
+    }
+    for (const [key, mode] of Object.entries(cfg.columns)) {
+      row[key] = { value: resolveAggregate(pageData, key, mode) }
+    }
+    return row
+  }
+})
+
+/** selectable / tree 注入；loading 由独立 prop 控制 */
 const mergedTableProps = computed(() => {
   const base = { ...(props.tableProps || {}) } as Record<string, unknown>
+  const tree = resolvedTree.value
+  if (tree) {
+    if (tree.childrenKey != null)
+      base.childrenKey = tree.childrenKey
+    if (tree.defaultExpandAll != null)
+      base.defaultExpandAll = tree.defaultExpandAll
+    if (tree.indent != null)
+      base.indent = tree.indent
+  }
+
   if (!props.selectable)
     return base
 
@@ -469,12 +691,21 @@ const csvExportMode = ref<'original' | 'display'>('original')
 const exportFieldMap = computed(() => {
   const map = new Map<string, { field: UnifiedFieldConfig, table: NonNullable<Exclude<UnifiedFieldConfig['table'], false>> }>()
   const fields = displayFields.value.length ? displayFields.value : props.fields
-  for (const field of fields) {
-    if (!isFieldInScene(field, 'table'))
-      continue
-    const table = field.table === false ? {} : (field.table ?? {})
-    map.set(resolveColumnKey(field), { field, table })
+
+  function walk(list: UnifiedFieldConfig[]) {
+    for (const field of list) {
+      if (!isFieldInScene(field, 'table'))
+        continue
+      if (field.children?.length) {
+        walk(field.children)
+        continue
+      }
+      const table = field.table === false ? {} : (field.table ?? {})
+      map.set(resolveColumnKey(field), { field, table })
+    }
   }
+
+  walk(fields)
   return map
 })
 
@@ -540,6 +771,12 @@ defineExpose({
   height: 46px;
   padding: 0 4px;
   pointer-events: none;
+}
+
+.common-table__toolbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .common-table__toolbar :deep(.n-button) {

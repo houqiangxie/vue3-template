@@ -30,6 +30,7 @@
     <CommonTable
       class="page-container__table"
       flex-height
+      show-index
       selectable
       col-setting-key="system-config"
       v-model:checked-row-keys="checkedIds"

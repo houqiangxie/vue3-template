@@ -364,8 +364,16 @@ export function serializeField(field: BuilderField, indent = 2): string {
       tableParts.push(`fixed: '${field.table.fixed}'`)
     if (field.table.align)
       tableParts.push(`align: '${field.table.align}'`)
-    if (field.table.sortable)
+    if (field.table.sortable === true)
       tableParts.push('sortable: true')
+    else if (field.table.sortable === 'local' || field.table.sortable === 'remote')
+      tableParts.push(`sortable: '${field.table.sortable}'`)
+    if (field.table.filter === true)
+      tableParts.push('filter: true')
+    else if (field.table.filter === 'local' || field.table.filter === 'remote')
+      tableParts.push(`filter: '${field.table.filter}'`)
+    if (field.table.filterMultiple === false)
+      tableParts.push('filterMultiple: false')
     if (field.table.ellipsis)
       tableParts.push(`ellipsis: ${serializeValue(field.table.ellipsis)}`)
     if (field.table.format)
@@ -379,6 +387,12 @@ export function serializeField(field: BuilderField, indent = 2): string {
     appendSceneExtraParts(tableParts, field.table, TABLE_MANAGED_KEYS)
     if (tableParts.length)
       lines.push(`${pad}  table: { ${tableParts.join(', ')} },`)
+  }
+  if (field.children?.length) {
+    const childBody = field.children
+      .map(child => serializeField(child as BuilderField, indent + 2))
+      .join(',\n')
+    lines.push(`${pad}  children: [\n${childBody}\n${pad}  ],`)
   }
   lines.push(`${pad}}`)
   return lines.join('\n')

@@ -1,6 +1,7 @@
 import { local } from 'ux-web-storage'
 import type { ViewModules } from '@/router/utils/buildDynamicRoutes'
 import type { Router } from 'vue-router'
+import { setupIframeChildBridge } from '@/hooks/useIframeChild'
 
 /**
  * 安装全局导航守卫：
@@ -11,6 +12,8 @@ import type { Router } from 'vue-router'
  *     根据后台菜单动态添加路由，然后重新触发导航
  */
 export default (router: Router, viewModules: ViewModules, viewsBaseDir: string): void => {
+  let disposeIframeChild: (() => void) | undefined
+
   router.beforeEach(async (to, from) => {
     const loadingStore = useLoadingStore()
     if (to.fullPath !== from.fullPath)
@@ -27,8 +30,21 @@ export default (router: Router, viewModules: ViewModules, viewsBaseDir: string):
       return { path: target, query: to.query, hash: to.hash, replace: true }
     }
 
-    // iframe 嵌入只用显式标记；勿依赖 query.token（易进日志/Referer）
-    loadingStore.isIframe = to.query.isIframe === '1' || to.query.isIframe === 'true' || to.query.isIframe === ''
+    // iframe 嵌入：显式 query，或实际处于 iframe 中
+    let embedded = to.query.isIframe === '1' || to.query.isIframe === 'true' || to.query.isIframe === ''
+    if (!embedded) {
+      try {
+        embedded = window.self !== window.top
+      }
+      catch {
+        embedded = true
+      }
+    }
+    loadingStore.isIframe = embedded
+
+    // 实际处于 iframe 中时安装子应用桥（不依赖 query；query 仍可用于布局裁剪）
+    if (!disposeIframeChild && embedded)
+      disposeIframeChild = setupIframeChildBridge(router)
 
     // ?token= 仅 DEV 或显式 VITE_ALLOW_QUERY_TOKEN=true 时写入本地；生产默认忽略并剥离 query
     // 新嵌入请用 postMessage / 首屏注入等方式传凭证，勿再依赖 URL 凭证

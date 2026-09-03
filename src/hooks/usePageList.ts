@@ -1,4 +1,5 @@
 import type { Ref } from 'vue'
+import type { TableFilterState, TableSortState } from '@/components/common/table/types'
 
 export interface PageListResult<T = Record<string, unknown>> {
   rows: T[]
@@ -17,6 +18,15 @@ export interface UsePageListOptions<T = Record<string, unknown>> {
   pageSize?: number
   /** 每次成功拉取后的回调（如清空勾选） */
   onFetched?: () => void
+  /**
+   * 远程排序写入 searchModel 的字段名（若依风格默认）
+   * - columnKey → orderByColumn
+   * - ascend/descend → isAsc: 'asc' | 'desc'
+   */
+  sortKeys?: {
+    column?: string
+    order?: string
+  }
 }
 
 export type PageSearchModel = Record<string, unknown> & {
@@ -51,7 +61,11 @@ export function usePageList<T extends Record<string, unknown> = Record<string, u
     immediate = true,
     pageSize = 10,
     onFetched,
+    sortKeys = { column: 'orderByColumn', order: 'isAsc' },
   } = options
+
+  const columnKeyName = sortKeys.column ?? 'orderByColumn'
+  const orderKeyName = sortKeys.order ?? 'isAsc'
 
   const searchModel = ref({
     pageNum: 1,
@@ -111,6 +125,36 @@ export function usePageList<T extends Record<string, unknown> = Record<string, u
     return fetchList()
   }
 
+  /** 远程排序：写入 orderByColumn / isAsc 后重新请求 */
+  function onSorterChange(sorter: TableSortState | TableSortState[] | null) {
+    const state = Array.isArray(sorter) ? sorter[0] : sorter
+    if (!state || !state.order) {
+      delete searchModel.value[columnKeyName]
+      delete searchModel.value[orderKeyName]
+    }
+    else {
+      searchModel.value[columnKeyName] = state.columnKey
+      searchModel.value[orderKeyName] = state.order === 'ascend' ? 'asc' : 'desc'
+    }
+    searchModel.value.pageNum = 1
+    return fetchList()
+  }
+
+  /**
+   * 远程筛选：按列 key 写入 searchModel（多选数组 / 单选标量；清空则 delete）
+   * 需后端支持对应查询参数
+   */
+  function onFiltersChange(filters: TableFilterState) {
+    for (const [key, value] of Object.entries(filters)) {
+      if (value == null || (Array.isArray(value) && value.length === 0))
+        delete searchModel.value[key]
+      else
+        searchModel.value[key] = value
+    }
+    searchModel.value.pageNum = 1
+    return fetchList()
+  }
+
   if (immediate) {
     onMounted(() => {
       void fetchList()
@@ -127,6 +171,8 @@ export function usePageList<T extends Record<string, unknown> = Record<string, u
     handleReset,
     onPageChange,
     onPageSizeChange,
+    onSorterChange,
+    onFiltersChange,
   }
 }
 

@@ -160,6 +160,7 @@
   import { hexLuminance, resolveCustomBg } from '@/utils/layout';
   import { useT } from '@/hooks/useT';
   import { I18N_ENABLED } from '@/i18n/config';
+  import { useIframeStore } from '@/store/iframe';
   import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
@@ -338,6 +339,22 @@
   };
 
   const breadcrumbList = computed((): CrumbItem[] => {
+    const iframeStore = useIframeStore();
+    const iframeCrumbs = iframeStore.overrideBreadcrumbs;
+
+    // 子应用通过 postMessage 上报的面包屑：直接覆盖（子应用自行包含完整链路）
+    if (iframeCrumbs?.length && route.meta?.iFrameUrl) {
+      return iframeCrumbs.map((title, index) => ({
+        name: `iframe-crumb-${index}`,
+        meta: { title },
+        label: title,
+        key: `iframe-crumb-${index}`,
+        navigable: false,
+        navigateTarget: null,
+        children: [],
+      }))
+    }
+
     const menus = permissionStore.userMenuList as MenuItem[];
     const routeName = route.name ? String(route.name) : '';
     const activeMenu = route.meta?.activeMenu ? String(route.meta.activeMenu) : '';

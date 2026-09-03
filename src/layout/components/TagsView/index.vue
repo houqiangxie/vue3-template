@@ -28,12 +28,12 @@
         </span>
 
         <div ref="navScroll" class="tabs-card-scroll">
-          <Draggable :list="tabsList" animation="300" item-key="fullPath" class="flex">
+          <Draggable :list="tabsList" animation="300" item-key="name" class="flex">
             <template #item="{ element }">
               <div
-                :id="`tag${element.fullPath.split('/').join('\\/')}`"
+                :id="`tag${String(element.name).split('/').join('\\/')}`"
                 class="tabs-card-scroll-item"
-                :class="{ 'active-item': activeKey === element.fullPath }"
+                :class="{ 'active-item': isTabActive(element) }"
                 @click.stop="goPage(element)"
                 @contextmenu="handleContextMenu($event, element)"
               >
@@ -246,14 +246,18 @@
         if (tabsList.value.length === 1) {
           return message.warning('这已经是最后一页，不能再关闭了！');
         }
-        // 关闭前先找到相邻 tab（前一个优先）
-        const closingIndex = tabsList.value.findIndex((item) => item.fullPath === r.fullPath);
+        // 关闭前先找到相邻 tab（前一个优先）；iframe 按 name 匹配更稳
+        const closingIndex = tabsList.value.findIndex(
+          item => item.name === r.name || item.fullPath === r.fullPath,
+        );
         const adjacentTab =
           tabsList.value[closingIndex - 1] || tabsList.value[closingIndex + 1];
 
         tabsViewStore.closeCurrentTab(r);
 
-        if (state.activeKey === r.fullPath && adjacentTab) {
+        const closingIsActive = state.activeKey === r.fullPath
+          || (!!r.name && r.name === route.name);
+        if (closingIsActive && adjacentTab) {
           state.activeKey = adjacentTab.fullPath;
           router.push(adjacentTab);
         }
@@ -333,10 +337,13 @@
           state.scrollable = true;
           if (autoScroll) {
             const tagList = navScroll.value.querySelectorAll('.tabs-card-scroll-item') || [];
+            const activeName = String(route.name || '');
+            const activeId = activeName
+              ? `tag${activeName.split('/').join('\\/')}`
+              : `tag${state.activeKey.split('/').join('\\/')}`;
             ([...tagList] as HTMLElement[]).forEach((tag) => {
-              if (tag.id === `tag${state.activeKey.split('/').join('\\/')}`) {
+              if (tag.id === activeId)
                 tag.scrollIntoView && tag.scrollIntoView();
-              }
             });
           }
         } else {
@@ -363,16 +370,26 @@
         state.showDropdown = false;
       }
 
+      /** iframe 页按 name 高亮，避免子路径同步时标签闪烁/重挂 */
+      function isTabActive(element: RouteItem) {
+        if (element.meta?.iFrameUrl || route.meta?.iFrameUrl)
+          return !!element.name && element.name === route.name;
+        return element.fullPath === route.fullPath || element.fullPath === state.activeKey;
+      }
+
       function goPage(e: any) {
-        const { fullPath } = e;
+        const { fullPath, name } = e;
+        if (e.meta?.iFrameUrl && name && name === route.name)
+          return;
         if (fullPath === route.fullPath) return;
         state.activeKey = fullPath;
         router.push(e);
       }
 
       function closeTabItem(e: any) {
-        const { fullPath } = e;
-        const routeInfo = tabsList.value.find((item) => item.fullPath === fullPath);
+        const routeInfo = tabsList.value.find(
+          item => item.name === e.name || item.fullPath === e.fullPath,
+        );
         if (routeInfo) removeTab(routeInfo);
       }
 
@@ -400,6 +417,7 @@
         tabsList,
         goPage,
         closeTabItem,
+        isTabActive,
         closeAll,
         reloadPage,
         tabsViewStyle,

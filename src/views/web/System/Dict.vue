@@ -27,6 +27,7 @@
     <CommonTable
       class="page-container__table"
       flex-height
+      show-index
       selectable
       col-setting-key="system-dict"
       v-model:checked-row-keys="checkedIds"

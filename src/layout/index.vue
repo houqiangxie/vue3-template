@@ -1,5 +1,10 @@
 <template>
-  <n-layout class="layout" has-sider>
+  <!-- 被嵌入时只渲染页面内容，避免双层壳（侧栏/顶栏/页签） -->
+  <div v-if="isEmbedMode" class="layout-embed">
+    <MainView />
+  </div>
+
+  <n-layout v-else class="layout" has-sider>
     <!-- 左侧边栏（vertical / horizontal-mix 模式） -->
     <n-layout-sider
       v-if="showSider"
@@ -91,11 +96,15 @@
 
   const designStore = useDesignSettingStore();
   const settingStore = useProjectSettingStore();
+  const loadingStore = useLoadingStore();
   const themeVars = useThemeVars();
   const { t } = useT();
 
   const route = useRoute();
   const currentYear = new Date().getFullYear();
+
+  /** 被主应用 iframe 嵌入时裁剪壳层 */
+  const isEmbedMode = computed(() => loadingStore.isIframe);
 
   /** 移动端抽屉开关（不持久化；桌面折叠写回 menuSetting.collapsed） */
   const mobileDrawerOpen = ref(false);
@@ -269,6 +278,13 @@
 </script>
 
 <style lang="scss" scoped>
+  .layout-embed {
+    width: var(--app-vw, 100vw);
+    height: var(--app-vh, 100vh);
+    height: var(--app-dvh, 100dvh);
+    overflow: auto;
+  }
+
   .layout {
     display: flex;
     flex-direction: row;

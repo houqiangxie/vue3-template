@@ -27,10 +27,13 @@
     <CommonTable
       class="page-container__table"
       flex-height
+      remote
+      show-index
       selectable
       col-setting-key="system-role"
       v-model:checked-row-keys="checkedRoleIds"
       :filter-checked-keys="(keys) => keys.map(Number).filter(id => id !== 1)"
+      :selection-disabled="(row) => Number(row.roleId) === 1"
       :data="tableData"
       :fields="tableFields"
       :page="searchModel.pageNum as number"
@@ -40,6 +43,8 @@
       :loading="loading"
       @update:page="onPageChange"
       @update:page-size="onPageSizeChange"
+      @update:sorter="onSorterChange"
+      @update:filters="onFiltersChange"
     />
 
     <!-- 新增/编辑 -->
@@ -168,7 +173,7 @@ const roleFields = defineFields([
     component: 'NInput',
     form: { required: true },
     search: false,
-    table: { width: 140 },
+    table: { width: 140, sortable: true },
   },
   {
     key: 'roleKey',
@@ -195,6 +200,7 @@ const roleFields = defineFields([
     search: false,
     table: {
       width: 90,
+      filter: true,
       render: (row: Record<string, unknown>) => {
         const role = row as unknown as SysRole
         if (role.roleId === 1)
@@ -215,7 +221,7 @@ const roleFields = defineFields([
     component: 'NInput',
     form: false,
     search: false,
-    table: { width: 170 },
+    table: { width: 170, sortable: true },
   },
   {
     key: 'remark',
@@ -289,6 +295,8 @@ const {
   handleSearch,
   onPageChange,
   onPageSizeChange,
+  onSorterChange,
+  onFiltersChange,
 } = usePageList({
   fetcher: async q => toPageResult(await listRole(q)),
   defaults: extractSearchDefaults(searchFields),

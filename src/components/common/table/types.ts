@@ -109,3 +109,51 @@ export interface CommonTableExportInst {
   exportOriginalData: (fileName?: string) => void
   exportDisplayData: (fileName?: string) => void
 }
+
+/** 排序状态（对齐 Naive UI SortState 常用字段） */
+export interface TableSortState {
+  columnKey: string | number
+  order: 'ascend' | 'descend' | false
+}
+
+/** 列筛选状态（columnKey → 选中值） */
+export type TableFilterState = Record<string, string | number | Array<string | number> | null>
+
+/** 合计单元格 */
+export interface TableSummaryCell {
+  value?: import('vue').VNodeChild
+  colSpan?: number
+  rowSpan?: number
+}
+
+/** 合计行：函数，或按列 key 配置聚合 */
+export type TableSummaryConfig =
+  | ((pageData: Record<string, unknown>[]) => Record<string, TableSummaryCell> | Array<Record<string, TableSummaryCell>>)
+  | {
+      /** 首列文案，默认「合计」 */
+      label?: string
+      /** 文案落在哪一列，默认第一数据列；传 `__index` / selection 旁列 key */
+      labelKey?: string
+      /** 列聚合：sum / count / avg，或自定义 */
+      columns: Record<string, 'sum' | 'count' | 'avg' | ((pageData: Record<string, unknown>[]) => import('vue').VNodeChild)>
+    }
+
+/** 展开行配置（也可只开 expand + 使用 #expand 插槽） */
+export interface TableExpandConfig<T = Record<string, unknown>> {
+  /** 展开区渲染；有 #expand 插槽时优先插槽 */
+  render?: (row: T, index: number) => import('vue').VNode | string
+  /** 是否可展开，默认均可 */
+  expandable?: (row: T) => boolean
+  /** 展开列宽度 */
+  width?: number
+}
+
+/** 树表配置（对应 Naive UI childrenKey / defaultExpandAll / indent） */
+export interface TableTreeConfig {
+  /** 子节点字段，默认 children */
+  childrenKey?: string
+  /** 默认展开全部 */
+  defaultExpandAll?: boolean
+  /** 缩进像素 */
+  indent?: number
+}

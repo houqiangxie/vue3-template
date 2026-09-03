@@ -1,6 +1,6 @@
 # Vue3 Template
 
-基于 Vue 3 + Vite + Naive UI 的中后台前端模板，支持 **Web 管理端**、**App 端（MPA）** 与 **Electron 桌面端**。内置动态路由/权限、CRUD 组合式封装，以及可切换的本地 Mock。
+基于 Vue 3 + Vite + Naive UI 的中后台前端模板，支持 **Web 管理端**、**App 端（MPA）** 与 **Electron 桌面端**。内置动态路由/权限、CRUD 组合式封装、iframe 嵌入同步，以及可切换的本地 Mock。
 
 ## 技术栈
 
@@ -75,18 +75,20 @@ cp .env.example .env.dev.local
 ├── index.html              # Web 端入口
 ├── electron/               # Electron 主进程 / preload / 托盘 / 更新
 ├── mock/                   # 本地 Mock（Vite 中间件）
-├── public/vendor/          # 文件预览等静态资源
+├── public/
+│   ├── iframe-bridge.js    # 跨域/第三方子应用可自行引入的桥接脚本
+│   └── vendor/             # 文件预览等静态资源
 ├── src/
 │   ├── api/system/         # 系统管理 API
 │   ├── components/common/  # CommonForm / SearchPanel / table / modal
 │   ├── config/             # 站点与菜单配置
-│   ├── hooks/              # usePageList / useCrud / useFormModal …
+│   ├── hooks/              # usePageList / useCrud / useIframeHost|Child …
 │   ├── layout/             # Web 布局（侧栏、TagsView、主题）
 │   ├── pages/              # 多入口启动（web.ts / app.ts）
 │   ├── router/             # 路由 + 动态路由 / 权限守卫
-│   ├── store/              # Pinia
-│   ├── utils/              # fetch、toast、文件工具等
-│   └── views/              # web / app 页面
+│   ├── store/              # Pinia（含 iframe 面包屑覆盖）
+│   ├── utils/iframeBridge/ # postMessage 协议与路径工具
+│   └── views/              # web / app 页面（含 common/IFrame.vue）
 └── vite.config.ts
 ```
 
@@ -123,6 +125,84 @@ cp .env.example .env.dev.local
 - 实现：`mock/plugin.ts` + `mock/handlers/*`
 - 开发且 `VITE_USE_MOCK=true` 时挂载到 `/api`
 - 启动日志会打印 `[api] MOCK` 或 `[api] PROXY → …`
+
+### iframe 嵌入与路由同步
+
+主应用可通过菜单挂载 iframe 页，与子应用用统一 `postMessage` 协议同步路由、高度、面包屑与登录态。
+
+**能力**
+
+| 能力 | 说明 |
+| --- | --- |
+| 路由双向同步 | 子 → `route-change` 改主应用 URL；主 → `navigate` 推子应用；keep-alive 切回发 `ping` 重同步 |
+| iframe 复用 | iframe 路由默认 `keepAlive`，多系统切换不销毁 |
+| 高度自适应 | 子上报 `iframe-resize` |
+| 登录态 | 子 `ready` 后主下发 `auth-token`（不走 URL；生产默认忽略 `?token=`） |
+| 面包屑 | 子上报 `breadcrumb`，覆盖 Header |
+
+**关键文件**
+
+- 宿主页：`src/views/common/IFrame.vue` → `useIframeHost`
+- 子应用（本仓库被嵌入时）：`permission` 内自动 `setupIframeChildBridge`
+- 协议与路径：`src/utils/iframeBridge/`
+- 第三方脚本：`public/iframe-bridge.js`（同源也可由宿主注入；与 Vue 桥互斥，避免双装）
+
+**菜单配置**
+
+组件填 iframe 页（如 `common/IFrame` / `IFrame`），并在 `meta` 写地址：
+
+```ts
+{
+  name: 'ExtSystem',
+  component: 'common/IFrame',
+  meta: {
+    title: '外部系统',
+    iFrameUrl: 'https://child.example.com/app/', // 必填
+  },
+}
+```
+
+动态路由会挂上 catch-all，例如主应用 `/ExtSystem/user/1` ↔ 子应用 `/user/1`（`meta.iFrameBasePath` 自动写入）。
+
+**子应用接入**
+
+1. **本模板作为子应用**：处于 iframe 中时自动安装 Vue 桥，一般无需改代码。
+2. **同源第三方页**：宿主 `load` 后尝试注入 `iframe-bridge.js`。
+3. **跨域第三方**：子页自行引入脚本，或手写协议：
+
+```html
+<script src="https://host.example.com/iframe-bridge.js"></script>
+<!-- 可选：注入前配置 -->
+<script>
+  window.__IFRAME_BRIDGE__ = {
+    targetOrigin: '*',
+    trustedParentOrigin: 'https://host.example.com', // 生产建议配置，校验父消息
+    syncRoute: true,
+    syncHeight: true,
+    syncBreadcrumb: true,
+  }
+</script>
+```
+
+面包屑可用 `<meta name="iframe-breadcrumb" content="首页,列表,详情">` 或 `data-iframe-breadcrumb`；也可用 `window.__iframeBridge.postBreadcrumb([...])`。
+
+手写消息时 `source` 必须为 `vue3-template-iframe`：
+
+```js
+// 子 → 主
+parent.postMessage({ source: 'vue3-template-iframe', type: 'route-change', path: location.pathname }, '*')
+parent.postMessage({ source: 'vue3-template-iframe', type: 'breadcrumb', data: ['首页', '详情'] }, '*')
+parent.postMessage({ source: 'vue3-template-iframe', type: 'iframe-resize', height: document.body.scrollHeight }, '*')
+parent.postMessage({ source: 'vue3-template-iframe', type: 'ready' }, '*')
+
+// 主 → 子（子侧监听）
+// { type: 'navigate', path } | { type: 'auth-token', token } | { type: 'ping' }
+```
+
+**安全注意**
+
+- 生产宿主按 `iFrameUrl` 校验子消息 origin；开发可放宽（`allowAnyOriginInDev`）。
+- 子侧校验父 origin（`trustedParentOrigin` / referrer）；勿再依赖 URL 传 token，除非显式 `VITE_ALLOW_QUERY_TOKEN=true`。
 
 
 

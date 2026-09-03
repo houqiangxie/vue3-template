@@ -20,16 +20,36 @@ export function isActionsField(field: UnifiedFieldConfig): boolean {
   return key === 'actions' || key === 'action' || label === '操作'
 }
 
-/** 是否可参与列设置（显隐 / 排序） */
+/** 是否可参与列设置（显隐 / 排序）；分组列本身不进列表，只平铺叶子 */
 export function isColSettingField(field: UnifiedFieldConfig): boolean {
   if (!isFieldInScene(field, 'table'))
     return false
   if (isActionsField(field))
     return false
+  const kids = field.children?.filter(f => isFieldInScene(f, 'table')) ?? []
+  if (kids.length)
+    return false
   const table = field.table === false ? undefined : field.table
-  if (table?.hideInSetting || table?.isHede)
+  if (table?.hideInSetting)
     return false
   return true
+}
+
+/** 平铺可配置叶子列（多级表头只出现叶子） */
+export function flattenColSettingFields(fields: UnifiedFieldConfig[]): UnifiedFieldConfig[] {
+  const leaves: UnifiedFieldConfig[] = []
+  for (const field of fields) {
+    if (!isFieldInScene(field, 'table'))
+      continue
+    const kids = field.children?.filter(f => isFieldInScene(f, 'table')) ?? []
+    if (kids.length) {
+      leaves.push(...flattenColSettingFields(kids))
+      continue
+    }
+    if (isColSettingField(field))
+      leaves.push(field)
+  }
+  return leaves
 }
 
 /** 读取本地列设置 */
@@ -58,7 +78,7 @@ export function buildColSettingItems(
   fields: UnifiedFieldConfig[],
   storageKey?: string,
 ): ColSettingItem[] {
-  const configurable = fields.filter(isColSettingField)
+  const configurable = flattenColSettingFields(fields)
   const cached = storageKey ? loadColSetting(storageKey) : null
   if (!cached?.length) {
     return configurable.map(field => ({
@@ -99,40 +119,58 @@ export function buildColSettingItems(
 }
 
 /**
- * 按列设置应用顺序与显隐
- * - selection / actions 等特殊列保持原位（actions 始终在末尾）
- * - 未出现在设置中的新字段追加到可配置列末尾
+ * 按列设置应用顺序与显隐（支持多级表头）
+ * - 叶子按设置排序 / 显隐
+ * - 分组列保留结构，无可见子列时整组去掉
+ * - actions 始终在末尾
  */
 export function applyColSetting(
   fields: UnifiedFieldConfig[],
   setting: ColSettingItem[],
 ): UnifiedFieldConfig[] {
-  const tableFields = fields.filter(f => isFieldInScene(f, 'table'))
-  const actionFields = tableFields.filter(isActionsField)
-  const otherFields = tableFields.filter(f => !isActionsField(f))
-  const settingFields = otherFields.filter(isColSettingField)
-  const fixedFields = otherFields.filter(f => !isColSettingField(f))
+  const orderIndex = new Map(setting.map((item, i) => [item.key, i]))
+  const showMap = new Map(setting.map(item => [item.key, item.isShow !== false]))
 
-  const fieldMap = new Map(settingFields.map(f => [resolveFieldKey(f), f]))
-  const ordered: UnifiedFieldConfig[] = [...fixedFields]
-  const used = new Set<string>()
-
-  for (const item of setting) {
-    const field = fieldMap.get(item.key)
-    if (!field)
-      continue
-    used.add(item.key)
-    if (item.isShow === false)
-      continue
-    ordered.push(field)
+  function leafOrder(field: UnifiedFieldConfig): number {
+    const kids = field.children?.filter(f => isFieldInScene(f, 'table')) ?? []
+    if (kids.length) {
+      const orders = kids.map(leafOrder).filter(n => Number.isFinite(n))
+      return orders.length ? Math.min(...orders) : Number.POSITIVE_INFINITY
+    }
+    return orderIndex.get(resolveFieldKey(field)) ?? Number.POSITIVE_INFINITY
   }
 
-  for (const field of settingFields) {
-    const key = resolveFieldKey(field)
-    if (used.has(key))
-      continue
-    ordered.push(field)
+  function isLeafVisible(field: UnifiedFieldConfig): boolean {
+    if (isActionsField(field))
+      return true
+    if (!isColSettingField(field))
+      return true
+    return showMap.get(resolveFieldKey(field)) !== false
   }
 
-  return [...ordered, ...actionFields]
+  function transform(list: UnifiedFieldConfig[]): UnifiedFieldConfig[] {
+    const next: UnifiedFieldConfig[] = []
+    for (const field of list) {
+      if (!isFieldInScene(field, 'table'))
+        continue
+      const kids = field.children?.filter(f => isFieldInScene(f, 'table')) ?? []
+      if (kids.length) {
+        const children = transform(kids)
+        if (!children.length)
+          continue
+        next.push({ ...field, children })
+        continue
+      }
+      if (!isLeafVisible(field))
+        continue
+      next.push(field)
+    }
+
+    const actions = next.filter(isActionsField)
+    const others = next.filter(f => !isActionsField(f))
+    others.sort((a, b) => leafOrder(a) - leafOrder(b))
+    return [...others, ...actions]
+  }
+
+  return transform(fields)
 }

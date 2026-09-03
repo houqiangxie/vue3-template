@@ -18,6 +18,10 @@ declare module 'vue-router' {
      * Configure via `routeConfig` in `src/router/web.ts` or `src/router/app.ts`.
      */
     permissions?: string[];
+    /** iframe 地址（component 为 iframe 页时） */
+    iFrameUrl?: string;
+    /** iframe 宿主路由 base path（不含 catch-all），用于 URL 同步 */
+    iFrameBasePath?: string;
   }
 }
 
@@ -29,6 +33,11 @@ declare global {
     $dialog: DialogApi;
     $notification: NotificationApi;
   }
+}
+
+declare module '*?raw' {
+  const src: string
+  export default src
 }
 
 interface ImportMetaEnv {

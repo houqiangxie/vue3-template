@@ -157,8 +157,14 @@ const userDetailModal = defineModal({
       key: 'logs',
       title: '操作日志',
       fields: [
-        { key: 'action', label: '操作', table: { width: 120 } },
-        { key: 'operator', label: '操作人', table: { width: 100 } },
+        {
+          key: 'meta',
+          label: '操作信息',
+          children: [
+            { key: 'action', label: '操作', table: { width: 120 } },
+            { key: 'operator', label: '操作人', table: { width: 100 } },
+          ],
+        },
         { key: 'time', label: '时间', table: { width: 180, format: 'datetime' } },
       ],
       showPagination: false,

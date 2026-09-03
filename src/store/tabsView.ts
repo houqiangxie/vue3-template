@@ -162,7 +162,9 @@ export const useTabsViewStore = defineStore('app-tabs-view', {
     },
 
     closeCurrentTab(route: RouteItem) {
-      const index = this.tabsList.findIndex(item => item.fullPath === route.fullPath)
+      const index = this.tabsList.findIndex(
+        item => item.name === route.name || item.fullPath === route.fullPath,
+      )
       if (index === -1)
         return
       const closed = this.tabsList[index]

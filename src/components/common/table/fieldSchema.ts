@@ -156,7 +156,25 @@ export interface TableFieldConfig {
   maxWidth?: number
   fixed?: 'left' | 'right'
   align?: 'left' | 'center' | 'right'
-  sortable?: boolean
+  /**
+   * 列排序
+   * - true：跟随 CommonTable.remote（本地 default / 远程 true）
+   * - 'local'：强制客户端排序
+   * - 'remote'：强制远程排序（仅展示排序图标）
+   */
+  sortable?: boolean | 'local' | 'remote'
+  /**
+   * 列筛选
+   * - true：跟随 CommonTable.remote
+   * - 'local'：客户端筛选（filter: 'default'）
+   * - 'remote'：仅 UI，配合 @update:filters
+   * - 函数：自定义本地筛选
+   */
+  filter?: boolean | 'local' | 'remote' | ((value: string | number, row: Record<string, unknown>) => boolean)
+  /** 筛选项；未传且 field.options 存在时自动生成 */
+  filterOptions?: Array<{ label: string, value: string | number }>
+  /** 是否多选筛选，默认 true */
+  filterMultiple?: boolean
   ellipsis?: boolean | { tooltip: boolean }
   /** 自定义单元格渲染，优先级高于 format / actions */
   render?: TableRenderFn
@@ -179,6 +197,10 @@ export interface TableFieldConfig {
   tagType?: (value: unknown) => 'default' | 'error' | 'primary' | 'info' | 'success' | 'warning'
   /** 设计器导出的固定 tag 类型，defineFields 时编译为 tagType */
   tagTypeValue?: 'default' | 'error' | 'primary' | 'info' | 'success' | 'warning' | string
+  /** 列设置中默认是否显示 */
+  isShow?: boolean
+  /** 不参与列设置（显隐 / 拖拽排序） */
+  hideInSetting?: boolean
 }
 
 /**
@@ -203,6 +225,11 @@ export interface UnifiedFieldConfig {
   form?: false | FormFieldConfig
   search?: false | SearchFieldConfig
   table?: false | TableFieldConfig
+  /**
+   * 多级表头子列（仅 table；有 children 时本节点为分组列，不渲染单元格）
+   * @example { key: 'base', label: '基本信息', children: [{ key: 'name', label: '姓名', table: { width: 120 } }] }
+   */
+  children?: UnifiedFieldConfig[]
   /** 设计器字典类型提示；运行时需自行 useDict 填充 options，或导出前先加载选项 */
   dictType?: string
   /** 设计器可视化联动规则（仅文档/往返用，运行时以 form.visibleExpr 为准） */
@@ -487,6 +514,9 @@ export const TABLE_COLUMN_HANDLED_KEYS = new Set([
   'fixed',
   'align',
   'sortable',
+  'filter',
+  'filterOptions',
+  'filterMultiple',
   'ellipsis',
   'allowExport',
   'render',
@@ -497,6 +527,8 @@ export const TABLE_COLUMN_HANDLED_KEYS = new Set([
   'exportText',
   'tagTypeValue',
   'exportTextValue',
+  'isShow',
+  'hideInSetting',
 ])
 
 function pickExtraTableColumnProps(table: TableFieldConfig): Record<string, unknown> {
@@ -509,41 +541,117 @@ function pickExtraTableColumnProps(table: TableFieldConfig): Record<string, unkn
   return extra
 }
 
-/** 转为 Naive UI DataTable columns */
-export function toTableColumns(fields: UnifiedFieldConfig[]): DataTableColumns {
+/** 解析列 sorter：local → 'default'，remote → true（仅 UI） */
+export function resolveColumnSorter(
+  sortable: TableFieldConfig['sortable'],
+  remote = false,
+): 'default' | true | undefined {
+  if (!sortable)
+    return undefined
+  if (sortable === 'local')
+    return 'default'
+  if (sortable === 'remote')
+    return true
+  return remote ? true : 'default'
+}
+
+/** 解析列 filter：local → 'default'，remote → true（仅 UI） */
+export function resolveColumnFilter(
+  filter: TableFieldConfig['filter'],
+  remote = false,
+): TableFieldConfig['filter'] | 'default' | true | undefined {
+  if (!filter)
+    return undefined
+  if (typeof filter === 'function')
+    return filter
+  if (filter === 'local')
+    return 'default'
+  if (filter === 'remote')
+    return true
+  return remote ? true : 'default'
+}
+
+function resolveFilterOptions(
+  field: UnifiedFieldConfig,
+  table: TableFieldConfig,
+): Array<{ label: string, value: string | number }> | undefined {
+  if (table.filterOptions?.length)
+    return table.filterOptions
+  if (!table.filter)
+    return undefined
+  const opts = field.options as FieldOption[] | undefined
+  if (!opts?.length)
+    return undefined
+  return opts
+    .filter(o => o && (typeof o.value === 'string' || typeof o.value === 'number'))
+    .map(o => ({ label: o.label, value: o.value as string | number }))
+}
+
+function fieldToColumn(
+  field: UnifiedFieldConfig,
+  remote: boolean,
+): DataTableColumns[number] {
+  const table = field.table === false ? {} : (field.table ?? {})
+  const colKey = resolveColumnKey(field)
+  const label = field.label ?? field.title
+  const childFields = field.children?.filter(f => isFieldInScene(f, 'table')) ?? []
+
+  if (childFields.length) {
+    return {
+      key: colKey,
+      title: label ?? colKey,
+      align: table.align,
+      fixed: table.fixed,
+      children: childFields.map(child => fieldToColumn(child, remote)),
+    } as DataTableColumns[number]
+  }
+
+  const isActions = Boolean(table.actions) || isActionsColumnKey(colKey, label)
+  const filterOptions = resolveFilterOptions(field, table)
+  const rawFilter = resolveColumnFilter(table.filter, remote)
+  /** 无选项且非自定义函数时不挂 filter，避免空筛选菜单 */
+  const filter = rawFilter && (typeof table.filter === 'function' || (filterOptions?.length ?? 0) > 0)
+    ? rawFilter
+    : undefined
+  return {
+    key: colKey,
+    title: label ?? colKey,
+    width: table.width,
+    minWidth: table.minWidth,
+    maxWidth: table.maxWidth,
+    fixed: table.fixed,
+    align: table.align,
+    sorter: resolveColumnSorter(table.sortable, remote),
+    filter,
+    filterOptions: filter ? filterOptions : undefined,
+    filterMultiple: table.filterMultiple,
+    ellipsis: table.ellipsis,
+    allowExport: table.allowExport ?? !isActions,
+    ...pickExtraTableColumnProps(table),
+    render: (row: Record<string, unknown>, index: number) => {
+      if (table.render)
+        return table.render(row, index)
+      if (table.actions) {
+        return h(TableAction, {
+          row,
+          actions: table.actions(row),
+          max: table.actionsMax,
+        })
+      }
+      return formatCellValue(row[colKey], field, table, row)
+    },
+  } as DataTableColumns[number]
+}
+
+/** 转为 Naive UI DataTable columns（支持多级表头 children） */
+export function toTableColumns(
+  fields: UnifiedFieldConfig[],
+  options?: { remote?: boolean },
+): DataTableColumns {
+  const remote = options?.remote ?? false
   return fields
     .filter(f => isFieldInScene(f, 'table'))
-    .map((field) => {
-      const table = field.table === false ? {} : (field.table ?? {})
-      const colKey = resolveColumnKey(field)
-      const label = field.label ?? field.title
-      const isActions = Boolean(table.actions) || isActionsColumnKey(colKey, label)
-      return {
-        key: colKey,
-        title: label ?? colKey,
-        width: table.width,
-        minWidth: table.minWidth,
-        maxWidth: table.maxWidth,
-        fixed: table.fixed,
-        align: table.align,
-        sorter: table.sortable ? 'default' : undefined,
-        ellipsis: table.ellipsis,
-        allowExport: table.allowExport ?? !isActions,
-        ...pickExtraTableColumnProps(table),
-        render: (row: Record<string, unknown>, index: number) => {
-          if (table.render)
-            return table.render(row, index)
-          if (table.actions) {
-            return h(TableAction, {
-              row,
-              actions: table.actions(row),
-              max: table.actionsMax,
-            })
-          }
-          return formatCellValue(row[colKey], field, table, row)
-        },
-      }
-    }) as DataTableColumns
+    .map(field => fieldToColumn(field, remote)) as DataTableColumns
 }
 
 /** 从统一配置提取搜索默认值 */

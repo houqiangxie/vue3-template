@@ -218,6 +218,20 @@ export const tableAlignOptions = [
   { label: '右对齐', value: 'right' },
 ]
 
+/** 可排序：跟随表格 remote / 强制本地 / 强制远程 */
+export const tableSortableOptions = [
+  { label: '开启（跟随 remote）', value: 'true' },
+  { label: '仅本地', value: 'local' },
+  { label: '仅远程', value: 'remote' },
+]
+
+/** 可筛选：跟随表格 remote / 强制本地 / 强制远程 */
+export const tableFilterOptions = [
+  { label: '开启（跟随 remote）', value: 'true' },
+  { label: '仅本地', value: 'local' },
+  { label: '仅远程', value: 'remote' },
+]
+
 export const tableTagTypeOptions = [
   { label: '默认', value: 'default' },
   { label: '主要', value: 'primary' },

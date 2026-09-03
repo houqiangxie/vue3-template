@@ -36,6 +36,7 @@
       class="page-container__table"
       flex-height
       selectable
+      :clear-checked-on-data-change="false"
       col-setting-key="system-auth-user"
       v-model:checked-row-keys="checkedUserIds"
       :data="tableData"

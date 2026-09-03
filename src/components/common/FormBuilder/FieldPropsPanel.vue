@@ -18,6 +18,8 @@ import {
   tableAlignOptions,
   tableFixedOptions,
   tableFormatOptions,
+  tableFilterOptions,
+  tableSortableOptions,
   tableTagTypeOptions,
   fileTypeOptions,
   visibilityModeOptions,
@@ -233,14 +235,50 @@ function setSearchProp(key: 'span' | 'defaultValue' | 'enabled', value: unknown)
 }
 
 function setTableProp(
-  key: 'width' | 'minWidth' | 'maxWidth' | 'fixed' | 'sortable' | 'ellipsis' | 'format' | 'align' | 'allowExport' | 'exportTextValue',
+  key: 'width' | 'minWidth' | 'maxWidth' | 'fixed' | 'sortable' | 'filter' | 'filterMultiple' | 'ellipsis' | 'format' | 'align' | 'allowExport' | 'exportTextValue',
   value: unknown,
 ) {
   const table = ensureTableConfig(props.field)
-  if (value == null || value === '')
+  if (value == null || value === '' || value === false)
     delete (table as Record<string, unknown>)[key]
   else
     (table as Record<string, unknown>)[key] = value
+}
+
+function sortableSelectValue() {
+  const v = tableConfig.value?.sortable
+  if (v === true)
+    return 'true'
+  if (v === 'local' || v === 'remote')
+    return v
+  return null
+}
+
+function setTableSortable(value: string | null) {
+  if (!value)
+    setTableProp('sortable', undefined)
+  else if (value === 'true')
+    setTableProp('sortable', true)
+  else
+    setTableProp('sortable', value)
+}
+
+function filterSelectValue() {
+  const v = tableConfig.value?.filter
+  if (v === true)
+    return 'true'
+  if (v === 'local' || v === 'remote')
+    return v
+  return null
+}
+
+function setTableFilter(value: string | null) {
+  if (!value)
+    setTableProp('filter', undefined)
+  else if (value === 'true')
+    setTableProp('filter', true)
+  else
+    setTableProp('filter', value)
 }
 
 function updateSearchDefaultValue(text: string) {
@@ -914,17 +952,41 @@ watch(() => props.field.uid, () => {
                 <n-grid :cols="2" :x-gap="8">
                   <n-gi>
                     <n-form-item label="可排序">
-                      <n-switch
-                        :value="!!tableConfig?.sortable"
-                        @update:value="v => setTableProp('sortable', v || undefined)"
+                      <n-select
+                        :value="sortableSelectValue()"
+                        :options="tableSortableOptions"
+                        clearable
+                        placeholder="关闭"
+                        @update:value="setTableSortable"
                       />
                     </n-form-item>
                   </n-gi>
+                  <n-gi>
+                    <n-form-item label="可筛选">
+                      <n-select
+                        :value="filterSelectValue()"
+                        :options="tableFilterOptions"
+                        clearable
+                        placeholder="关闭"
+                        @update:value="setTableFilter"
+                      />
+                    </n-form-item>
+                  </n-gi>
+                </n-grid>
+                <n-grid :cols="2" :x-gap="8">
                   <n-gi>
                     <n-form-item label="省略显示">
                       <n-switch
                         :value="!!tableConfig?.ellipsis"
                         @update:value="v => setTableProp('ellipsis', v || undefined)"
+                      />
+                    </n-form-item>
+                  </n-gi>
+                  <n-gi v-if="!!tableConfig?.filter">
+                    <n-form-item label="多选筛选">
+                      <n-switch
+                        :value="tableConfig?.filterMultiple !== false"
+                        @update:value="v => setTableProp('filterMultiple', v ? undefined : false)"
                       />
                     </n-form-item>
                   </n-gi>

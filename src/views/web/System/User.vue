@@ -46,10 +46,13 @@
       <CommonTable
         class="page-container__table"
         flex-height
+        remote
+        show-index
         selectable
         col-setting-key="system-user"
         v-model:checked-row-keys="checkedUserIds"
         :filter-checked-keys="(keys) => keys.map(Number).filter(id => id !== 1)"
+        :selection-disabled="(row) => Number(row.userId) === 1"
         :data="tableData"
         :fields="tableFields"
         :page="searchModel.pageNum as number"
@@ -59,6 +62,8 @@
         :loading="loading"
         @update:page="onPageChange"
         @update:page-size="onPageSizeChange"
+        @update:sorter="onSorterChange"
+        @update:filters="onFiltersChange"
       />
     </div>
 
@@ -171,6 +176,8 @@ const {
   handleReset,
   onPageChange,
   onPageSizeChange,
+  onSorterChange,
+  onFiltersChange,
 } = usePageList({
   fetcher: async q => toPageResult(await listUser(q)),
   defaults: {
@@ -250,7 +257,7 @@ const userFields = computed(() => defineFields([
       visible: () => !isEdit.value,
     },
     search: false,
-    table: { width: 120 },
+    table: { width: 120, sortable: true },
   },
   {
     key: 'password',
@@ -282,6 +289,7 @@ const userFields = computed(() => defineFields([
     search: false,
     table: {
       width: 90,
+      filter: true,
       render: (row: Record<string, unknown>) => {
         const user = row as unknown as SysUser
         if (user.userId === 1)
@@ -338,7 +346,7 @@ const userFields = computed(() => defineFields([
     component: 'NInput',
     form: false,
     search: false,
-    table: { width: 170 },
+    table: { width: 170, sortable: true },
   },
   {
     key: 'remark',

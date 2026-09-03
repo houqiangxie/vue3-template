@@ -62,6 +62,8 @@ export interface MenuItem {
     breadcrumb?: boolean
     /** iframe 地址（component 为 iframe 页时） */
     iFrameUrl?: string
+    /** iframe 宿主路由 base path（不含 catch-all），用于 URL 同步 */
+    iFrameBasePath?: string
   }
   /** 子菜单 */
   children?: MenuItem[]
