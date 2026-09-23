@@ -4,7 +4,8 @@ export interface MockRequest {
   method: string
   url: string
   pathname: string
-  query: Record<string, string>
+  /** 同名参数重复时为 string[]（如 createTime=a&createTime=b） */
+  query: Record<string, any>
   params: Record<string, string>
   body: any
 }
@@ -48,14 +49,22 @@ export function fail(message: string, code = 500) {
   return { code, data: null, message }
 }
 
-export function parseQuery(url: string): Record<string, string> {
+export function parseQuery(url: string): Record<string, string | string[]> {
   const qIndex = url.indexOf('?')
   if (qIndex < 0)
     return {}
   const params = new URLSearchParams(url.slice(qIndex + 1))
-  const result: Record<string, string> = {}
+  const result: Record<string, string | string[]> = {}
   params.forEach((value, key) => {
-    result[key] = value
+    if (!(key in result)) {
+      result[key] = value
+      return
+    }
+    const prev = result[key]
+    if (Array.isArray(prev))
+      prev.push(value)
+    else
+      result[key] = [prev, value]
   })
   return result
 }

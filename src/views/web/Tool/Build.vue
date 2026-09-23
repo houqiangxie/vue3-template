@@ -1,58 +1,79 @@
 <template>
-  <div class="form-builder">
-    <div class="form-builder__toolbar">
-      <n-space align="right">
-        <n-button type="primary" @click="handlePreview">
-          预览
-        </n-button>
-        <n-button @click="importVisible = true">
-          导入 JSON
-        </n-button>
-        <n-button @click="handleCopyJson">
-          复制 JSON
-        </n-button>
-        <n-button @click="handleDownloadJson">
-          下载 JSON
-        </n-button>
-        <n-button @click="handleExportTs">
-          复制 defineFields
-        </n-button>
-        <n-button @click="handleDownloadTs">
-          下载 TS
-        </n-button>
-        <n-button type="primary" secondary @click="openCrudExport">
-          导出 CRUD 页面
-        </n-button>
-        <n-button :disabled="!canUndo" @click="undo">
-          撤销
-        </n-button>
-        <n-button :disabled="!canRedo" @click="redo">
-          重做
-        </n-button>
-        <n-button type="error" secondary @click="handleClear">
+  <div class="form-builder" :class="{ 'is-bpm': bpmMode }">
+    <header class="form-builder__toolbar">
+      <div class="form-builder__toolbar-left">
+        <template v-if="bpmMode">
+          <n-button quaternary size="small" @click="handleBpmBack">
+            返回列表
+          </n-button>
+          <div class="form-builder__toolbar-divider" />
+          <span class="form-builder__toolbar-title">{{ bpmFormMeta.name || '流程表单设计' }}</span>
+        </template>
+        <span v-else class="form-builder__toolbar-title">表单设计器</span>
+      </div>
+
+      <div class="form-builder__toolbar-right">
+        <n-button-group size="small">
+          <n-button :disabled="!canUndo" @click="undo">
+            撤销
+          </n-button>
+          <n-button :disabled="!canRedo" @click="redo">
+            重做
+          </n-button>
+        </n-button-group>
+
+        <div class="form-builder__toolbar-divider" />
+
+        <div class="form-builder__toolbar-meta">
+          <span class="form-builder__toolbar-label">列数</span>
+          <n-input-number
+            v-model:value="formCols"
+            :min="1"
+            :max="4"
+            size="small"
+            class="form-builder__cols-input"
+          />
+        </div>
+
+        <template v-if="!bpmMode">
+          <div class="form-builder__toolbar-meta">
+            <span class="form-builder__toolbar-label">自动保存</span>
+            <n-switch v-model:value="autoSave" size="small" />
+            <span
+              v-if="autoSave && saveStatus !== 'idle'"
+              class="form-builder__save-status"
+              :class="`is-${saveStatus}`"
+            >
+              {{ saveStatusText }}
+            </span>
+          </div>
+        </template>
+
+        <div class="form-builder__toolbar-divider" />
+
+        <n-dropdown :options="moreActionOptions" @select="onMoreActionSelect">
+          <n-button size="small">
+            更多
+          </n-button>
+        </n-dropdown>
+
+        <n-button size="small" type="error" quaternary @click="handleClear">
           清空
         </n-button>
-        <n-divider vertical />
-        <span class="form-builder__toolbar-label">自动保存</span>
-        <n-switch v-model:value="autoSave" size="small" />
-        <span
-          v-if="autoSave && saveStatus !== 'idle'"
-          class="form-builder__save-status"
-          :class="`is-${saveStatus}`"
-        >
-          {{ saveStatusText }}
-        </span>
-        <n-divider vertical />
-        <span class="form-builder__toolbar-label">表单列数</span>
-        <n-input-number
-          v-model:value="formCols"
-          :min="1"
-          :max="4"
+        <n-button size="small" type="primary" secondary @click="handlePreview">
+          预览
+        </n-button>
+        <n-button
+          v-if="bpmMode"
           size="small"
-          style="width: 72px"
-        />
-      </n-space>
-    </div>
+          type="primary"
+          :loading="bpmSaving"
+          @click="handleBpmSave"
+        >
+          保存
+        </n-button>
+      </div>
+    </header>
 
     <n-alert
       v-if="duplicateKeys.length"
@@ -64,172 +85,188 @@
     </n-alert>
 
     <div class="form-builder__body">
-      <n-card class="form-builder__palette" size="small" title="组件库" :bordered="false">
-        <div class="form-builder__panel-body">
-            <n-collapse :default-expanded-names="paletteExpandedNames">
-              <n-collapse-item
-                v-for="group in paletteGroups"
-                :key="group.name"
-                :title="group.name"
-                :name="group.name"
-              >
-                <div class="form-builder__palette-list">
-                  <div
-                    v-for="item in group.items"
-                    :key="`${group.name}-${item.component}-${item.label}`"
-                    class="form-builder__palette-item"
-                    draggable="true"
-                    @dragstart="onPaletteDragStart(item, $event)"
-                    @dragend="onPaletteDragEnd"
-                  >
-                    {{ item.label }}
-                  </div>
-                </div>
-              </n-collapse-item>
-            </n-collapse>
+      <section class="form-builder__panel form-builder__palette">
+        <div class="form-builder__panel-head">
+          <span>组件库</span>
+          <span class="form-builder__panel-hint">拖到画布</span>
         </div>
-      </n-card>
-
-      <n-card class="form-builder__canvas" size="small" title="设计画布" :bordered="false">
         <div class="form-builder__panel-body">
-            <div
-              class="form-builder__dropzone"
-              :class="{ 'is-palette-dragging': paletteDragging, 'is-empty': !fields.length && !paletteDragging }"
-              @dragenter.prevent="onDropzoneDragEnter"
-              @dragleave.prevent="onDropzoneDragLeave"
-              @dragover.prevent="onDropzoneDragOver"
-              @drop.prevent="onCanvasDrop"
+          <n-collapse :default-expanded-names="paletteExpandedNames" arrow-placement="right">
+            <n-collapse-item
+              v-for="group in paletteGroups"
+              :key="group.name"
+              :title="group.name"
+              :name="group.name"
             >
-          <n-empty
-            v-if="!fields.length && !paletteDragging"
-            description="从左侧拖拽组件到此处"
-          />
+              <div class="form-builder__palette-list">
+                <div
+                  v-for="item in group.items"
+                  :key="`${group.name}-${item.component}-${item.label}`"
+                  class="form-builder__palette-item"
+                  draggable="true"
+                  @dragstart="onPaletteDragStart(item, $event)"
+                  @dragend="onPaletteDragEnd"
+                >
+                  {{ item.label }}
+                </div>
+              </div>
+            </n-collapse-item>
+          </n-collapse>
+        </div>
+      </section>
+
+      <section class="form-builder__panel form-builder__canvas">
+        <div class="form-builder__panel-head">
+          <span>设计画布</span>
+          <span class="form-builder__panel-hint">{{ fields.length }} 个字段</span>
+        </div>
+        <div class="form-builder__panel-body form-builder__panel-body--canvas">
           <div
-            v-if="fields.length"
-            ref="fieldGridRef"
-            class="form-builder__grid-shell"
+            class="form-builder__dropzone"
+            :class="{ 'is-palette-dragging': paletteDragging, 'is-empty': !fields.length && !paletteDragging }"
+            @dragenter.prevent="onDropzoneDragEnter"
+            @dragleave.prevent="onDropzoneDragLeave"
+            @dragover.prevent="onDropzoneDragOver"
+            @drop.prevent="onCanvasDrop"
           >
+            <n-empty
+              v-if="!fields.length && !paletteDragging"
+              description="从左侧拖拽组件到此处"
+            />
             <div
-              v-if="formCols > 1"
-              class="form-builder__col-guides"
-              :style="gridColumnStyle"
+              v-if="fields.length"
+              ref="fieldGridRef"
+              class="form-builder__grid-shell"
             >
               <div
-                v-for="col in formCols"
-                :key="col"
-                class="form-builder__col-guide"
-              />
-            </div>
-            <draggable
-              v-model="fields"
-              class="form-builder__field-grid"
-              :style="gridColumnStyle"
-              item-key="uid"
-              filter=".form-builder__no-drag"
-              :prevent-on-filter="false"
-              ghost-class="form-builder__ghost"
-              chosen-class="form-builder__chosen"
-              drag-class="form-builder__dragging"
-              :animation="180"
-              :disabled="paletteDragging || !!gridResizing"
-              @end="onCanvasFieldDragEnd"
-            >
-              <template #item="{ element, index }">
+                v-if="formCols > 1"
+                class="form-builder__col-guides"
+                :style="gridColumnStyle"
+              >
                 <div
-                  class="form-builder__field-wrap"
-                  :data-uid="element.uid"
-                  :style="fieldWrapGridStyle(element, formCols)"
-                >
+                  v-for="col in formCols"
+                  :key="col"
+                  class="form-builder__col-guide"
+                />
+              </div>
+              <draggable
+                v-model="fields"
+                class="form-builder__field-grid"
+                :style="gridColumnStyle"
+                item-key="uid"
+                filter=".form-builder__no-drag"
+                :prevent-on-filter="false"
+                ghost-class="form-builder__ghost"
+                chosen-class="form-builder__chosen"
+                drag-class="form-builder__dragging"
+                :animation="180"
+                :disabled="paletteDragging || !!gridResizing"
+                @end="onCanvasFieldDragEnd"
+              >
+                <template #item="{ element, index }">
                   <div
-                    v-show="paletteDragging && dropInsertIndex === index"
-                    class="form-builder__drop-indicator"
-                  />
-                  <div
-                    class="form-builder__field"
-                    :class="{
-                      'is-active': selectedUid === element.uid,
-                      'is-resizing-grid': gridResizing?.uid === element.uid,
-                      'is-duplicate-key': isDuplicateKey(element),
-                    }"
-                    @click="selectField(element.uid)"
+                    class="form-builder__field-wrap"
+                    :data-uid="element.uid"
+                    :style="fieldWrapGridStyle(element, formCols)"
                   >
-                    <div class="form-builder__field-head">
-                      <span class="form-builder__field-handle" title="拖动排序">⋮⋮</span>
-                      <span class="form-builder__field-label">{{ element.label || resolveFieldKey(element) }}</span>
-                      <n-tag
-                        v-if="isDuplicateKey(element)"
-                        size="tiny"
-                        type="error"
-                        :bordered="false"
-                      >
-                        重名
-                      </n-tag>
-                      <n-tag
-                        v-if="element.form !== false && formCols > 1"
-                        size="tiny"
-                        :bordered="false"
-                        type="primary"
-                      >
-                        {{ getFieldSpan(element, formCols) }}/{{ formCols }}列
-                      </n-tag>
-                      <n-space :size="4">
+                    <div
+                      v-show="paletteDragging && dropInsertIndex === index"
+                      class="form-builder__drop-indicator"
+                    />
+                    <div
+                      class="form-builder__field"
+                      :class="{
+                        'is-active': selectedUid === element.uid,
+                        'is-resizing-grid': gridResizing?.uid === element.uid,
+                        'is-duplicate-key': isDuplicateKey(element),
+                      }"
+                      @click="selectField(element.uid)"
+                    >
+                      <div class="form-builder__field-head">
+                        <div class="form-builder__field-head-main">
+                          <span class="form-builder__field-handle" title="拖动排序">⋮⋮</span>
+                          <span class="form-builder__field-label">{{ element.label || resolveFieldKey(element) }}</span>
+                          <n-tag
+                            v-if="isDuplicateKey(element)"
+                            size="tiny"
+                            type="error"
+                            :bordered="false"
+                          >
+                            重名
+                          </n-tag>
+                        </div>
+                        <n-space class="form-builder__no-drag form-builder__field-ops" :size="2">
+                          <n-button text size="tiny" @click.stop="duplicateFieldAt(index)">
+                            复制
+                          </n-button>
+                          <n-button text type="error" size="tiny" @click.stop="removeField(index)">
+                            删除
+                          </n-button>
+                        </n-space>
+                      </div>
+                      <div class="form-builder__field-meta">
+                        <n-tag
+                          v-if="element.form !== false && formCols > 1"
+                          size="tiny"
+                          :bordered="false"
+                          type="primary"
+                        >
+                          {{ getFieldSpan(element, formCols) }}/{{ formCols }}列
+                        </n-tag>
                         <n-tag v-if="element.form !== false" size="tiny" type="info" :bordered="false">表单</n-tag>
                         <n-tag v-if="element.search !== false" size="tiny" type="success" :bordered="false">搜索</n-tag>
                         <n-tag v-if="element.table !== false" size="tiny" type="warning" :bordered="false">表格</n-tag>
                         <n-tag v-if="element._visibleExpr || element._hiddenExpr" size="tiny" type="error" :bordered="false">联动</n-tag>
-                      </n-space>
-                      <n-tag size="tiny" :bordered="false">{{ resolveComponentLabel(element) }}</n-tag>
-                      <n-space class="form-builder__no-drag" :size="4">
-                        <n-button text size="tiny" @click.stop="duplicateFieldAt(index)">
-                          复制
-                        </n-button>
-                        <n-button text type="error" size="tiny" @click.stop="removeField(index)">
-                          删除
-                        </n-button>
-                      </n-space>
-                    </div>
-                    <div class="form-builder__field-preview form-builder__field-preview--compact" @click.stop>
-                      <n-empty
-                        v-if="element.form === false"
-                        size="small"
-                        description="未参与表单场景"
-                      />
-                      <div v-else class="form-builder__field-preview-hint">
-                        {{ resolveFieldKey(element) }} · {{ resolveComponentLabel(element) }}
+                        <span class="form-builder__field-comp">{{ resolveComponentLabel(element) }}</span>
                       </div>
+                      <div class="form-builder__field-preview form-builder__field-preview--compact" @click.stop>
+                        <n-empty
+                          v-if="element.form === false"
+                          size="small"
+                          description="未参与表单场景"
+                        />
+                        <div v-else class="form-builder__field-preview-hint">
+                          {{ resolveFieldKey(element) }}
+                        </div>
+                      </div>
+                      <template v-if="element.form !== false && formCols > 1">
+                        <div
+                          class="form-builder__field-resizer form-builder__field-resizer--west form-builder__no-drag"
+                          title="拖动调整起始列"
+                          @mousedown.stop="startGridResize(element, 'west', $event)"
+                        />
+                        <div
+                          class="form-builder__field-resizer form-builder__field-resizer--east form-builder__no-drag"
+                          title="拖动调整占用列数"
+                          @mousedown.stop="startGridResize(element, 'east', $event)"
+                        />
+                      </template>
                     </div>
-                    <template v-if="element.form !== false && formCols > 1">
-                      <div
-                        class="form-builder__field-resizer form-builder__field-resizer--west form-builder__no-drag"
-                        title="拖动调整起始列"
-                        @mousedown.stop="startGridResize(element, 'west', $event)"
-                      />
-                      <div
-                        class="form-builder__field-resizer form-builder__field-resizer--east form-builder__no-drag"
-                        title="拖动调整占用列数"
-                        @mousedown.stop="startGridResize(element, 'east', $event)"
-                      />
-                    </template>
                   </div>
-                </div>
-              </template>
-            </draggable>
-          </div>
-          <div
-            v-show="paletteDragging && dropInsertIndex === fields.length"
-            class="form-builder__drop-indicator form-builder__drop-indicator--tail"
-          />
-          <div
-            v-show="paletteDragging"
-            class="form-builder__drop-tail"
-          >
-            拖放到此处追加到末尾
-          </div>
+                </template>
+              </draggable>
             </div>
+            <div
+              v-show="paletteDragging && dropInsertIndex === fields.length"
+              class="form-builder__drop-indicator form-builder__drop-indicator--tail"
+            />
+            <div
+              v-show="paletteDragging"
+              class="form-builder__drop-tail"
+            >
+              拖放到此处追加到末尾
+            </div>
+          </div>
         </div>
-      </n-card>
+      </section>
 
-      <n-card class="form-builder__props" size="small" title="字段属性" :bordered="false">
+      <section class="form-builder__panel form-builder__props">
+        <div class="form-builder__panel-head">
+          <span>字段属性</span>
+          <span v-if="selectedField" class="form-builder__panel-hint">
+            {{ selectedField.label || resolveFieldKey(selectedField) }}
+          </span>
+        </div>
         <div class="form-builder__panel-body">
           <n-empty v-if="!selectedField" description="请选择画布中的字段" size="small" />
           <FieldPropsPanel
@@ -241,7 +278,7 @@
             @key-change="onFieldKeyChange"
           />
         </div>
-      </n-card>
+      </section>
     </div>
 
     <CommonModal
@@ -419,17 +456,42 @@ import {
   rewriteModelKeyRefs,
 } from '@/components/common/FormBuilder/utils'
 import { getBodyCssZoom } from '@/utils/bodyZoom'
+import { useRoute, useRouter } from 'vue-router'
+import * as FormApi from '@/api/bpm/form'
+import { packBpmForm, unpackBpmForm } from '@/components/FormCreate/src/bpmFormBuilder'
+import { resolveBpmRouteName } from '@/views/web/Bpm/routeNames'
 
 const GRID_GAP = 10
 
 defineOptions({ name: 'Tool-Build' })
 
 const { message, confirmDanger } = useConfirm()
+const route = useRoute()
+const router = useRouter()
+
+const bpmFormId = computed(() => {
+  const fromQuery = route.query.bpmFormId
+  const fromParams = route.params.id
+  const raw = fromQuery ?? fromParams
+  if (raw == null || raw === '')
+    return undefined
+  const n = Number(Array.isArray(raw) ? raw[0] : raw)
+  return Number.isFinite(n) && n > 0 ? n : undefined
+})
+const bpmMode = computed(() => bpmFormId.value != null)
+const bpmSaving = ref(false)
+const bpmFormMeta = ref<Partial<FormApi.FormVO>>({})
 
 const formCols = ref(2)
 const fields = ref<BuilderField[]>([])
 const selectedUid = ref('')
-const { autoSave, saveStatus, canUndo, canRedo, undo, redo } = useFormBuilderPersistence(fields, formCols, selectedUid)
+const bpmAutoSave = ref(false)
+const { autoSave, saveStatus, canUndo, canRedo, undo, redo } = useFormBuilderPersistence(
+  fields,
+  formCols,
+  selectedUid,
+  { autoSave: bpmMode.value ? bpmAutoSave : undefined },
+)
 
 const saveStatusText = computed(() => {
   if (saveStatus.value === 'pending')
@@ -440,6 +502,47 @@ const saveStatusText = computed(() => {
     return '保存失败'
   return ''
 })
+
+const moreActionOptions = computed(() => {
+  const options: Array<{ label: string, key: string, type?: 'divider' }> = [
+    { label: '导入 JSON', key: 'import' },
+    { label: '复制 JSON', key: 'copy-json' },
+    { label: '下载 JSON', key: 'download-json' },
+    { type: 'divider', key: 'd1', label: '' },
+    { label: '复制 defineFields', key: 'copy-ts' },
+    { label: '下载 TS', key: 'download-ts' },
+  ]
+  if (!bpmMode.value) {
+    options.push(
+      { type: 'divider', key: 'd2', label: '' },
+      { label: '导出 CRUD 页面', key: 'export-crud' },
+    )
+  }
+  return options
+})
+
+function onMoreActionSelect(key: string) {
+  switch (key) {
+    case 'import':
+      importVisible.value = true
+      break
+    case 'copy-json':
+      handleCopyJson()
+      break
+    case 'download-json':
+      handleDownloadJson()
+      break
+    case 'copy-ts':
+      handleExportTs()
+      break
+    case 'download-ts':
+      handleDownloadTs()
+      break
+    case 'export-crud':
+      openCrudExport()
+      break
+  }
+}
 
 const previewVisible = ref(false)
 const previewTab = ref<'form' | 'search' | 'table'>('form')
@@ -973,8 +1076,16 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
+  if (bpmFormId.value) {
+    await loadBpmForm(bpmFormId.value)
+  }
+})
+
+watch(bpmFormId, async (id, prev) => {
+  if (id && id !== prev)
+    await loadBpmForm(id)
 })
 
 onUnmounted(() => {
@@ -982,33 +1093,149 @@ onUnmounted(() => {
   document.removeEventListener('mouseup', onGridResizeEnd)
   window.removeEventListener('keydown', onKeydown)
 })
+
+async function loadBpmForm(id: number) {
+  try {
+    const data = await FormApi.getForm(id) as FormApi.FormVO
+    bpmFormMeta.value = data
+    const unpacked = unpackBpmForm(data.conf, data.fields)
+    invalidateRuntimeCache()
+    fields.value = unpacked.fields
+    formCols.value = unpacked.formCols
+    selectedUid.value = unpacked.fields[0]?.uid || ''
+    document.title = `设计表单 · ${data.name || id}`
+  }
+  catch (e: any) {
+    message.error(e?.message || '加载流程表单失败')
+  }
+}
+
+async function handleBpmSave() {
+  if (!bpmFormId.value)
+    return
+  if (duplicateKeys.value.length) {
+    message.warning('存在重复字段名，请先修正后再保存')
+    return
+  }
+  bpmSaving.value = true
+  try {
+    const packed = packBpmForm(fields.value, formCols.value)
+    await FormApi.updateForm({
+      id: bpmFormId.value,
+      name: bpmFormMeta.value.name || '',
+      status: bpmFormMeta.value.status ?? 0,
+      remark: bpmFormMeta.value.remark || '',
+      conf: packed.conf,
+      fields: packed.fields,
+      createTime: bpmFormMeta.value.createTime || '',
+    } as FormApi.FormVO)
+    bpmFormMeta.value = {
+      ...bpmFormMeta.value,
+      conf: packed.conf,
+      fields: packed.fields,
+    }
+    message.success('已保存到流程表单')
+  }
+  catch (e: any) {
+    message.error(e?.message || '保存失败')
+  }
+  finally {
+    bpmSaving.value = false
+  }
+}
+
+function handleBpmBack() {
+  if (router.hasRoute('BpmForm')) {
+    router.push({ name: 'BpmForm' })
+    return
+  }
+  if (router.hasRoute('Bpm-Form')) {
+    router.push({ name: 'Bpm-Form' })
+    return
+  }
+  router.push({ name: resolveBpmRouteName(router, 'Bpm-Form', 'BpmForm') })
+}
 </script>
 
 <style scoped>
 .form-builder {
+  --fb-border: #e8ecf1;
+  --fb-surface: #fff;
+  --fb-muted: #6b7280;
+  --fb-bg: #f3f5f8;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  background: var(--fb-bg);
+  border-radius: 8px;
 }
 
 .form-builder__toolbar {
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  min-height: 52px;
+  padding: 8px 14px;
+  background: var(--fb-surface);
+  border-bottom: 1px solid var(--fb-border);
 }
 
-.form-builder__duplicate-alert {
-  margin-bottom: 12px;
+.form-builder__toolbar-left,
+.form-builder__toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.form-builder__toolbar-right {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.form-builder__toolbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-builder__toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--fb-border);
+  flex-shrink: 0;
+}
+
+.form-builder__toolbar-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .form-builder__toolbar-label {
-  font-size: 13px;
-  color: var(--n-text-color-3);
+  font-size: 12px;
+  color: var(--fb-muted);
+  white-space: nowrap;
+}
+
+.form-builder__cols-input {
+  width: 72px;
+}
+
+.form-builder__duplicate-alert {
+  margin: 10px 12px 0;
 }
 
 .form-builder__save-status {
   font-size: 12px;
-  color: var(--n-text-color-3);
+  color: var(--fb-muted);
 }
 
 .form-builder__save-status.is-saved {
@@ -1021,46 +1248,72 @@ onUnmounted(() => {
 
 .form-builder__body {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 320px;
+  grid-template-columns: 240px minmax(0, 1fr) 340px;
   grid-template-rows: minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  padding: 10px 12px 12px;
 }
 
-.form-builder__palette,
-.form-builder__canvas,
-.form-builder__props {
+.form-builder__panel {
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+  background: var(--fb-surface);
+  border: 1px solid var(--fb-border);
+  border-radius: 10px;
 }
 
-.form-builder__palette :deep(.n-card-content),
-.form-builder__canvas :deep(.n-card-content),
-.form-builder__props :deep(.n-card-content) {
-  position: relative;
-  min-height: 0;
-  overflow: hidden;
-  padding: 0;
+.form-builder__panel-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 42px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--fb-border);
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.form-builder__panel-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--fb-muted);
 }
 
 .form-builder__panel-body {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1;
+  min-height: 0;
   box-sizing: border-box;
   padding: 12px;
   overflow-x: hidden;
   overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }
 
-.form-builder__panel-body::-webkit-scrollbar {
-  display: none;
+.form-builder__panel-body--canvas {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--fb-border) 55%, transparent) 1px, transparent 1px) 0 0 / 16px 16px,
+    linear-gradient(color-mix(in srgb, var(--fb-border) 55%, transparent) 1px, transparent 1px) 0 0 / 16px 16px,
+    #fafbfc;
+}
+
+.form-builder__palette :deep(.n-collapse-item__header) {
+  padding: 6px 0 !important;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fb-muted);
+}
+
+.form-builder__palette :deep(.n-collapse-item__content-inner) {
+  padding: 4px 0 10px !important;
 }
 
 .form-builder__grid-shell {
@@ -1094,25 +1347,33 @@ onUnmounted(() => {
 
 .form-builder__col-guide {
   min-height: 100%;
-  border: 1px dashed color-mix(in srgb, var(--n-border-color) 70%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--n-primary-color) 22%, transparent);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--n-border-color) 8%, transparent);
+  background: color-mix(in srgb, var(--n-primary-color) 4%, transparent);
 }
 
 .form-builder__palette-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .form-builder__palette-item {
   padding: 8px 10px;
-  border: 1px dashed var(--n-border-color);
-  border-radius: 6px;
+  border: 1px solid var(--fb-border);
+  border-radius: 8px;
   cursor: grab;
   user-select: none;
-  font-size: 13px;
-  background: var(--n-color);
+  font-size: 12px;
+  color: #374151;
+  background: #f8fafc;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.form-builder__palette-item:hover {
+  border-color: color-mix(in srgb, var(--n-primary-color) 45%, var(--fb-border));
+  background: color-mix(in srgb, var(--n-primary-color) 8%, #fff);
+  color: var(--n-primary-color);
 }
 
 .form-builder__palette-item:active {
@@ -1123,6 +1384,7 @@ onUnmounted(() => {
   position: relative;
   display: flex;
   flex-direction: column;
+  min-height: 100%;
 }
 
 .form-builder__dropzone.is-empty,
@@ -1134,6 +1396,7 @@ onUnmounted(() => {
   outline: 2px dashed var(--n-primary-color);
   outline-offset: -2px;
   background: color-mix(in srgb, var(--n-primary-color) 6%, transparent);
+  border-radius: 8px;
 }
 
 .form-builder__field-wrap {
@@ -1155,15 +1418,16 @@ onUnmounted(() => {
 
 .form-builder__drop-tail {
   flex: 1;
-  min-height: 120px;
+  min-height: 100px;
   margin-top: 8px;
-  border: 2px dashed var(--n-border-color);
+  border: 1px dashed color-mix(in srgb, var(--n-primary-color) 35%, var(--fb-border));
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--n-text-color-3);
+  color: var(--fb-muted);
   font-size: 13px;
+  background: color-mix(in srgb, #fff 70%, transparent);
 }
 
 .form-builder__dropzone.is-palette-dragging .form-builder__drop-tail {
@@ -1175,12 +1439,17 @@ onUnmounted(() => {
 .form-builder__field {
   position: relative;
   height: 100%;
-  border: 1px solid var(--n-border-color);
-  border-radius: 8px;
+  border: 1px solid var(--fb-border);
+  border-radius: 10px;
   padding: 10px 12px;
-  background: var(--n-color);
+  background: #fff;
   cursor: grab;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-builder__field:hover {
+  border-color: color-mix(in srgb, var(--n-primary-color) 35%, var(--fb-border));
 }
 
 .form-builder__field:active {
@@ -1226,7 +1495,7 @@ onUnmounted(() => {
 
 .form-builder__field.is-active {
   border-color: var(--n-primary-color);
-  box-shadow: 0 0 0 1px var(--n-primary-color);
+  box-shadow: 0 0 0 1px var(--n-primary-color), 0 4px 14px color-mix(in srgb, var(--n-primary-color) 12%, transparent);
 }
 
 .form-builder__field.is-duplicate-key {
@@ -1240,20 +1509,51 @@ onUnmounted(() => {
 .form-builder__field-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+}
+
+.form-builder__field-head-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
 }
 
 .form-builder__field-handle {
   cursor: grab;
-  color: var(--n-text-color-3);
+  color: #9ca3af;
   letter-spacing: -2px;
+  flex-shrink: 0;
 }
 
 .form-builder__field-label {
-  flex: 1;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 13px;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-builder__field-ops {
+  flex-shrink: 0;
+}
+
+.form-builder__field-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.form-builder__field-comp {
+  margin-left: auto;
+  font-size: 11px;
+  color: #9ca3af;
 }
 
 .form-builder__field-preview {
@@ -1261,19 +1561,24 @@ onUnmounted(() => {
 }
 
 .form-builder__field-preview--compact {
-  min-height: 36px;
+  min-height: 34px;
   display: flex;
   align-items: center;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px dashed var(--fb-border);
 }
 
 .form-builder__field-preview-hint {
   font-size: 12px;
-  color: var(--n-text-color-3);
+  color: var(--fb-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .form-builder__import-tip {
   font-size: 12px;
-  color: var(--n-text-color-3);
+  color: var(--fb-muted);
 }
 
 .form-builder__ghost {
@@ -1288,5 +1593,9 @@ onUnmounted(() => {
   opacity: 0.85;
 }
 
-
+@media (max-width: 1200px) {
+  .form-builder__body {
+    grid-template-columns: 200px minmax(0, 1fr) 300px;
+  }
+}
 </style>

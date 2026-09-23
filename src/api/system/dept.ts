@@ -96,3 +96,21 @@ export function deptToTreeSelectData(depts: SysDept[]): DeptTreeOption[] {
     children: d.children?.length ? deptToTreeSelectData(d.children) : undefined,
   }))
 }
+
+/** BPM 设计器兼容：芋道 DeptVO */
+export interface DeptVO {
+  id: number
+  name: string
+  parentId?: number
+  children?: DeptVO[]
+}
+
+/** BPM：部门精简列表（扁平，含 id/name） */
+export async function getSimpleDeptList(): Promise<DeptVO[]> {
+  const flat = await listDeptFlat({ status: '0' })
+  return flat.map(d => ({
+    id: d.deptId,
+    name: d.deptName,
+    parentId: d.parentId,
+  }))
+}

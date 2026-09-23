@@ -103,8 +103,15 @@
   const route = useRoute();
   const currentYear = new Date().getFullYear();
 
-  /** 被主应用 iframe 嵌入时裁剪壳层 */
-  const isEmbedMode = computed(() => loadingStore.isIframe);
+  /** 被主应用 iframe 嵌入，或路由/query 声明 hideMenu 时裁剪壳层 */
+  const isEmbedMode = computed(() => {
+    if (loadingStore.isIframe)
+      return true
+    const q = route.query.hideMenu
+    if (q === '1' || q === 'true' || q === '')
+      return true
+    return route.matched.some(r => r.meta?.hideMenu === true)
+  });
 
   /** 移动端抽屉开关（不持久化；桌面折叠写回 menuSetting.collapsed） */
   const mobileDrawerOpen = ref(false);
@@ -282,7 +289,14 @@
     width: var(--app-vw, 100vw);
     height: var(--app-vh, 100vh);
     height: var(--app-dvh, 100dvh);
-    overflow: auto;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .layout-embed :deep(.bpm-model-editor),
+  .layout-embed :deep(.bpm-page) {
+    height: 100%;
+    min-height: 0;
   }
 
   .layout {

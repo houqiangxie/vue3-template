@@ -71,8 +71,9 @@ cp .env.example .env.dev.local
 ## 项目结构
 
 ```
-├── app/index.html          # App 端入口
 ├── index.html              # Web 端入口
+├── app/index.html          # App 端入口
+├── bpm/index.html          # BPM 流程设计独立入口（简易 + BPMN）
 ├── electron/               # Electron 主进程 / preload / 托盘 / 更新
 ├── mock/                   # 本地 Mock（Vite 中间件）
 ├── public/
@@ -80,15 +81,18 @@ cp .env.example .env.dev.local
 │   └── vendor/             # 文件预览等静态资源
 ├── src/
 │   ├── api/system/         # 系统管理 API
-│   ├── components/common/  # CommonForm / SearchPanel / table / modal
-│   ├── config/             # 站点与菜单配置
+│   ├── api/bpm/            # 流程 API（芋道协议兼容）
+│   ├── components/bpm/     # BPM 业务组件（DictTag 等）
+│   ├── components/common/  # CommonForm / SearchPanel / CommonTable / CommonModal
+│   ├── components/SimpleProcessDesignerV2/  # 简易流程设计器
+│   ├── components/bpmnProcessDesigner/      # BPMN 设计器（画布 bpmn-js）
 │   ├── hooks/              # usePageList / useCrud / useIframeHost|Child …
 │   ├── layout/             # Web 布局（侧栏、TagsView、主题）
-│   ├── pages/              # 多入口启动（web.ts / app.ts）
+│   ├── pages/              # 多入口启动（web.ts / app.ts / bpm.ts）
 │   ├── router/             # 路由 + 动态路由 / 权限守卫
 │   ├── store/              # Pinia（含 iframe 面包屑覆盖）
 │   ├── utils/iframeBridge/ # postMessage 协议与路径工具
-│   └── views/              # web / app 页面（含 common/IFrame.vue）
+│   └── views/              # web / app / bpm 页面
 └── vite.config.ts
 ```
 
@@ -98,11 +102,23 @@ cp .env.example .env.dev.local
 
 
 
-### 双端 MPA
+### 三端 MPA
 
 - Web：`index.html` → `src/pages/web.ts`，Naive UI + 后台布局（`layout/index.vue` + 项目配置）
 - App：`app/index.html` → `src/pages/app.ts`，仅作 H5 预留（`layout/AppLayout.vue` 轻量壳，不兼容后台布局配置）
+- BPM：`bpm/index.html` → `src/pages/bpm.ts`，流程设计独立站（简易设计器 + BPMN），直接使用 **Naive UI** 与项目通用组件（`CommonTable` / `CommonModal` / `SearchPanel` / `usePageList`）
 - 公共启动逻辑在 `src/pages/createBootstrap.ts`
+- 入口选择：`VITE_APPS=main,app,bpm`（`web` 等价 `main`）
+
+| 命令 | 说明 |
+| --- | --- |
+| `pnpm dev` | 三端一起开发 |
+| `pnpm dev:web` / `dev:app` / `dev:bpm` | 只启对应入口 |
+| `pnpm build` | 三端一起打包到 `dist/` |
+| `pnpm build:web` / `build:app` / `build:bpm` | 只打对应端（合并拷到线上即可） |
+| `VITE_EMPTY_OUTDIR` | `.env.build` 中默认 `true` 清空 `dist`；改 `false` 则不清空，可连续单端打进同一 `dist` |
+
+开发访问：`http://localhost:90/bpm/`（简易 `/bpm/simple`，BPMN `/bpm/bpmn`）
 
 
 
@@ -214,6 +230,7 @@ parent.postMessage({ source: 'vue3-template-iframe', type: 'ready' }, '*')
 | `VITE_baseUrl`                             | 接口前缀，默认 `/api`              |
 | `VITE_USE_MOCK`                            | `true` 本地 Mock，`false` 走代理  |
 | `VITE_API_PROXY_TARGET`                    | 代理目标（Mock 关闭时）              |
+| `VITE_EMPTY_OUTDIR`                        | 打包是否清空 `dist`，默认 `true`   |
 | `VITE_BUILD_URL`                           | 部署 publicPath / base        |
 | `VITE_LOGIN_AES_KEY` / `VITE_LOGIN_AES_IV` | 登录密码 AES（本地 `.env.*.local`） |
 | `VITE_ALLOW_QUERY_TOKEN`                   | 是否允许 URL `?token=`（生产默认关闭）  |

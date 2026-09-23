@@ -30,6 +30,16 @@ let nextJobId = 4
 let nextJobLogId = 5
 let nextPostId = 4
 let nextConfigId = 5
+let nextBpmCategoryId = 3
+let nextBpmFormId = 3
+let nextBpmUserGroupId = 3
+let nextBpmProcessListenerId = 3
+let nextBpmProcessExpressionId = 3
+let nextBpmLeaveId = 3
+let nextBpmModelId = 3
+let nextBpmProcessDefinitionSeq = 3
+let nextBpmProcessInstanceId = 4
+let nextBpmTaskId = 4
 
 export const users: SysUser[] = [
   {
@@ -183,6 +193,44 @@ export const menus: SysMenu[] = [
   { menuId: 96, parentId: 92, menuName: '导入代码', menuType: 'F', orderNum: 4, perms: 'tool:gen:import', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
   { menuId: 97, parentId: 92, menuName: '预览代码', menuType: 'F', orderNum: 5, perms: 'tool:gen:preview', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
   { menuId: 98, parentId: 92, menuName: '生成代码', menuType: 'F', orderNum: 6, perms: 'tool:gen:code', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  // —— 工作流 ——
+  { menuId: 200, parentId: 0, menuName: '工作流', menuType: 'M', orderNum: 8, path: '/Bpm', icon: 'ApartmentOutlined', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 230, parentId: 200, menuName: '流程模型', menuType: 'C', orderNum: 1, path: '/Bpm/Model', component: 'Bpm/Model', perms: 'bpm:model:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 231, parentId: 230, menuName: '模型新增', menuType: 'F', orderNum: 1, perms: 'bpm:model:create', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 232, parentId: 230, menuName: '模型修改', menuType: 'F', orderNum: 2, perms: 'bpm:model:update', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 233, parentId: 230, menuName: '模型删除', menuType: 'F', orderNum: 3, perms: 'bpm:model:delete', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 234, parentId: 230, menuName: '模型发布', menuType: 'F', orderNum: 4, perms: 'bpm:model:deploy', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 235, parentId: 200, menuName: '编辑流程模型', menuType: 'C', orderNum: 2, path: '/Bpm/ModelEditor/:type/:id?', component: 'Bpm/ModelEditor', perms: 'bpm:model:update', visible: '0', status: '1', isCache: '0', createTime: '2024-01-01 00:00:00' },
+  { menuId: 201, parentId: 200, menuName: '流程分类', menuType: 'C', orderNum: 3, path: '/Bpm/Category', component: 'Bpm/Category', perms: 'bpm:category:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 202, parentId: 201, menuName: '分类新增', menuType: 'F', orderNum: 1, perms: 'bpm:category:create', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 203, parentId: 201, menuName: '分类修改', menuType: 'F', orderNum: 2, perms: 'bpm:category:update', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 204, parentId: 201, menuName: '分类删除', menuType: 'F', orderNum: 3, perms: 'bpm:category:delete', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 205, parentId: 200, menuName: '流程表单', menuType: 'C', orderNum: 4, path: '/Bpm/Form', component: 'Bpm/Form', perms: 'bpm:form:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 206, parentId: 205, menuName: '表单新增', menuType: 'F', orderNum: 1, perms: 'bpm:form:create', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 207, parentId: 205, menuName: '表单修改', menuType: 'F', orderNum: 2, perms: 'bpm:form:update', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 208, parentId: 205, menuName: '表单删除', menuType: 'F', orderNum: 3, perms: 'bpm:form:delete', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 209, parentId: 200, menuName: '用户分组', menuType: 'C', orderNum: 5, path: '/Bpm/UserGroup', component: 'Bpm/UserGroup', perms: 'bpm:user-group:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 210, parentId: 209, menuName: '分组新增', menuType: 'F', orderNum: 1, perms: 'bpm:user-group:create', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 211, parentId: 209, menuName: '分组修改', menuType: 'F', orderNum: 2, perms: 'bpm:user-group:update', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 212, parentId: 209, menuName: '分组删除', menuType: 'F', orderNum: 3, perms: 'bpm:user-group:delete', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 213, parentId: 200, menuName: '流程监听器', menuType: 'C', orderNum: 6, path: '/Bpm/ProcessListener', component: 'Bpm/ProcessListener', perms: 'bpm:process-listener:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 214, parentId: 213, menuName: '监听器新增', menuType: 'F', orderNum: 1, perms: 'bpm:process-listener:create', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 215, parentId: 213, menuName: '监听器修改', menuType: 'F', orderNum: 2, perms: 'bpm:process-listener:update', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 216, parentId: 213, menuName: '监听器删除', menuType: 'F', orderNum: 3, perms: 'bpm:process-listener:delete', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 217, parentId: 200, menuName: '流程表达式', menuType: 'C', orderNum: 7, path: '/Bpm/ProcessExpression', component: 'Bpm/ProcessExpression', perms: 'bpm:process-expression:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 218, parentId: 217, menuName: '表达式新增', menuType: 'F', orderNum: 1, perms: 'bpm:process-expression:create', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 219, parentId: 217, menuName: '表达式修改', menuType: 'F', orderNum: 2, perms: 'bpm:process-expression:update', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 220, parentId: 217, menuName: '表达式删除', menuType: 'F', orderNum: 3, perms: 'bpm:process-expression:delete', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 236, parentId: 200, menuName: '流程实例', menuType: 'C', orderNum: 8, path: '/Bpm/ProcessInstance', component: 'Bpm/ProcessInstance', perms: 'bpm:process-instance:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 238, parentId: 200, menuName: '发起流程', menuType: 'C', orderNum: 7, path: '/Bpm/processInstance/create', component: 'Bpm/processInstance/create/index', perms: 'bpm:process-instance:query', visible: '1', status: '1', isCache: '0', createTime: '2024-01-01 00:00:00' },
+  { menuId: 239, parentId: 200, menuName: '流程详情', menuType: 'C', orderNum: 8, path: '/Bpm/processInstance/detail', component: 'Bpm/processInstance/detail/index', perms: 'bpm:process-instance:query', visible: '0', status: '1', isCache: '0', createTime: '2024-01-01 00:00:00' },
+  { menuId: 237, parentId: 200, menuName: '流程任务', menuType: 'C', orderNum: 9, path: '/Bpm/Task', component: 'Bpm/Task', perms: 'bpm:task:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 240, parentId: 200, menuName: '抄送我的', menuType: 'C', orderNum: 9, path: '/Bpm/task/copy', component: 'Bpm/task/copy/index', perms: 'bpm:task:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 241, parentId: 200, menuName: '流程报表', menuType: 'C', orderNum: 8, path: '/Bpm/processInstance/report', component: 'Bpm/processInstance/report/index', perms: 'bpm:process-instance:query', visible: '0', status: '1', isCache: '0', createTime: '2024-01-01 00:00:00' },
+  { menuId: 221, parentId: 200, menuName: '请假申请', menuType: 'C', orderNum: 10, path: '/Bpm/Leave', component: 'Bpm/Leave', perms: 'bpm:oa-leave:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 222, parentId: 221, menuName: '发起请假', menuType: 'F', orderNum: 1, perms: 'bpm:oa-leave:create', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
+  { menuId: 242, parentId: 200, menuName: '发起请假页', menuType: 'C', orderNum: 11, path: '/Bpm/oa/leave/create', component: 'Bpm/oa/leave/create', perms: 'bpm:oa-leave:create', visible: '0', status: '1', isCache: '0', createTime: '2024-01-01 00:00:00' },
+  { menuId: 243, parentId: 200, menuName: '请假详情页', menuType: 'C', orderNum: 12, path: '/Bpm/oa/leave/detail', component: 'Bpm/oa/leave/detail', perms: 'bpm:oa-leave:query', visible: '0', status: '1', isCache: '0', createTime: '2024-01-01 00:00:00' },
 ]
 
 // 超级管理员拥有全部菜单（含 TabView 页面级子菜单 70–72）
@@ -663,6 +711,222 @@ export const routerMenus: MenuItem[] = [
       },
     ],
   },
+  {
+    id: 200,
+    parentId: 0,
+    name: 'Bpm',
+    path: '/Bpm',
+    component: 'ParentView',
+    type: 1,
+    alwaysShow: true,
+    orderNum: 8,
+    meta: { title: '工作流', icon: 'ApartmentOutlined' },
+    children: [
+      {
+        id: 230,
+        parentId: 200,
+        name: 'Bpm-Model',
+        path: '/Bpm/Model',
+        component: 'Bpm/Model',
+        type: 2,
+        isCache: '1',
+        orderNum: 1,
+        meta: { title: '流程模型', permissions: ['bpm:model:query'] },
+      },
+      {
+        id: 235,
+        parentId: 200,
+        name: 'Bpm-ModelEditor',
+        path: '/Bpm/ModelEditor/:type/:id?',
+        component: 'Bpm/ModelEditor',
+        type: 2,
+        isCache: '0',
+        orderNum: 2,
+        hidden: true,
+        meta: {
+          title: '编辑流程模型',
+          permissions: ['bpm:model:update'],
+          activeMenu: 'Bpm-Model',
+          hideMenu: true,
+        },
+      },
+      {
+        id: 201,
+        parentId: 200,
+        name: 'Bpm-Category',
+        path: '/Bpm/Category',
+        component: 'Bpm/Category',
+        type: 2,
+        isCache: '1',
+        orderNum: 3,
+        meta: { title: '流程分类', permissions: ['bpm:category:query'] },
+      },
+      {
+        id: 205,
+        parentId: 200,
+        name: 'Bpm-Form',
+        path: '/Bpm/Form',
+        component: 'Bpm/Form',
+        type: 2,
+        isCache: '1',
+        orderNum: 4,
+        meta: { title: '流程表单', permissions: ['bpm:form:query'] },
+      },
+      {
+        id: 209,
+        parentId: 200,
+        name: 'Bpm-UserGroup',
+        path: '/Bpm/UserGroup',
+        component: 'Bpm/UserGroup',
+        type: 2,
+        isCache: '1',
+        orderNum: 5,
+        meta: { title: '用户分组', permissions: ['bpm:user-group:query'] },
+      },
+      {
+        id: 213,
+        parentId: 200,
+        name: 'Bpm-ProcessListener',
+        path: '/Bpm/ProcessListener',
+        component: 'Bpm/ProcessListener',
+        type: 2,
+        isCache: '1',
+        orderNum: 6,
+        meta: { title: '流程监听器', permissions: ['bpm:process-listener:query'] },
+      },
+      {
+        id: 217,
+        parentId: 200,
+        name: 'Bpm-ProcessExpression',
+        path: '/Bpm/ProcessExpression',
+        component: 'Bpm/ProcessExpression',
+        type: 2,
+        isCache: '1',
+        orderNum: 7,
+        meta: { title: '流程表达式', permissions: ['bpm:process-expression:query'] },
+      },
+      {
+        id: 236,
+        parentId: 200,
+        name: 'Bpm-ProcessInstance',
+        path: '/Bpm/ProcessInstance',
+        component: 'Bpm/ProcessInstance',
+        type: 2,
+        isCache: '1',
+        orderNum: 8,
+        meta: { title: '流程实例', permissions: ['bpm:process-instance:query'] },
+      },
+      {
+        id: 238,
+        parentId: 200,
+        name: 'Bpm-ProcessInstanceCreate',
+        path: '/Bpm/processInstance/create',
+        component: 'Bpm/processInstance/create/index',
+        type: 2,
+        isCache: '0',
+        orderNum: 7,
+        meta: { title: '发起流程', permissions: ['bpm:process-instance:query'] },
+      },
+      {
+        id: 239,
+        parentId: 200,
+        name: 'Bpm-ProcessInstanceDetail',
+        path: '/Bpm/processInstance/detail',
+        component: 'Bpm/processInstance/detail/index',
+        type: 2,
+        isCache: '0',
+        orderNum: 8,
+        hidden: true,
+        meta: {
+          title: '流程详情',
+          permissions: ['bpm:process-instance:query'],
+          activeMenu: 'Bpm-ProcessInstance',
+          hideMenu: true,
+        },
+      },
+      {
+        id: 237,
+        parentId: 200,
+        name: 'Bpm-Task',
+        path: '/Bpm/Task',
+        component: 'Bpm/Task',
+        type: 2,
+        isCache: '1',
+        orderNum: 9,
+        meta: { title: '流程任务', permissions: ['bpm:task:query'] },
+      },
+      {
+        id: 240,
+        parentId: 200,
+        name: 'Bpm-TaskCopy',
+        path: '/Bpm/task/copy',
+        component: 'Bpm/task/copy/index',
+        type: 2,
+        isCache: '1',
+        orderNum: 9,
+        meta: { title: '抄送我的', permissions: ['bpm:task:query'] },
+      },
+      {
+        id: 241,
+        parentId: 200,
+        name: 'Bpm-ProcessInstanceReport',
+        path: '/Bpm/processInstance/report',
+        component: 'Bpm/processInstance/report/index',
+        type: 2,
+        isCache: '0',
+        orderNum: 8,
+        meta: {
+          title: '流程报表',
+          permissions: ['bpm:process-instance:query'],
+          hideMenu: true,
+          activeMenu: 'Bpm-Model',
+        },
+      },
+      {
+        id: 221,
+        parentId: 200,
+        name: 'Bpm-Leave',
+        path: '/Bpm/Leave',
+        component: 'Bpm/Leave',
+        type: 2,
+        isCache: '1',
+        orderNum: 10,
+        meta: { title: '请假申请', permissions: ['bpm:oa-leave:query'] },
+      },
+      {
+        id: 242,
+        parentId: 200,
+        name: 'Bpm-LeaveCreate',
+        path: '/Bpm/oa/leave/create',
+        component: 'Bpm/oa/leave/create',
+        type: 2,
+        isCache: '0',
+        orderNum: 11,
+        meta: {
+          title: '发起请假',
+          permissions: ['bpm:oa-leave:create'],
+          hideMenu: true,
+          activeMenu: 'Bpm-Leave',
+        },
+      },
+      {
+        id: 243,
+        parentId: 200,
+        name: 'Bpm-LeaveDetail',
+        path: '/Bpm/oa/leave/detail',
+        component: 'Bpm/oa/leave/detail',
+        type: 2,
+        isCache: '0',
+        orderNum: 12,
+        meta: {
+          title: '请假详情',
+          permissions: ['bpm:oa-leave:query'],
+          hideMenu: true,
+          activeMenu: 'Bpm-Leave',
+        },
+      },
+    ],
+  },
 ]
 
 export function genUserId() {
@@ -717,7 +981,532 @@ export function genConfigId() {
   return nextConfigId++
 }
 
-export function stampCreateTime<T extends { createTime?: string }>(row: T): T {
+/** BPM Mock 数据 */
+export const bpmCategories: any[] = [
+  { id: 1, name: '默认', code: 'default', status: 0, sort: 1, createTime: '2024-01-01 00:00:00' },
+  { id: 2, name: 'OA 办公', code: 'oa', status: 0, sort: 2, createTime: '2024-01-01 00:00:00' },
+]
+
+const leaveFormFields = [
+  JSON.stringify({
+    key: 'reason',
+    label: '请假原因',
+    component: 'NInput',
+    form: { required: true, span: 2 },
+    search: false,
+    table: false,
+    bind: { type: 'textarea', rows: 3, placeholder: '请输入请假原因' },
+  }),
+  JSON.stringify({
+    key: 'type',
+    label: '请假类型',
+    component: 'NSelect',
+    form: { required: true, span: 1 },
+    search: false,
+    table: false,
+    options: [
+      { label: '事假', value: 1 },
+      { label: '病假', value: 2 },
+      { label: '年假', value: 3 },
+    ],
+  }),
+  JSON.stringify({
+    key: 'startTime',
+    label: '开始时间',
+    component: 'NDatePicker',
+    form: { required: true, span: 1 },
+    search: false,
+    table: false,
+    bind: { type: 'datetime', clearable: true },
+  }),
+  JSON.stringify({
+    key: 'endTime',
+    label: '结束时间',
+    component: 'NDatePicker',
+    form: { required: true, span: 1 },
+    search: false,
+    table: false,
+    bind: { type: 'datetime', clearable: true },
+  }),
+]
+
+const expenseFormFields = [
+  JSON.stringify({
+    key: 'title',
+    label: '报销标题',
+    component: 'NInput',
+    form: { required: true, span: 2 },
+    search: false,
+    table: false,
+  }),
+  JSON.stringify({
+    key: 'amount',
+    label: '报销金额',
+    component: 'NInputNumber',
+    form: { required: true, span: 1 },
+    search: false,
+    table: false,
+    bind: { min: 0, precision: 2 },
+  }),
+  JSON.stringify({
+    key: 'remark',
+    label: '备注',
+    component: 'NInput',
+    form: { span: 2 },
+    search: false,
+    table: false,
+    bind: { type: 'textarea', rows: 2 },
+  }),
+]
+
+/** 审批节点办理子表单 */
+const approveNodeFormFields = [
+  JSON.stringify({
+    key: 'approveNote',
+    label: '办理说明',
+    component: 'NInput',
+    form: { required: true, span: 2 },
+    search: false,
+    table: false,
+    bind: { type: 'textarea', rows: 3, placeholder: '请填写办理说明' },
+  }),
+  JSON.stringify({
+    key: 'actualDays',
+    label: '核定天数',
+    component: 'NInputNumber',
+    form: { required: true, span: 1 },
+    search: false,
+    table: false,
+    bind: { min: 0.5, step: 0.5, precision: 1 },
+  }),
+]
+
+const formBuilderConf = JSON.stringify({ engine: 'formBuilder', version: 1, formCols: 2 })
+
+const leaveSimpleModel = {
+  id: 'StartUserNode',
+  name: '发起人',
+  type: 10,
+  childNode: {
+    id: 'UserTask_1',
+    name: '部门审批',
+    type: 11,
+    showText: '部门负责人',
+    candidateStrategy: 20,
+    childNode: {
+      id: 'UserTask_2',
+      name: '人事审批',
+      type: 11,
+      showText: '人事专员',
+      candidateStrategy: 30,
+      childNode: {
+        id: 'EndEvent',
+        name: '结束',
+        type: 1,
+      },
+    },
+  },
+}
+
+const expenseBpmnXml = `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:flowable="http://flowable.org/bpmn" targetNamespace="http://flowable.org/processdef">
+  <process id="oa_expense" name="报销审批" isExecutable="true">
+    <startEvent id="startEvent" name="开始"/>
+    <userTask id="approveTask" name="财务审批" flowable:assignee="\${assignee}"/>
+    <endEvent id="endEvent" name="结束"/>
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="approveTask"/>
+    <sequenceFlow id="flow2" sourceRef="approveTask" targetRef="endEvent"/>
+  </process>
+</definitions>`
+
+export const bpmForms: any[] = (() => {
+  const g = globalThis as any
+  const approveForm = {
+    id: 3,
+    name: '审批办理表单',
+    conf: formBuilderConf,
+    fields: approveNodeFormFields,
+    status: 0,
+    remark: '节点办理子表单',
+    createTime: '2024-03-01 00:00:00',
+  }
+  if (Array.isArray(g.__mockBpmForms) && g.__mockBpmForms.length) {
+    if (!g.__mockBpmForms.some((f: any) => f.id === 3))
+      g.__mockBpmForms.push(approveForm)
+    return g.__mockBpmForms
+  }
+  const seed = [
+    { id: 1, name: '请假表单', conf: formBuilderConf, fields: leaveFormFields, status: 0, remark: '示例表单', createTime: '2024-01-01 00:00:00' },
+    { id: 2, name: '报销表单', conf: formBuilderConf, fields: expenseFormFields, status: 0, remark: '', createTime: '2024-02-01 00:00:00' },
+    approveForm,
+  ]
+  g.__mockBpmForms = seed
+  if (typeof g.__mockNextBpmFormId !== 'number')
+    g.__mockNextBpmFormId = 4
+  return seed
+})()
+
+export const bpmUserGroups: any[] = [
+  { id: 1, name: '研发审批组', description: '研发部审批人员', userIds: [1, 2], status: 0, remark: '', createTime: '2024-01-01 00:00:00' },
+  { id: 2, name: '人事组', description: '人事相关', userIds: [1], status: 0, remark: '', createTime: '2024-01-01 00:00:00' },
+]
+
+export const bpmProcessListeners = [
+  { id: 1, name: '流程启动日志', type: 'execution', status: 0, event: 'start', valueType: 'class', value: 'com.example.StartListener' },
+  { id: 2, name: '任务完成通知', type: 'task', status: 0, event: 'complete', valueType: 'delegateExpression', value: '${taskCompleteListener}' },
+]
+
+export const bpmProcessExpressions = [
+  { id: 1, name: '发起人', status: 0, expression: '${startUserId}' },
+  { id: 2, name: '部门负责人', status: 0, expression: '${deptLeader}' },
+]
+
+export const bpmLeaves: any[] = [
+  { id: 1, status: 2, type: 1, reason: '感冒休息', processInstanceId: 'pi-1001', startTime: '2024-03-01 09:00:00', endTime: '2024-03-02 18:00:00', createTime: '2024-03-01 08:30:00' },
+  { id: 2, status: 1, type: 2, reason: '家中有事', processInstanceId: 'pi-1003', startTime: '2024-04-10 09:00:00', endTime: '2024-04-11 18:00:00', createTime: '2024-04-09 17:00:00' },
+]
+
+/** 抄送记录 */
+export const bpmProcessCopies: any[] = [
+  {
+    id: 1,
+    processInstanceId: 'pi-1002',
+    processInstanceName: '张三的报销',
+    processInstanceStartTime: '2024-03-02 10:00:00',
+    startUser: { id: 2, nickname: '张三', deptName: '研发部' },
+    startUserNickname: '张三',
+    activityId: 'approveTask',
+    activityName: '财务审批',
+    createUser: { id: 1, nickname: '超级管理员' },
+    createUserNickname: '超级管理员',
+    createTime: '2024-03-02 16:05:00',
+    reason: '知会财务',
+    summary: [
+      { key: '标题', value: '出差交通费' },
+      { key: '金额', value: '1280' },
+    ],
+  },
+]
+
+/** 流转评论 */
+export const bpmProcessComments: any[] = [
+  {
+    id: 1,
+    processInstanceId: 'pi-1003',
+    userId: 1,
+    userNickname: '超级管理员',
+    content: '请尽快处理，家里有急事。',
+    createTime: '2024-04-10 09:20:00',
+  },
+  {
+    id: 2,
+    processInstanceId: 'pi-1003',
+    userId: 3,
+    userNickname: '李四',
+    content: '收到，今天内审批。',
+    createTime: '2024-04-10 10:05:00',
+  },
+]
+
+let nextBpmCommentId = 3
+let nextBpmCopyId = 2
+
+export function genBpmCommentId() {
+  return nextBpmCommentId++
+}
+
+export function genBpmCopyId() {
+  return nextBpmCopyId++
+}
+
+export const bpmProcessDefinitions: any[] = [
+  {
+    id: 'pd-oa_leave:1:1001',
+    key: 'oa_leave',
+    name: '请假审批',
+    version: 1,
+    category: 'oa',
+    modelId: 1,
+    modelType: 20,
+    formType: 10,
+    formId: 1,
+    icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="8" fill="#3473ff"/><text x="24" y="30" text-anchor="middle" fill="#fff" font-size="16" font-family="sans-serif">假</text></svg>'),
+    suspensionState: 1,
+    deploymentTime: '2024-01-05 10:00:00',
+    deploymentTIme: '2024-01-05 10:00:00',
+    simpleModel: JSON.stringify(leaveSimpleModel),
+    bpmnXml: '',
+    description: '示例请假流程 v1',
+    managerUserIds: [1],
+    startUserIds: [2, 3],
+    startDeptIds: [],
+    allowCancelRunningProcess: true,
+    allowWithdrawTask: false,
+  },
+  {
+    id: 'pd-oa_expense:1:1002',
+    key: 'oa_expense',
+    name: '报销审批',
+    version: 1,
+    category: 'oa',
+    modelId: 2,
+    modelType: 10,
+    formType: 10,
+    formId: 2,
+    icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="8" fill="#10b981"/><text x="24" y="30" text-anchor="middle" fill="#fff" font-size="16" font-family="sans-serif">报</text></svg>'),
+    suspensionState: 1,
+    deploymentTime: '2024-02-05 11:00:00',
+    deploymentTIme: '2024-02-05 11:00:00',
+    simpleModel: '',
+    bpmnXml: expenseBpmnXml,
+    description: '示例报销流程 v1',
+    managerUserIds: [1],
+    startUserIds: [],
+    startDeptIds: [2, 3],
+    allowCancelRunningProcess: true,
+    allowWithdrawTask: false,
+  },
+]
+
+export const bpmModels: any[] = [
+  {
+    id: 1,
+    name: '请假审批',
+    key: 'oa_leave',
+    category: 'oa',
+    type: 20,
+    formType: 10,
+    formId: 1,
+    icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="8" fill="#3473ff"/><text x="24" y="30" text-anchor="middle" fill="#fff" font-size="16" font-family="sans-serif">假</text></svg>'),
+    visible: true,
+    status: 0,
+    description: '示例请假流程',
+    managerUserIds: [1],
+    startUserIds: [2, 3],
+    startDeptIds: [],
+    simpleModel: leaveSimpleModel,
+    bpmnXml: '',
+    allowCancelRunningProcess: true,
+    allowWithdrawTask: false,
+    printTemplateSetting: {
+      enable: true,
+      template: '<h2>请假审批单</h2><p>申请人：{{startUser}}</p><p>原因：{{reason}}</p>',
+    },
+    processDefinition: {
+      id: 'pd-oa_leave:1:1001',
+      version: 1,
+      suspensionState: 1,
+      deploymentTime: '2024-01-05 10:00:00',
+      deploymentTIme: '2024-01-05 10:00:00',
+      formType: 10,
+    },
+    createTime: '2024-01-01 00:00:00',
+  },
+  {
+    id: 2,
+    name: '报销审批',
+    key: 'oa_expense',
+    category: 'oa',
+    type: 10,
+    formType: 10,
+    formId: 2,
+    icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="8" fill="#10b981"/><text x="24" y="30" text-anchor="middle" fill="#fff" font-size="16" font-family="sans-serif">报</text></svg>'),
+    visible: true,
+    status: 0,
+    description: '示例报销流程',
+    managerUserIds: [1],
+    startUserIds: [],
+    startDeptIds: [2, 3],
+    bpmnXml: expenseBpmnXml,
+    simpleModel: null,
+    allowCancelRunningProcess: true,
+    allowWithdrawTask: false,
+    processDefinition: {
+      id: 'pd-oa_expense:1:1002',
+      version: 1,
+      suspensionState: 1,
+      deploymentTime: '2024-02-05 11:00:00',
+      deploymentTIme: '2024-02-05 11:00:00',
+      formType: 10,
+    },
+    createTime: '2024-02-01 00:00:00',
+  },
+]
+
+const mockAdminUser = { id: 1, nickname: '超级管理员', avatar: '', deptName: '总公司' }
+const mockZhangSan = { id: 2, nickname: '张三', avatar: '', deptName: '研发部' }
+const mockLiSi = { id: 3, nickname: '李四', avatar: '', deptName: '市场部' }
+
+export const bpmProcessInstances: any[] = [
+  {
+    id: 'pi-1001',
+    name: '王五的请假',
+    category: 'oa',
+    status: 2,
+    processDefinitionId: 'pd-oa_leave:1:1001',
+    processDefinitionKey: 'oa_leave',
+    businessKey: '1',
+    startUser: mockAdminUser,
+    startUserNickname: '超级管理员',
+    startTime: '2024-03-01 09:00:00',
+    createTime: '2024-03-01 09:00:00',
+    endTime: '2024-03-01 18:00:00',
+    durationInMillis: 9 * 60 * 60 * 1000,
+    formVariables: {
+      reason: '感冒休息',
+      type: 1,
+      startTime: '2024-03-01 09:00:00',
+      endTime: '2024-03-02 18:00:00',
+      approveNote: '情况属实，准假',
+      actualDays: 2,
+    },
+  },
+  {
+    id: 'pi-1002',
+    name: '张三的报销',
+    category: 'oa',
+    status: 2,
+    processDefinitionId: 'pd-oa_expense:1:1002',
+    processDefinitionKey: 'oa_expense',
+    businessKey: '',
+    startUser: mockZhangSan,
+    startUserNickname: '张三',
+    startTime: '2024-03-02 10:00:00',
+    createTime: '2024-03-02 10:00:00',
+    endTime: '2024-03-02 18:00:00',
+    durationInMillis: 8 * 60 * 60 * 1000,
+    formVariables: {
+      title: '出差交通费',
+      amount: 1280,
+      remark: '北京出差高铁+打车',
+    },
+  },
+  {
+    id: 'pi-1003',
+    name: '超级管理员的请假',
+    category: 'oa',
+    status: 1,
+    processDefinitionId: 'pd-oa_leave:1:1001',
+    processDefinitionKey: 'oa_leave',
+    businessKey: '2',
+    startUser: mockAdminUser,
+    startUserNickname: '超级管理员',
+    startTime: '2024-04-10 09:00:00',
+    createTime: '2024-04-10 09:00:00',
+    endTime: '',
+    durationInMillis: 0,
+    formVariables: {
+      reason: '家中有事',
+      type: 2,
+      startTime: '2024-04-10 09:00:00',
+      endTime: '2024-04-11 18:00:00',
+    },
+  },
+]
+
+export const bpmTasks: any[] = [
+  {
+    id: 'task-1001',
+    name: '部门审批',
+    processInstanceId: 'pi-1001',
+    processInstanceName: '王五的请假',
+    taskDefinitionKey: 'UserTask_1',
+    assigneeUser: mockAdminUser,
+    assigneeUserNickname: '超级管理员',
+    ownerUser: mockAdminUser,
+    createTime: '2024-03-01 09:05:00',
+    endTime: '2024-03-01 18:00:00',
+    durationInMillis: (18 - 9) * 60 * 60 * 1000 - 5 * 60 * 1000,
+    status: 2,
+    reason: '同意',
+    formId: 3,
+    formName: '审批办理表单',
+    formVariables: {
+      approveNote: '情况属实，准假',
+      actualDays: 2,
+    },
+  },
+  {
+    id: 'task-1002',
+    name: '财务审批',
+    processInstanceId: 'pi-1002',
+    processInstanceName: '张三的报销',
+    taskDefinitionKey: 'approveTask',
+    assigneeUser: mockLiSi,
+    assigneeUserNickname: '李四',
+    ownerUser: mockLiSi,
+    createTime: '2024-03-02 10:10:00',
+    endTime: '2024-03-02 16:00:00',
+    durationInMillis: (16 - 10) * 60 * 60 * 1000 - 10 * 60 * 1000,
+    status: 2,
+    reason: '票据齐全，同意报销',
+  },
+  {
+    id: 'task-1003',
+    name: '部门审批',
+    processInstanceId: 'pi-1003',
+    processInstanceName: '超级管理员的请假',
+    taskDefinitionKey: 'UserTask_1',
+    assigneeUser: mockAdminUser,
+    assigneeUserNickname: '超级管理员',
+    ownerUser: mockAdminUser,
+    createTime: '2024-04-10 09:05:00',
+    endTime: '',
+    durationInMillis: 0,
+    status: 1,
+    reason: '',
+    formId: 3,
+    formName: '审批办理表单',
+    formVariables: {},
+  },
+]
+
+export function genBpmCategoryId() {
+  return nextBpmCategoryId++
+}
+
+export function genBpmFormId() {
+  const g = globalThis as any
+  if (typeof g.__mockNextBpmFormId !== 'number')
+    g.__mockNextBpmFormId = nextBpmFormId
+  const id = g.__mockNextBpmFormId++
+  nextBpmFormId = g.__mockNextBpmFormId
+  return id
+}
+
+export function genBpmUserGroupId() {
+  return nextBpmUserGroupId++
+}
+
+export function genBpmProcessListenerId() {
+  return nextBpmProcessListenerId++
+}
+
+export function genBpmProcessExpressionId() {
+  return nextBpmProcessExpressionId++
+}
+
+export function genBpmLeaveId() {
+  return nextBpmLeaveId++
+}
+
+export function genBpmModelId() {
+  return nextBpmModelId++
+}
+
+export function genBpmProcessDefinitionId(key: string, version: number) {
+  return `pd-${key}:${version}:${nextBpmProcessDefinitionSeq++}`
+}
+
+export function genBpmProcessInstanceId() {
+  return `pi-${nextBpmProcessInstanceId++}`
+}
+
+export function genBpmTaskId() {
+  return `task-${nextBpmTaskId++}`
+}
+
+export function stampCreateTime(row: any): any {
   if (!row.createTime)
     row.createTime = now()
   return row

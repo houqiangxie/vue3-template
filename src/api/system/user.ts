@@ -59,3 +59,24 @@ export async function getUserPostOptions() {
   const { data } = await listPost({ pageNum: 1, pageSize: 100, status: '0' })
   return (data?.rows ?? []).map(p => ({ label: p.postName, value: p.postId }))
 }
+
+/** BPM 设计器兼容：芋道 UserVO */
+export interface UserVO {
+  id: number
+  nickname: string
+  username?: string
+  deptId?: number
+  deptName?: string
+}
+
+/** BPM：用户精简列表 */
+export async function getSimpleUserList(): Promise<UserVO[]> {
+  const { data } = await listUser({ pageNum: 1, pageSize: 500, status: '0' })
+  return (data?.rows ?? []).map(u => ({
+    id: u.userId,
+    nickname: u.nickName || u.userName,
+    username: u.userName,
+    deptId: u.deptId,
+    deptName: u.deptName,
+  }))
+}

@@ -242,6 +242,8 @@ function buildRouteMeta(menu: MenuItem) {
     alwaysShow: menu.alwaysShow,
     /** 侧栏不展示，但路由可访问（下钻页） */
     hidden: menu.hidden,
+    /** 裁剪布局壳层（侧栏/顶栏），用于全屏编辑页或嵌入 */
+    hideMenu: (menu.meta as any)?.hideMenu === true,
   }
 }
 

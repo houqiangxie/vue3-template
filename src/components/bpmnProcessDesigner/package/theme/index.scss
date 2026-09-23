@@ -1,0 +1,127 @@
+@use './process-designer.scss';
+@use './process-panel.scss';
+
+/* 状态色优先读主题 token，缺省回退到原 BPMN 语义色 */
+$success-color: var(--bpmn-success, #4eb819);
+$primary-color: var(--bpmn-primary, #409eff);
+$danger-color: var(--bpmn-error, #f56c6c);
+$cancel-color: var(--bpmn-text-3, #909399);
+
+/* 浅色网格 */
+$grid-light: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImEiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgMTBoNDBNMTAgMHY0ME0wIDIwaDQwTTIwIDB2NDBNMCAzMGg0ME0zMCAwdjQwIiBmaWxsPSJub25lIiBzdHJva2U9IiNlMGUwZTAiIG9wYWNpdHk9Ii4yIi8+PHBhdGggZD0iTTQwIDBIMHY0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZTBlMGUwIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2EpIi8+PC9zdmc+');
+/* 深色网格 */
+$grid-dark: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImEiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgMTBoNDBNMTAgMHY0ME0wIDIwaDQwTTIwIDB2NDBNMCAzMGg0ME0zMCAwdjQwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIG9wYWNpdHk9Ii4wOCIvPjxwYXRoIGQ9Ik00MCAwSDB2NDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgb3BhY2l0eT0iLjA2Ii8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2EpIi8+PC9zdmc+');
+
+.process-viewer {
+  position: relative;
+  height: 100%;
+  min-height: 420px;
+  border: 1px solid var(--bpmn-border, #efefef);
+  background-color: var(--bpmn-card, #fff);
+  background-image: $grid-light;
+  background-repeat: repeat !important;
+  color: var(--bpmn-text, #303133);
+
+  .success-arrow {
+    fill: $success-color;
+    stroke: $success-color;
+  }
+
+  .success-conditional {
+    fill: white;
+    stroke: $success-color;
+  }
+
+  .success.djs-connection {
+    .djs-visual path {
+      stroke: $success-color !important;
+    }
+  }
+
+  .success.djs-shape {
+    .djs-visual rect {
+      stroke: $success-color !important;
+      fill: $success-color !important;
+      fill-opacity: 0.15 !important;
+    }
+
+    .djs-visual polygon {
+      stroke: $success-color !important;
+    }
+
+    .djs-visual path:nth-child(2) {
+      stroke: $success-color !important;
+      fill: $success-color !important;
+    }
+
+    .djs-visual circle {
+      stroke: $success-color !important;
+      fill: $success-color !important;
+      fill-opacity: 0.15 !important;
+    }
+  }
+
+  .primary.djs-shape {
+    .djs-visual rect {
+      stroke: $primary-color !important;
+      fill: $primary-color !important;
+      fill-opacity: 0.15 !important;
+    }
+
+    .djs-visual polygon {
+      stroke: $primary-color !important;
+    }
+
+    .djs-visual circle {
+      stroke: $primary-color !important;
+      fill: $primary-color !important;
+      fill-opacity: 0.15 !important;
+    }
+  }
+
+  .danger.djs-shape {
+    .djs-visual rect {
+      stroke: $danger-color !important;
+      fill: $danger-color !important;
+      fill-opacity: 0.15 !important;
+    }
+
+    .djs-visual polygon {
+      stroke: $danger-color !important;
+    }
+
+    .djs-visual circle {
+      stroke: $danger-color !important;
+      fill: $danger-color !important;
+      fill-opacity: 0.15 !important;
+    }
+  }
+
+  .cancel.djs-shape {
+    .djs-visual rect {
+      stroke: $cancel-color !important;
+      fill: $cancel-color !important;
+      fill-opacity: 0.15 !important;
+    }
+
+    .djs-visual polygon {
+      stroke: $cancel-color !important;
+    }
+
+    .djs-visual circle {
+      stroke: $cancel-color !important;
+      fill: $cancel-color !important;
+      fill-opacity: 0.15 !important;
+    }
+  }
+}
+
+html.dark .process-viewer {
+  background-image: $grid-dark;
+}
+
+.process-viewer .djs-tooltip-container,
+.process-viewer .djs-overlay-container,
+.process-viewer .djs-palette {
+  display: none;
+}

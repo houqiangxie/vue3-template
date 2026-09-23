@@ -1,6 +1,7 @@
 import type { MockRoute } from './utils'
 import { aiRoutes } from './handlers/ai'
 import { authRoutes } from './handlers/auth'
+import { bpmRoutes } from './handlers/bpm'
 import { cacheRoutes } from './handlers/cache'
 import { configRoutes } from './handlers/config'
 import { dashboardRoutes } from './handlers/dashboard'
@@ -41,5 +42,6 @@ export function getMockRoutes(): MockRoute[] {
     ...cacheRoutes,
     ...genRoutes,
     ...aiRoutes,
+    ...bpmRoutes,
   ]
 }

@@ -22,6 +22,29 @@ function resolveFlag(value: string | undefined) {
   return value === 'true' || value === '1';
 }
 
+/** MPA 入口选择：VITE_APPS=main,app,bpm（web 可写 main/web） */
+function resolveAppInputs() {
+  const all = {
+    main: resolve(root, 'index.html'),
+    app: resolve(root, 'app/index.html'),
+    bpm: resolve(root, 'bpm/index.html'),
+  } as const;
+  const raw = (process.env.VITE_APPS || 'main,app,bpm')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(s => (s === 'web' ? 'main' : s));
+  const selected = new Set(raw);
+  const input: Record<string, string> = {};
+  for (const key of Object.keys(all) as Array<keyof typeof all>) {
+    if (selected.has(key))
+      input[key] = all[key];
+  }
+  if (!Object.keys(input).length)
+    input.main = all.main;
+  return input;
+}
+
 function copyElectronAssets() {
   const src = resolve(root, 'electron/assets');
   const dest = resolve(root, 'dist-electron/assets');
@@ -56,8 +79,17 @@ export default ({ command, mode }: ConfigEnv) => {
   const devBase = buildBase === '/' ? '' : buildBase.replace(/\/$/, '');
   const isDev = mode === 'dev';
 
+  const appInputs = isElectron
+    ? { main: resolve(root, 'index.html') }
+    : resolveAppInputs();
+  const appNames = Object.keys(appInputs);
+  // 默认清空 dist；.env.build 或 cross-env 设 VITE_EMPTY_OUTDIR=false 可保留旧产物
+  const emptyOutDirRaw = process.env.VITE_EMPTY_OUTDIR ?? env.VITE_EMPTY_OUTDIR;
+  const emptyOutDir = emptyOutDirRaw != null ? resolveFlag(emptyOutDirRaw) : true;
+
   if (command === 'serve') {
     console.log(`[api] ${useMock ? 'MOCK' : 'PROXY → ' + apiProxyTarget}`);
+    console.log(`[apps] ${appNames.join(', ')}`);
   }
 
   const plugins = [
@@ -213,19 +245,13 @@ export default ({ command, mode }: ConfigEnv) => {
     build: {
       target: 'es2020',
       outDir: env.VITE_outputDir,
+      emptyOutDir,
       assetsDir: 'assets',
       assetsInlineLimit: 2048,
       cssCodeSplit: true,
       reportCompressedSize: false,
       rolldownOptions: {
-        input: isElectron
-          ? {
-              main: resolve(root, 'index.html'),
-            }
-          : {
-              main: resolve(root, 'index.html'),
-              app: resolve(root, 'app/index.html'),
-            },
+        input: appInputs,
         output: {
           manualChunks(id) {
             if (!id.includes('node_modules'))
@@ -236,6 +262,8 @@ export default ({ command, mode }: ConfigEnv) => {
               return 'naive-ui'
             if (id.includes('@file-viewer'))
               return 'file-viewer'
+            if (id.includes('bpmn-js') || id.includes('diagram-js') || id.includes('camunda-bpmn'))
+              return 'bpmn'
             // Electron desktop shell does not ship the App (MPA) entry; skip vant split.
             if (!isElectron && (id.includes('/vant/') || id.includes('\\vant\\')))
               return 'vant'

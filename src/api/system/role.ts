@@ -72,3 +72,20 @@ export function authUserCancelAll(data: { roleId: number, userIds: number[] }) {
 export function authUserSelectAll(data: { roleId: number, userIds: number[] }) {
   return put('/system/role/authUser/selectAll', data)
 }
+
+/** BPM 设计器兼容：芋道 RoleVO */
+export interface RoleVO {
+  id: number
+  name: string
+  code?: string
+}
+
+/** BPM：角色精简列表 */
+export async function getSimpleRoleList(): Promise<RoleVO[]> {
+  const { data } = await listRole({ pageNum: 1, pageSize: 200, status: '0' })
+  return (data?.rows ?? []).map(r => ({
+    id: r.roleId,
+    name: r.roleName,
+    code: r.roleKey,
+  }))
+}

@@ -64,6 +64,8 @@ export interface MenuItem {
     iFrameUrl?: string
     /** iframe 宿主路由 base path（不含 catch-all），用于 URL 同步 */
     iFrameBasePath?: string
+    /** 为 true 时裁剪布局侧栏/顶栏（全屏编辑页） */
+    hideMenu?: boolean
   }
   /** 子菜单 */
   children?: MenuItem[]
