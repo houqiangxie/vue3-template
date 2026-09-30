@@ -1,4 +1,4 @@
-﻿import request from '@/config/axios'
+import request from '@/config/axios'
 import { ProcessDefinitionVO } from '@/api/bpm/model'
 import { NodeType, CandidateStrategy } from '@/components/SimpleProcessDesigner/src/consts'
 export type Task = {

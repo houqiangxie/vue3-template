@@ -1,4 +1,4 @@
-﻿import antfu from '@antfu/eslint-config'
+import antfu from '@antfu/eslint-config'
 
 /**
  * Flat config for ESLint 9+/10（替代旧 .eslintrc）。

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <CommonForm
     v-if="runtimeFields.length"
     ref="formRef"

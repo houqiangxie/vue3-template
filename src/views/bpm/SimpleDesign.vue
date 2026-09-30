@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="bpm-page">
     <div class="bpm-page__bar">
       <n-button text @click="$router.push('/')">← 返回</n-button>

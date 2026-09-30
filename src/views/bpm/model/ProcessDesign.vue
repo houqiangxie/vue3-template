@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <!-- BPMN设计器 -->
   <div v-if="modelData.type === BpmModelType.BPMN" class="process-design">
     <BpmModelEditor

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div v-if="definition" class="bpm-create-detail">
     <div class="bpm-create-detail__head">
       <n-button quaternary @click="emit('cancel')">返回</n-button>

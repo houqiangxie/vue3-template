@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <n-form ref="formRef" :model="modelData" label-width="130px" class="mt-20px">
     <n-form-item class="mb-20px">
       <template #label>

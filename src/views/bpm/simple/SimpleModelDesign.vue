@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="simple-model-design">
     <SimpleProcessDesigner
       :model-name="modelName"

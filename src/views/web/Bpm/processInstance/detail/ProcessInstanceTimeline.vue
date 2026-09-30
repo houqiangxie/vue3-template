@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <n-timeline>
     <n-timeline-item
       v-for="(node, index) in nodes"
