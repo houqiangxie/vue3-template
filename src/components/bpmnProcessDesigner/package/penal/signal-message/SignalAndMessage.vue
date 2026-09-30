@@ -2,7 +2,7 @@
   <div class="panel-tab__content">
     <div class="panel-tab__content--title">
       <span><Icon icon="ep:menu" class="bpmn-section-icon" />消息列表</span>
-      <XButton type="primary" title="创建新消息" preIcon="ep:plus" @click="openModel('message')" />
+      <n-button type="primary" @click="openModel('message')"><Icon icon="ep:plus" class="mr-1px" />创建新消息</n-button>
     </div>
     <CommonTable
       :data="messageList"
@@ -18,7 +18,7 @@
       style="padding-top: 8px; margin-top: 8px; border-top: 1px solid #eee"
     >
       <span><Icon icon="ep:menu" class="bpmn-section-icon" />信号列表</span>
-      <XButton type="primary" title="创建新信号" preIcon="ep:plus" @click="openModel('signal')" />
+      <n-button type="primary" @click="openModel('signal')"><Icon icon="ep:plus" class="mr-1px" />创建新信号</n-button>
     </div>
     <CommonTable
       :data="signalList"
@@ -39,8 +39,9 @@
   </div>
 </template>
 <script lang="ts" setup>
+import { Icon } from '@/components/Icon'
 import { useFormModal } from '@/hooks/useFormModal'
-import { useMessage } from '@/hooks/web/useMessage'
+import { useMessage } from 'naive-ui'
 import { defineFields, defineModal, extractFormDefaults } from '@/utils/schema'
 
 defineOptions({ name: 'SignalAndMassage' })

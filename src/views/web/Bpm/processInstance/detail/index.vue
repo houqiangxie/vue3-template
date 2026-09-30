@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div v-loading="loading" class="bpm-detail">
     <n-card v-if="processInstance?.id" size="small" class="bpm-detail__header">
       <div class="bpm-detail__title-row">
@@ -154,8 +154,8 @@ import runningSvg from '@/assets/svgs/bpm/running.svg'
 import approveSvg from '@/assets/svgs/bpm/approve.svg'
 import rejectSvg from '@/assets/svgs/bpm/reject.svg'
 import cancelSvg from '@/assets/svgs/bpm/cancel.svg'
-import { FieldPermissionType } from '@/components/SimpleProcessDesignerV2/src/consts'
-import { SimpleProcessViewer } from '@/components/SimpleProcessDesignerV2/src'
+import { FieldPermissionType } from '@/components/SimpleProcessDesigner/src/consts'
+import { SimpleProcessViewer } from '@/components/SimpleProcessDesigner/src'
 import ProcessViewer from '@/components/bpmnProcessDesigner/package/designer/ProcessViewer.vue'
 import BpmProcessForm from '../components/BpmProcessForm.vue'
 import BpmBusinessFormView from '../../components/BpmBusinessFormView.vue'

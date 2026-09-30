@@ -44,6 +44,10 @@ export const COMPONENT_MANAGED_BIND_KEYS: Record<string, readonly string[]> = {
   NCascader: ['filterable', 'clearable'],
   NTreeSelect: ['filterable', 'clearable'],
   DeptSelect: ['filterable', 'clearable', 'onlyEnabled'],
+  FormDivider: ['title', 'dashed', 'titlePlacement'],
+  FormAlert: ['title', 'content', 'type', 'bordered', 'closable'],
+  FormHtml: ['html', 'content'],
+  FormTable: ['cols', 'min', 'max'],
 }
 
 /** 场景控件覆盖（SceneBindEditor）已管理的 bind 键 */

@@ -150,7 +150,8 @@ export default ({ command, mode }: ConfigEnv) => {
       ],
       resolvers: [NaiveUiResolver()],
       dts: 'src/auto-import.d.ts',
-      dirs: ['src/utils/**', 'src/store/**', 'src/hooks/**'],
+      // utils 只扫顶层 + 子目录 barrel，避免 index 与 inject 等同名 re-export 冲突
+      dirs: ['src/utils/*.ts', 'src/utils/*/index.ts', 'src/store', 'src/hooks/**'],
     }),
     UnoCSS(),
   ];

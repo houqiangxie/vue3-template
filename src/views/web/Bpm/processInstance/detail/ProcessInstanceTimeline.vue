@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <n-timeline>
     <n-timeline-item
       v-for="(node, index) in nodes"
@@ -91,7 +91,7 @@ import { TaskStatusEnum } from '@/api/bpm/task'
 import {
   CandidateStrategy,
   NodeType,
-} from '@/components/SimpleProcessDesignerV2/src/consts'
+} from '@/components/SimpleProcessDesigner/src/consts'
 import UserSelect from '@/components/common/UserSelect.vue'
 import { DICT_TYPE, getDictLabel } from '@/utils/dict'
 import { formatPast2 } from '@/utils/formatTime'

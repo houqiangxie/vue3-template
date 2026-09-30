@@ -1,4 +1,4 @@
-# Vue3 Template
+﻿# Vue3 Template
 
 基于 Vue 3 + Vite + Naive UI 的中后台前端模板，支持 **Web 管理端**、**App 端（MPA）** 与 **Electron 桌面端**。内置动态路由/权限、CRUD 组合式封装、iframe 嵌入同步，以及可切换的本地 Mock。
 
@@ -23,9 +23,10 @@ pnpm install
 # 开发（默认读 .env.dev，当前为本地 Mock）
 pnpm dev
 
-# 浏览器访问
-# Web：http://localhost:88/
-# App：http://localhost:88/app/
+# 浏览器访问（端口见 vite.config server.port，默认 90）
+# Web：http://localhost:90/
+# App：http://localhost:90/app/
+# BPM：http://localhost:90/bpm/
 ```
 
 Mock 模式下任意账号密码均可登录；`admin` 拥有全部权限。
@@ -84,7 +85,7 @@ cp .env.example .env.dev.local
 │   ├── api/bpm/            # 流程 API（芋道协议兼容）
 │   ├── components/bpm/     # BPM 业务组件（DictTag 等）
 │   ├── components/common/  # CommonForm / SearchPanel / CommonTable / CommonModal
-│   ├── components/SimpleProcessDesignerV2/  # 简易流程设计器
+│   ├── components/SimpleProcessDesigner/  # 简易流程设计器
 │   ├── components/bpmnProcessDesigner/      # BPMN 设计器（画布 bpmn-js）
 │   ├── hooks/              # usePageList / useCrud / useIframeHost|Child …
 │   ├── layout/             # Web 布局（侧栏、TagsView、主题）
@@ -235,6 +236,7 @@ parent.postMessage({ source: 'vue3-template-iframe', type: 'ready' }, '*')
 | `VITE_LOGIN_AES_KEY` / `VITE_LOGIN_AES_IV` | 登录密码 AES（本地 `.env.*.local`） |
 | `VITE_ALLOW_QUERY_TOKEN`                   | 是否允许 URL `?token=`（生产默认关闭）  |
 | `VITE_WS_URL`                              | WebSocket 地址；`false` 关闭 WS       |
+| `VITE_BPM_API_PREFIX`                      | BPM/Flowable 网关前缀，默认 `/jgzf-flowable` |
 | `VITE_ENABLE_I18N`                         | `true` 启用 vue-i18n 业务文案；默认不加载 |
 
 
@@ -263,7 +265,7 @@ VITE_ENABLE_I18N=true
 Docker 与 Nginx 部署说明见 **[DEPLOY.md](./DEPLOY.md)**，包含：
 
 - 多阶段 Docker 构建与 `docker compose up`
-- Web / App 双入口 Nginx 配置
+- Web / App / BPM 三入口 Nginx 配置
 - API 网关、WebSocket、Token 刷新对接说明
 
 ## Electron

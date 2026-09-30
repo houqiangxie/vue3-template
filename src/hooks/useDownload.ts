@@ -1,5 +1,6 @@
 import { saveAs } from 'file-saver'
 import { local } from 'ux-web-storage'
+import { resolveBpmUrl } from '@/config/bpm'
 import { toQueryString } from '@/utils/fetch'
 
 function parseFilename(disposition: string | null): string | undefined {
@@ -56,8 +57,9 @@ export function useDownload() {
 
     const token = (local as { token?: { token?: string } }).token?.token
     const base = String(import.meta.env.VITE_baseUrl || '')
+    const path = resolveBpmUrl(url)
     const qs = method === 'GET' ? toQueryString(params) : ''
-    const fullUrl = `${base}${url}${qs ? `?${qs}` : ''}`
+    const fullUrl = `${base}${path}${qs ? `?${qs}` : ''}`
 
     downloading.value = true
     if (showLoading)

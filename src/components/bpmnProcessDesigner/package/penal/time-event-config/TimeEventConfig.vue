@@ -76,7 +76,15 @@
       </n-input>
     </div>
     <!-- 时间选择器 -->
-    <Dialog v-model="showDatePicker" title="选择时间" width="400px">
+    <n-modal
+  v-model:show="showDatePicker"
+  preset="card"
+  title="选择时间"
+  :style="{ width: '400px' }"
+  :bordered="false"
+  display-directive="if"
+  class="app-dialog"
+>
       <n-date-picker
         v-model:value="dateValue"
         type="datetime"
@@ -88,30 +96,54 @@
         <n-button @click="showDatePicker = false">取消</n-button>
         <n-button type="primary" @click="onDateConfirm">确定</n-button>
       </template>
-    </Dialog>
+    </n-modal>
     <!-- 持续时长选择器 -->
-    <Dialog v-model="showDurationDialog" title="时间配置" width="600px">
+    <n-modal
+  v-model:show="showDurationDialog"
+  preset="card"
+  title="时间配置"
+  :style="{ width: '600px' }"
+  :bordered="false"
+  display-directive="if"
+  class="app-dialog"
+>
       <DurationConfig :value="condition" @change="onDurationChange" />
       <template #footer>
         <n-button @click="showDurationDialog = false">取消</n-button>
         <n-button type="primary" @click="onDurationConfirm">确定</n-button>
       </template>
-    </Dialog>
+    </n-modal>
     <!-- 循环配置器 -->
-    <Dialog v-model="showCycleDialog" title="时间配置" width="800px">
+    <n-modal
+  v-model:show="showCycleDialog"
+  preset="card"
+  title="时间配置"
+  :style="{ width: '800px' }"
+  :bordered="false"
+  display-directive="if"
+  class="app-dialog"
+>
       <CycleConfig :value="condition" @change="onCycleChange" />
       <template #footer>
         <n-button @click="showCycleDialog = false">取消</n-button>
         <n-button type="primary" @click="onCycleConfirm">确定</n-button>
       </template>
-    </Dialog>
+    </n-modal>
     <!-- 帮助说明 -->
-    <Dialog v-model="showHelp" title="格式说明" width="600px">
+    <n-modal
+  v-model:show="showHelp"
+  preset="card"
+  title="格式说明"
+  :style="{ width: '600px' }"
+  :bordered="false"
+  display-directive="if"
+  class="app-dialog"
+>
       <div v-html="helpHtml"></div>
       <template #footer>
         <n-button @click="showHelp = false">关闭</n-button>
       </template>
-    </Dialog>
+    </n-modal>
   </div>
 </template>
 
@@ -120,8 +152,6 @@ import { CheckmarkCircle, Warning, HelpCircle } from '@vicons/ionicons5'
 import { useThemeVars } from 'naive-ui'
 import DurationConfig from './DurationConfig.vue'
 import CycleConfig from './CycleConfig.vue'
-import { Dialog } from '@/components/Dialog'
-
 const themeVars = useThemeVars()
 const bpmnInstances = () => (window as any).bpmnInstances
 const props = defineProps({ businessObject: Object })

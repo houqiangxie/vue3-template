@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="simple-model-design">
     <SimpleProcessDesigner
       :model-name="modelName"
@@ -12,7 +12,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { SimpleProcessDesigner } from '@/components/SimpleProcessDesignerV2/src/'
+import { SimpleProcessDesigner } from '@/components/SimpleProcessDesigner/src/'
 
 defineOptions({
   name: 'SimpleModelDesign'

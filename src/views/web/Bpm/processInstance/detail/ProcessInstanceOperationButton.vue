@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div v-if="todoTask" class="bpm-ops">
     <n-space>
       <n-button
@@ -135,7 +135,7 @@ import {
 import {
   CandidateStrategy,
   OperationButtonType,
-} from '@/components/SimpleProcessDesignerV2/src/consts'
+} from '@/components/SimpleProcessDesigner/src/consts'
 import UserSelect from '@/components/common/UserSelect.vue'
 import { BpmProcessInstanceStatus } from '@/utils/constants'
 import BpmProcessForm from '../components/BpmProcessForm.vue'

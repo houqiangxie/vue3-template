@@ -62,7 +62,7 @@ import {
 } from '@/api/bpm/processInstance'
 import { getProcessDefinition, getProcessDefinitionList } from '@/api/bpm/definition'
 import { getSimpleUserList } from '@/api/system/user'
-import { parseFormFields } from '@/components/FormCreate/src/utils'
+import { parseFormFields } from '@/components/common/FormBuilder/bpmForm'
 import { defineFields, extractSearchDefaults } from '@/utils/schema'
 import { usePageList } from '@/hooks/usePageList'
 import { pushBpmProcessDetail } from '@/views/web/Bpm/routeNames'

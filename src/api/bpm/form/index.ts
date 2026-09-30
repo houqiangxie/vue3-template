@@ -13,7 +13,7 @@ export type FormVO = {
 // 创建工作流的表单定义
 export const createForm = async (data: FormVO) => {
   return await request.post({
-    url: '/jgzf-flowable/bpm/form/create',
+    url: '/bpm/form/create',
     data: data
   })
 }
@@ -21,7 +21,7 @@ export const createForm = async (data: FormVO) => {
 // 更新工作流的表单定义
 export const updateForm = async (data: FormVO) => {
   return await request.put({
-    url: '/jgzf-flowable/bpm/form/update',
+    url: '/bpm/form/update',
     data: data
   })
 }
@@ -29,21 +29,21 @@ export const updateForm = async (data: FormVO) => {
 // 删除工作流的表单定义
 export const deleteForm = async (id: number) => {
   return await request.delete({
-    url: '/jgzf-flowable/bpm/form/delete?id=' + id
+    url: '/bpm/form/delete?id=' + id
   })
 }
 
 // 获得工作流的表单定义
 export const getForm = async (id: number) => {
   return await request.get({
-    url: '/jgzf-flowable/bpm/form/get?id=' + id
+    url: '/bpm/form/get?id=' + id
   })
 }
 
 // 获得工作流的表单定义分页
 export const getFormPage = async (params) => {
   return await request.get({
-    url: '/jgzf-flowable/bpm/form/page',
+    url: '/bpm/form/page',
     params
   })
 }
@@ -51,6 +51,6 @@ export const getFormPage = async (params) => {
 // 获得动态表单的精简列表
 export const getFormSimpleList = async () => {
   return await request.get({
-    url: '/jgzf-flowable/bpm/form/simple-list'
+    url: '/bpm/form/simple-list'
   })
 }

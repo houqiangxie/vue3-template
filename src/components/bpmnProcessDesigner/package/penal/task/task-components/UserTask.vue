@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <n-form label-width="120px">
     <n-form-item label="规则类型" path="candidateStrategy">
       <n-select v-model:value="userTaskForm.candidateStrategy" clearable style="width: 100%"
@@ -62,8 +62,7 @@
       path="candidateParam">
       <n-input type="textarea" v-model:value="userTaskForm.candidateParam[0]" clearable style="width: 100%"
         @change="updateElementTask" />
-      <XButton class="!w-1/1 mt-5px" type="success" preIcon="ep:select" title="选择表达式" size="small"
-        @click="openProcessExpressionDialog" />
+      <n-button type="success" size="small" class="!w-1/1 mt-5px" @click="openProcessExpressionDialog"><Icon icon="ep:select" class="mr-1px" />选择表达式</n-button>
       <!-- 选择弹窗 -->
       <ProcessExpressionDialog ref="processExpressionDialogRef" @select="selectProcessExpression" />
     </n-form-item>
@@ -76,12 +75,13 @@
 </template>
 
 <script lang="ts" setup>
+import { Icon } from '@/components/Icon'
 import {
   CANDIDATE_STRATEGY,
   CandidateStrategy,
   FieldPermissionType,
   MULTI_LEVEL_DEPT
-} from '@/components/SimpleProcessDesignerV2/src/consts'
+} from '@/components/SimpleProcessDesigner/src/consts'
 import { handleTree, toNaiveTreeSelectOptions } from '@/utils/tree'
 import * as RoleApi from '@/api/system/role'
 import * as DeptApi from '@/api/system/dept'
@@ -90,7 +90,7 @@ import * as UserApi from '@/api/system/user'
 import * as UserGroupApi from '@/api/bpm/userGroup'
 import ProcessExpressionDialog from './ProcessExpressionDialog.vue'
 import { ProcessExpressionVO } from '@/api/bpm/processExpression'
-import { useFormFieldsPermission } from '@/components/SimpleProcessDesignerV2/src/node'
+import { useFormFieldsPermission } from '@/components/SimpleProcessDesigner/src/node'
 
 defineOptions({ name: 'UserTask' })
 const props = defineProps({

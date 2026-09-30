@@ -76,9 +76,59 @@ export const paletteGroups: PaletteGroup[] = [
     ],
   },
   {
+    name: '布局',
+    items: [
+      {
+        label: '分割线',
+        component: 'FormDivider',
+        defaults: {
+          form: { span: 2, notValidate: true, showFeedback: false, bindItem: { showLabel: false } },
+          search: false,
+          table: false,
+          bind: { title: '' },
+        },
+      },
+      {
+        label: '提示条',
+        component: 'FormAlert',
+        defaults: {
+          form: { span: 2, notValidate: true, showFeedback: false, bindItem: { showLabel: false } },
+          search: false,
+          table: false,
+          bind: { title: '提示', content: '说明文字', type: 'info' },
+        },
+      },
+      {
+        label: '静态文案',
+        component: 'FormHtml',
+        defaults: {
+          form: { span: 2, notValidate: true, showFeedback: false, bindItem: { showLabel: false } },
+          search: false,
+          table: false,
+          bind: { content: '<p>说明文字</p>' },
+        },
+      },
+      {
+        label: '明细表',
+        component: 'FormTable',
+        defaults: {
+          form: { span: 2 },
+          search: false,
+          table: false,
+          bind: { cols: 2 },
+          children: [
+            { key: 'name', label: '名称', component: 'NInput', form: { required: true }, search: false, table: false },
+            { key: 'qty', label: '数量', component: 'NInputNumber', form: { required: true }, search: false, table: false },
+          ],
+        },
+      },
+    ],
+  },
+  {
     name: '业务组件',
     items: [
       { label: '文件上传', component: 'UploadFile' },
+      { label: '图片上传', component: 'UploadFile', defaults: { bind: { fileType: ['jpg', 'jpeg', 'png', 'gif', 'webp'], limit: 5 } as any } },
       { label: '图片裁剪', component: 'ImageCropper', defaults: { bind: { aspectRatio: 1, outputSize: 200 } } },
       { label: '富文本', component: 'Editor' },
       { label: '图标选择', component: 'IconSelect' },
@@ -135,6 +185,10 @@ export const componentOptions: Array<{ label: string, value: string }> = [
   { label: '评分 (NRate)', value: 'NRate' },
   { label: '滑块 (NSlider)', value: 'NSlider' },
   { label: '颜色 (NColorPicker)', value: 'NColorPicker' },
+  { label: '分割线 (FormDivider)', value: 'FormDivider' },
+  { label: '提示条 (FormAlert)', value: 'FormAlert' },
+  { label: '静态文案 (FormHtml)', value: 'FormHtml' },
+  { label: '明细表 (FormTable)', value: 'FormTable' },
   { label: '文件上传 (UploadFile)', value: 'UploadFile' },
   { label: '图片裁剪 (ImageCropper)', value: 'ImageCropper' },
   { label: '富文本 (Editor)', value: 'Editor' },

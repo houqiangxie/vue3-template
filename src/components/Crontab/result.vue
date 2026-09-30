@@ -522,7 +522,7 @@ function compare(value1: number, value2: number) {
 // 格式化日期格式如：2017-9-19 18:04:33
 function formatDate(value: any, type?: any) {
   // 计算日期相关值
-  // eslint-disable-next-line eqeqeq
+   
   let time = typeof value == 'number' ? new Date(value) : value
   let Y = time.getFullYear()
   let M = time.getMonth() + 1

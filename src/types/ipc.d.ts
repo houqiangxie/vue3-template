@@ -1,7 +1,7 @@
-import type { IpcChannel } from '../../../electron/ipc/channels';
-import type { ShowNotificationOptions } from '../../../electron/notification/types';
-import type { UpdateActionResult, UpdateStatusPayload } from '../../../electron/updater/types';
-import type { OpenWindowOptions, WindowActionResult } from '../../../electron/window/types';
+import type { IpcChannel } from '../../electron/ipc/channels';
+import type { ShowNotificationOptions } from '../../electron/notification/types';
+import type { UpdateActionResult, UpdateStatusPayload } from '../../electron/updater/types';
+import type { OpenWindowOptions, WindowActionResult } from '../../electron/window/types';
 
 /** Typed IPC contracts — optional, only for TypeScript hints in the renderer. */
 export interface IpcInvokeMap {

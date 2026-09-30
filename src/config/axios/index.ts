@@ -1,7 +1,8 @@
 /**
  * BPM 入口用的请求适配层：对齐芋道 `@/config/axios` 接口形态，
- * 底层走本仓库 `utils/fetch`，便于直接复用 flowable 的 api/bpm。
+ * 底层统一走本仓库 `utils/fetch`（与系统管理 API 同一套鉴权/错误/刷新逻辑）。
  */
+import { resolveBpmUrl } from '@/config/bpm'
 import { del, get as httpGet, post as httpPost, put as httpPut } from '@/utils/fetch'
 
 type Option = {
@@ -13,6 +14,10 @@ type Option = {
   responseType?: 'json' | 'text' | 'blob' | 'arrayBuffer'
 }
 
+function normalizeUrl(url: string): string {
+  return resolveBpmUrl(url)
+}
+
 async function unwrap<T>(promise: Promise<{ data: T }>): Promise<T> {
   const res = await promise
   return res.data as T
@@ -20,20 +25,20 @@ async function unwrap<T>(promise: Promise<{ data: T }>): Promise<T> {
 
 const request = {
   get: async <T = unknown>(option: Option) => {
-    return unwrap<T>(httpGet<T>(option.url, option.params, {
+    return unwrap<T>(httpGet<T>(normalizeUrl(option.url), option.params, {
       headers: option.headers,
       responseType: option.responseType,
     }))
   },
   post: async <T = unknown>(option: Option) => {
-    return unwrap<T>(httpPost<T>(option.url, option.data as Record<string, unknown>, {
+    return unwrap<T>(httpPost<T>(normalizeUrl(option.url), option.data as Record<string, unknown>, {
       headers: option.headers,
       formData: option.headersType === 'multipart/form-data',
       responseType: option.responseType,
     }))
   },
   put: async <T = unknown>(option: Option) => {
-    let url = option.url
+    let url = normalizeUrl(option.url)
     if (option.params && Object.keys(option.params).length) {
       const qs = new URLSearchParams()
       for (const [k, v] of Object.entries(option.params)) {
@@ -51,7 +56,7 @@ const request = {
   },
   delete: async <T = unknown>(option: Option) => {
     // 芋道风格：cancel 等接口用 @RequestParam，params 必须拼到 URL；body 仅在显式传 data 时使用（如减签）
-    let url = option.url
+    let url = normalizeUrl(option.url)
     if (option.params && Object.keys(option.params).length) {
       const qs = new URLSearchParams()
       for (const [k, v] of Object.entries(option.params)) {
@@ -68,14 +73,14 @@ const request = {
     }))
   },
   download: async (option: Option) => {
-    return httpGet(option.url, option.params, {
+    return httpGet(normalizeUrl(option.url), option.params, {
       responseType: 'blob',
       returnOrigin: true,
       withoutCheck: true,
     })
   },
   upload: async <T = unknown>(option: Option) => {
-    return unwrap<T>(httpPost<T>(option.url, option.data as Record<string, unknown>, {
+    return unwrap<T>(httpPost<T>(normalizeUrl(option.url), option.data as Record<string, unknown>, {
       fileUpload: true,
       formData: true,
     }))

@@ -30,6 +30,9 @@ import {
   depts,
 } from '../data/store'
 
+/** Align with frontend VITE_BPM_API_PREFIX */
+const BPM_API_PREFIX = String(import.meta.env.VITE_BPM_API_PREFIX || '/jgzf-flowable').replace(/\/$/, '')
+
 function bpmPageOk<T>(list: T[], total: number) {
   return ok({ list, total })
 }
@@ -365,7 +368,7 @@ function buildFormFieldsPermission(def: any, editable: boolean): Record<string, 
   for (const raw of formFields || []) {
     try {
       const field = typeof raw === 'string' ? JSON.parse(raw) : raw
-      // FormBuilder 用 key；yudao/form-create 常用 field / vModel
+      // FormBuilder 的 key；yudao/form-create 常用 field / vModel
       const key = field?.key || field?.field || field?.vModel || field?.__vModel__
       if (key)
         permission[String(key)] = editable ? '2' : '1' // WRITE / READ
@@ -558,7 +561,7 @@ export const bpmRoutes: MockRoute[] = [
   // —— 流程分类 ——
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/category/page',
+    path: `${BPM_API_PREFIX}/bpm/category/page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -576,12 +579,12 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/category/simple-list',
+    path: `${BPM_API_PREFIX}/bpm/category/simple-list`,
     handler: () => ok(bpmCategories.filter(i => i.status === 0).map(({ id, name, code, sort }) => ({ id, name, code, sort }))),
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/category/update-sort-batch',
+    path: `${BPM_API_PREFIX}/bpm/category/update-sort-batch`,
     handler: (req) => {
       const ids = String(req.query.ids || '')
         .split(',')
@@ -600,7 +603,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/category/get',
+    path: `${BPM_API_PREFIX}/bpm/category/get`,
     handler: (req) => {
       const id = Number(req.query.id)
       const row = bpmCategories.find(i => i.id === id)
@@ -611,7 +614,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/category/create',
+    path: `${BPM_API_PREFIX}/bpm/category/create`,
     handler: (req) => {
       const body = req.body || {}
       if (!body.name || !body.code)
@@ -629,7 +632,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/category/update',
+    path: `${BPM_API_PREFIX}/bpm/category/update`,
     handler: (req) => {
       const body = req.body || {}
       const idx = bpmCategories.findIndex(i => i.id === body.id)
@@ -641,7 +644,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'DELETE',
-    path: '/jgzf-flowable/bpm/category/delete',
+    path: `${BPM_API_PREFIX}/bpm/category/delete`,
     handler: (req) => {
       const id = Number(req.query.id)
       const idx = bpmCategories.findIndex(i => i.id === id)
@@ -655,7 +658,7 @@ export const bpmRoutes: MockRoute[] = [
   // —— 流程表单 ——
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/form/page',
+    path: `${BPM_API_PREFIX}/bpm/form/page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || req.query.pageNum || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -668,12 +671,12 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/form/simple-list',
+    path: `${BPM_API_PREFIX}/bpm/form/simple-list`,
     handler: () => ok(bpmForms.filter(i => i.status === 0).map(({ id, name }) => ({ id, name }))),
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/form/get',
+    path: `${BPM_API_PREFIX}/bpm/form/get`,
     handler: (req) => {
       const id = Number(req.query.id)
       const row = bpmForms.find(i => i.id === id)
@@ -684,7 +687,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/form/create',
+    path: `${BPM_API_PREFIX}/bpm/form/create`,
     handler: (req) => {
       const body = req.body || {}
       if (!body.name)
@@ -703,7 +706,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/form/update',
+    path: `${BPM_API_PREFIX}/bpm/form/update`,
     handler: (req) => {
       const body = req.body || {}
       const id = Number(body.id)
@@ -725,7 +728,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'DELETE',
-    path: '/jgzf-flowable/bpm/form/delete',
+    path: `${BPM_API_PREFIX}/bpm/form/delete`,
     handler: (req) => {
       const id = Number(req.query.id)
       const idx = bpmForms.findIndex(i => i.id === id)
@@ -739,7 +742,7 @@ export const bpmRoutes: MockRoute[] = [
   // —— 用户组 ——
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/user-group/page',
+    path: `${BPM_API_PREFIX}/bpm/user-group/page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -753,12 +756,12 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/user-group/simple-list',
+    path: `${BPM_API_PREFIX}/bpm/user-group/simple-list`,
     handler: () => ok(bpmUserGroups.filter(i => i.status === 0)),
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/user-group/get',
+    path: `${BPM_API_PREFIX}/bpm/user-group/get`,
     handler: (req) => {
       const id = Number(req.query.id)
       const row = bpmUserGroups.find(i => i.id === id)
@@ -769,7 +772,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/user-group/create',
+    path: `${BPM_API_PREFIX}/bpm/user-group/create`,
     handler: (req) => {
       const body = req.body || {}
       if (!body.name)
@@ -788,7 +791,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/user-group/update',
+    path: `${BPM_API_PREFIX}/bpm/user-group/update`,
     handler: (req) => {
       const body = req.body || {}
       const idx = bpmUserGroups.findIndex(i => i.id === body.id)
@@ -800,7 +803,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'DELETE',
-    path: '/jgzf-flowable/bpm/user-group/delete',
+    path: `${BPM_API_PREFIX}/bpm/user-group/delete`,
     handler: (req) => {
       const id = Number(req.query.id)
       const idx = bpmUserGroups.findIndex(i => i.id === id)
@@ -814,7 +817,7 @@ export const bpmRoutes: MockRoute[] = [
   // —— 流程监听器 ——
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-listener/page',
+    path: `${BPM_API_PREFIX}/bpm/process-listener/page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -834,7 +837,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-listener/get',
+    path: `${BPM_API_PREFIX}/bpm/process-listener/get`,
     handler: (req) => {
       const id = Number(req.query.id)
       const row = bpmProcessListeners.find(i => i.id === id)
@@ -845,7 +848,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/process-listener/create',
+    path: `${BPM_API_PREFIX}/bpm/process-listener/create`,
     handler: (req) => {
       const body = req.body || {}
       if (!body.name || !body.value)
@@ -865,7 +868,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/process-listener/update',
+    path: `${BPM_API_PREFIX}/bpm/process-listener/update`,
     handler: (req) => {
       const body = req.body || {}
       const idx = bpmProcessListeners.findIndex(i => i.id === body.id)
@@ -877,7 +880,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'DELETE',
-    path: '/jgzf-flowable/bpm/process-listener/delete',
+    path: `${BPM_API_PREFIX}/bpm/process-listener/delete`,
     handler: (req) => {
       const id = Number(req.query.id)
       const idx = bpmProcessListeners.findIndex(i => i.id === id)
@@ -891,7 +894,7 @@ export const bpmRoutes: MockRoute[] = [
   // —— 流程表达式 ——
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-expression/page',
+    path: `${BPM_API_PREFIX}/bpm/process-expression/page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -905,7 +908,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-expression/get',
+    path: `${BPM_API_PREFIX}/bpm/process-expression/get`,
     handler: (req) => {
       const id = Number(req.query.id)
       const row = bpmProcessExpressions.find(i => i.id === id)
@@ -916,7 +919,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/process-expression/create',
+    path: `${BPM_API_PREFIX}/bpm/process-expression/create`,
     handler: (req) => {
       const body = req.body || {}
       if (!body.name || !body.expression)
@@ -933,7 +936,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/process-expression/update',
+    path: `${BPM_API_PREFIX}/bpm/process-expression/update`,
     handler: (req) => {
       const body = req.body || {}
       const idx = bpmProcessExpressions.findIndex(i => i.id === body.id)
@@ -945,7 +948,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'DELETE',
-    path: '/jgzf-flowable/bpm/process-expression/delete',
+    path: `${BPM_API_PREFIX}/bpm/process-expression/delete`,
     handler: (req) => {
       const id = Number(req.query.id)
       const idx = bpmProcessExpressions.findIndex(i => i.id === id)
@@ -957,7 +960,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-expression/export-excel',
+    path: `${BPM_API_PREFIX}/bpm/process-expression/export-excel`,
     handler: () => {
       const header = 'id,name,status,expression\n'
       const rows = bpmProcessExpressions
@@ -977,7 +980,7 @@ export const bpmRoutes: MockRoute[] = [
   // —— OA 请假 ——
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/oa/leave/page',
+    path: `${BPM_API_PREFIX}/bpm/oa/leave/page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -993,7 +996,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/oa/leave/get',
+    path: `${BPM_API_PREFIX}/bpm/oa/leave/get`,
     handler: (req) => {
       const id = Number(req.query.id)
       const row = bpmLeaves.find(i => i.id === id)
@@ -1004,7 +1007,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/oa/leave/create',
+    path: `${BPM_API_PREFIX}/bpm/oa/leave/create`,
     handler: (req) => {
       const body = req.body || {}
       if (!body.type || !body.startTime || !body.endTime || !body.reason)
@@ -1036,7 +1039,7 @@ export const bpmRoutes: MockRoute[] = [
   // —— 流程模型 ——
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/model/list',
+    path: `${BPM_API_PREFIX}/bpm/model/list`,
     handler: (req) => {
       let list = [...bpmModels]
       const name = req.query.name?.trim()
@@ -1047,7 +1050,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/model/get',
+    path: `${BPM_API_PREFIX}/bpm/model/get`,
     handler: (req) => {
       const id = Number(req.query.id)
       const row = bpmModels.find(i => i.id === id)
@@ -1058,7 +1061,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/model/create',
+    path: `${BPM_API_PREFIX}/bpm/model/create`,
     handler: (req) => {
       const body = req.body || {}
       if (!body.name || !body.key)
@@ -1100,7 +1103,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/model/update',
+    path: `${BPM_API_PREFIX}/bpm/model/update`,
     handler: (req) => {
       const body = req.body || {}
       const idx = bpmModels.findIndex(i => i.id === body.id)
@@ -1118,7 +1121,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'DELETE',
-    path: '/jgzf-flowable/bpm/model/delete',
+    path: `${BPM_API_PREFIX}/bpm/model/delete`,
     handler: (req) => {
       const id = Number(req.query.id)
       const idx = bpmModels.findIndex(i => i.id === id)
@@ -1130,7 +1133,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/model/deploy',
+    path: `${BPM_API_PREFIX}/bpm/model/deploy`,
     handler: (req) => {
       const id = Number(req.query.id)
       const row = bpmModels.find(i => i.id === id)
@@ -1190,7 +1193,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/model/update-state',
+    path: `${BPM_API_PREFIX}/bpm/model/update-state`,
     handler: (req) => {
       const body = req.body || {}
       const row = bpmModels.find(i => i.id === Number(body.id))
@@ -1208,7 +1211,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'DELETE',
-    path: '/jgzf-flowable/bpm/model/clean',
+    path: `${BPM_API_PREFIX}/bpm/model/clean`,
     handler: (req) => {
       const id = Number(req.query.id)
       const row = bpmModels.find(i => i.id === id)
@@ -1228,7 +1231,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/model/update-sort-batch',
+    path: `${BPM_API_PREFIX}/bpm/model/update-sort-batch`,
     handler: (req) => {
       const ids = String(req.query.ids || '')
         .split(',')
@@ -1251,7 +1254,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/model/update-bpmn',
+    path: `${BPM_API_PREFIX}/bpm/model/update-bpmn`,
     handler: (req) => {
       const body = req.body || {}
       const idx = bpmModels.findIndex(i => i.id === body.id)
@@ -1266,7 +1269,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/model/simple/get',
+    path: `${BPM_API_PREFIX}/bpm/model/simple/get`,
     handler: (req) => {
       const id = Number(req.query.id)
       const row = bpmModels.find(i => i.id === id)
@@ -1280,7 +1283,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/model/simple/update',
+    path: `${BPM_API_PREFIX}/bpm/model/simple/update`,
     handler: (req) => {
       const body = req.body || {}
       const id = Number(body.id)
@@ -1295,7 +1298,7 @@ export const bpmRoutes: MockRoute[] = [
   // —— 流程定义 ——
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-definition/get',
+    path: `${BPM_API_PREFIX}/bpm/process-definition/get`,
     handler: (req) => {
       let row = null as any
       if (req.query.id)
@@ -1316,7 +1319,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-definition/page',
+    path: `${BPM_API_PREFIX}/bpm/process-definition/page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -1334,7 +1337,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-definition/list',
+    path: `${BPM_API_PREFIX}/bpm/process-definition/list`,
     handler: (req) => {
       let list = [...bpmProcessDefinitions]
       const key = req.query.key?.trim()
@@ -1349,7 +1352,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-definition/simple-list',
+    path: `${BPM_API_PREFIX}/bpm/process-definition/simple-list`,
     handler: () => {
       const latestByKey = new Map<string, any>()
       for (const row of bpmProcessDefinitions) {
@@ -1371,7 +1374,7 @@ export const bpmRoutes: MockRoute[] = [
   // —— 流程实例 ——
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-instance/manager-page',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/manager-page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -1403,7 +1406,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-instance/my-page',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/my-page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -1421,7 +1424,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-instance/get',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/get`,
     handler: (req) => {
       const id = String(req.query.id || '')
       const row = bpmProcessInstances.find(i => i.id === id)
@@ -1445,7 +1448,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/process-instance/create',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/create`,
     handler: (req) => {
       const body = req.body || {}
       const def = findDefinition(body.processDefinitionId) || findDefinition(body.processDefinitionKey)
@@ -1457,7 +1460,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'DELETE',
-    path: '/jgzf-flowable/bpm/process-instance/cancel-by-start-user',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/cancel-by-start-user`,
     handler: (req) => {
       const id = req.query.id ?? req.body?.id
       const reason = req.query.reason ?? req.body?.reason
@@ -1481,7 +1484,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'DELETE',
-    path: '/jgzf-flowable/bpm/process-instance/cancel-by-admin',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/cancel-by-admin`,
     handler: (req) => {
       const id = req.query.id ?? req.body?.id
       const reason = req.query.reason ?? req.body?.reason
@@ -1503,7 +1506,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-instance/copy/page',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/copy/page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -1516,7 +1519,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-instance/get-approval-detail',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/get-approval-detail`,
     handler: (req) => {
       const processInstanceId = String(req.query.processInstanceId || '')
       const processDefinitionId = String(req.query.processDefinitionId || '')
@@ -1653,7 +1656,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-instance/get-next-approval-nodes',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/get-next-approval-nodes`,
     handler: (req) => {
       const processInstanceId = String(req.query.processInstanceId || '')
       const instance = bpmProcessInstances.find(i => i.id === processInstanceId)
@@ -1675,7 +1678,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-instance/get-form-fields-permission',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/get-form-fields-permission`,
     handler: (req) => {
       const processInstanceId = String(req.query.processInstanceId || '')
       const instance = bpmProcessInstances.find(i => i.id === processInstanceId)
@@ -1688,7 +1691,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-instance/get-bpmn-model-view',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/get-bpmn-model-view`,
     handler: (req) => {
       const id = String(req.query.id || '')
       const instance = bpmProcessInstances.find(i => i.id === id)
@@ -1709,7 +1712,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-instance/get-print-data',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/get-print-data`,
     handler: (req) => {
       const id = String(req.query.processInstanceId || '')
       const instance = bpmProcessInstances.find(i => i.id === id)
@@ -1741,7 +1744,7 @@ export const bpmRoutes: MockRoute[] = [
           description: [
             t.assigneeUserNickname || t.assigneeUser?.nickname || '',
             t.reason ? `意见：${t.reason}` : '',
-            t.endTime ? `完成于 ${t.endTime}` : '处理中',
+            t.endTime ? `完成于：${t.endTime}` : '处理中',
           ].filter(Boolean).join(' · '),
           signPicUrl: t.signPicUrl || '',
         })),
@@ -1750,7 +1753,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/process-instance/comment/list',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/comment/list`,
     handler: (req) => {
       const processInstanceId = String(req.query.processInstanceId || '')
       const list = bpmProcessComments
@@ -1761,7 +1764,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'POST',
-    path: '/jgzf-flowable/bpm/process-instance/comment/create',
+    path: `${BPM_API_PREFIX}/bpm/process-instance/comment/create`,
     handler: (req) => {
       const body = req.body || {}
       const processInstanceId = String(body.processInstanceId || '')
@@ -1785,7 +1788,7 @@ export const bpmRoutes: MockRoute[] = [
   // —— 流程任务 ——
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/task/todo-page',
+    path: `${BPM_API_PREFIX}/bpm/task/todo-page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -1798,7 +1801,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/task/done-page',
+    path: `${BPM_API_PREFIX}/bpm/task/done-page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -1811,7 +1814,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/task/manager-page',
+    path: `${BPM_API_PREFIX}/bpm/task/manager-page`,
     handler: (req) => {
       const pageNo = Number(req.query.pageNo || 1)
       const pageSize = Number(req.query.pageSize || 10)
@@ -1824,7 +1827,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/task/list-by-process-instance-id',
+    path: `${BPM_API_PREFIX}/bpm/task/list-by-process-instance-id`,
     handler: (req) => {
       const processInstanceId = String(req.query.processInstanceId || '')
       return ok(bpmTasks.filter(t => t.processInstanceId === processInstanceId).map(enrichTaskForm))
@@ -1832,7 +1835,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/task/my-todo',
+    path: `${BPM_API_PREFIX}/bpm/task/my-todo`,
     handler: (req) => {
       const processInstanceId = String(req.query.processInstanceId || '')
       const task = bpmTasks.find(t => t.processInstanceId === processInstanceId && !t.endTime)
@@ -1841,7 +1844,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/task/list-by-return',
+    path: `${BPM_API_PREFIX}/bpm/task/list-by-return`,
     handler: (req) => {
       const id = String(req.query.id || req.query.taskId || '')
       const task = bpmTasks.find(t => t.id === id)
@@ -1854,7 +1857,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/task/approve',
+    path: `${BPM_API_PREFIX}/bpm/task/approve`,
     handler: (req) => {
       const body = req.body || {}
       const task = bpmTasks.find(t => t.id === body.id)
@@ -1900,7 +1903,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/task/reject',
+    path: `${BPM_API_PREFIX}/bpm/task/reject`,
     handler: (req) => {
       const body = req.body || {}
       const task = bpmTasks.find(t => t.id === body.id)
@@ -1922,7 +1925,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/task/return',
+    path: `${BPM_API_PREFIX}/bpm/task/return`,
     handler: (req) => {
       const body = req.body || {}
       const task = bpmTasks.find(t => t.id === body.id)
@@ -1936,7 +1939,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/task/delegate',
+    path: `${BPM_API_PREFIX}/bpm/task/delegate`,
     handler: (req) => {
       const body = req.body || {}
       const task = bpmTasks.find(t => t.id === body.id)
@@ -1950,7 +1953,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/task/transfer',
+    path: `${BPM_API_PREFIX}/bpm/task/transfer`,
     handler: (req) => {
       const body = req.body || {}
       const task = bpmTasks.find(t => t.id === body.id)
@@ -1964,7 +1967,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/task/create-sign',
+    path: `${BPM_API_PREFIX}/bpm/task/create-sign`,
     handler: (req) => {
       const body = req.body || {}
       const parent = bpmTasks.find(t => t.id === body.id)
@@ -1998,7 +2001,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'DELETE',
-    path: '/jgzf-flowable/bpm/task/delete-sign',
+    path: `${BPM_API_PREFIX}/bpm/task/delete-sign`,
     handler: (req) => {
       const body = req.body || {}
       const id = String(body.id || req.query.id || '')
@@ -2015,7 +2018,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/task/copy',
+    path: `${BPM_API_PREFIX}/bpm/task/copy`,
     handler: (req) => {
       const body = req.body || {}
       const task = bpmTasks.find(t => t.id === body.id)
@@ -2048,7 +2051,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'PUT',
-    path: '/jgzf-flowable/bpm/task/withdraw',
+    path: `${BPM_API_PREFIX}/bpm/task/withdraw`,
     handler: (req) => {
       const taskId = String(req.query.taskId || req.body?.taskId || '')
       const task = bpmTasks.find(t => t.id === taskId)
@@ -2070,7 +2073,7 @@ export const bpmRoutes: MockRoute[] = [
   },
   {
     method: 'GET',
-    path: '/jgzf-flowable/bpm/task/list-by-parent-task-id',
+    path: `${BPM_API_PREFIX}/bpm/task/list-by-parent-task-id`,
     handler: (req) => {
       const parentTaskId = String(req.query.parentTaskId || '')
       const list = bpmTasks.filter(t => t.parentTaskId === parentTaskId && !t.endTime)

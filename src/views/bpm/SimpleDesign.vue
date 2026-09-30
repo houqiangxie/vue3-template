@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="bpm-page">
     <div class="bpm-page__bar">
       <n-button text @click="$router.push('/')">← 返回</n-button>
@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { SimpleProcessDesigner } from '@/components/SimpleProcessDesignerV2/src/'
+import { SimpleProcessDesigner } from '@/components/SimpleProcessDesigner/src/'
 import { BpmModelFormType } from '@/utils/constants'
 import { useMessage } from 'naive-ui'
 

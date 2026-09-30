@@ -226,7 +226,7 @@ export const menus: SysMenu[] = [
   { menuId: 239, parentId: 200, menuName: '流程详情', menuType: 'C', orderNum: 8, path: '/Bpm/processInstance/detail', component: 'Bpm/processInstance/detail/index', perms: 'bpm:process-instance:query', visible: '0', status: '1', isCache: '0', createTime: '2024-01-01 00:00:00' },
   { menuId: 237, parentId: 200, menuName: '流程任务', menuType: 'C', orderNum: 9, path: '/Bpm/Task', component: 'Bpm/Task', perms: 'bpm:task:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
   { menuId: 240, parentId: 200, menuName: '抄送我的', menuType: 'C', orderNum: 9, path: '/Bpm/task/copy', component: 'Bpm/task/copy/index', perms: 'bpm:task:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
-  { menuId: 241, parentId: 200, menuName: '流程报表', menuType: 'C', orderNum: 8, path: '/Bpm/processInstance/report', component: 'Bpm/processInstance/report/index', perms: 'bpm:process-instance:query', visible: '0', status: '1', isCache: '0', createTime: '2024-01-01 00:00:00' },
+  { menuId: 241, parentId: 200, menuName: '流程报表', menuType: 'C', orderNum: 8, path: '/Bpm/processInstance/report', component: 'Bpm/processInstance/report/index', perms: 'bpm:process-instance:query', visible: '1', status: '1', isCache: '0', createTime: '2024-01-01 00:00:00' },
   { menuId: 221, parentId: 200, menuName: '请假申请', menuType: 'C', orderNum: 10, path: '/Bpm/Leave', component: 'Bpm/Leave', perms: 'bpm:oa-leave:query', visible: '1', status: '1', isCache: '1', createTime: '2024-01-01 00:00:00' },
   { menuId: 222, parentId: 221, menuName: '发起请假', menuType: 'F', orderNum: 1, perms: 'bpm:oa-leave:create', visible: '1', status: '1', createTime: '2024-01-01 00:00:00' },
   { menuId: 242, parentId: 200, menuName: '发起请假页', menuType: 'C', orderNum: 11, path: '/Bpm/oa/leave/create', component: 'Bpm/oa/leave/create', perms: 'bpm:oa-leave:create', visible: '0', status: '1', isCache: '0', createTime: '2024-01-01 00:00:00' },
@@ -878,8 +878,6 @@ export const routerMenus: MenuItem[] = [
         meta: {
           title: '流程报表',
           permissions: ['bpm:process-instance:query'],
-          hideMenu: true,
-          activeMenu: 'Bpm-Model',
         },
       },
       {

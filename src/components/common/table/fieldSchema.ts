@@ -24,6 +24,7 @@ export type NaiveComponentName =
   | 'Checkbox' | 'Radio' | 'RadioButton'
   | 'Editor' | 'IconSelect' | 'UserSelect' | 'DeptSelect'
   | 'CronInput' | 'SqlSearch' | 'UploadFile' | 'ImageCropper' | 'file'
+  | 'FormDivider' | 'FormAlert' | 'FormHtml' | 'FormTable'
 
 /** 表单值为数组的组件（无显式 defaultValue 时使用 []） */
 export const ARRAY_VALUE_COMPONENTS = new Set<string>([
@@ -33,6 +34,19 @@ export const ARRAY_VALUE_COMPONENTS = new Set<string>([
   'NTransfer',
   'UploadFile',
   'file',
+  'FormTable',
+])
+
+/** 纯展示组件：无业务值，不参与校验 / path 收集 */
+export const DISPLAY_ONLY_COMPONENTS = new Set<string>([
+  'FormDivider',
+  'FormAlert',
+  'FormHtml',
+  'divider',
+  'alert',
+  'html',
+  'span',
+  'text',
 ])
 
 export function resolveComponentDefaultValue(
@@ -226,11 +240,12 @@ export interface UnifiedFieldConfig {
   search?: false | SearchFieldConfig
   table?: false | TableFieldConfig
   /**
-   * 多级表头子列（仅 table；有 children 时本节点为分组列，不渲染单元格）
-   * @example { key: 'base', label: '基本信息', children: [{ key: 'name', label: '姓名', table: { width: 120 } }] }
+   * 子字段：
+   * - table：多级表头
+   * - FormTable：明细行 schema（对象数组每一行的字段）
    */
   children?: UnifiedFieldConfig[]
-  /** 设计器字典类型提示；运行时需自行 useDict 填充 options，或导出前先加载选项 */
+  /** 字典类型；BPM 运行时会按 dictType 自动填充 options（已有 options 时不覆盖） */
   dictType?: string
   /** 设计器可视化联动规则（仅文档/往返用，运行时以 form.visibleExpr 为准） */
   visibilityRule?: unknown
@@ -271,6 +286,8 @@ export type FormConfigItem = {
   span?: number
   /** 栅格起始列（1 起） */
   colStart?: number
+  /** FormTable 等：行内子字段 */
+  children?: UnifiedFieldConfig[]
 }
 
 /** @deprecated 请使用 FormConfigItem */
@@ -353,6 +370,7 @@ export function toFormConfig(fields: UnifiedFieldConfig[]): FormConfigItem[] {
         slot: form.slot,
         on: form.on,
         render: form.render,
+        children: field.children,
       }
     })
 }

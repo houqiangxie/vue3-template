@@ -5,6 +5,10 @@ services:
       args:
         VITE_baseUrl: /api
         VITE_BUILD_URL: /
+        VITE_BPM_API_PREFIX: ${VITE_BPM_API_PREFIX:-/jgzf-flowable}
+        VITE_WS_URL: ${VITE_WS_URL:-}
+        VITE_LOGIN_AES_KEY: ${VITE_LOGIN_AES_KEY:-}
+        VITE_LOGIN_AES_IV: ${VITE_LOGIN_AES_IV:-}
     ports:
       - "8080:80"
     restart: unless-stopped

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <CommonModal
     v-model:show="dialogVisible"
     :config="modalConfig"
@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { h } from 'vue'
 import { ProcessListenerApi, type ProcessListenerVO } from '@/api/bpm/processListener'
-import DictTag from '@/components/bpm/DictTag.vue'
+import DictTag from '@/components/common/DictTag.vue'
 import { DICT_TYPE } from '@/utils/dict'
 import { CommonStatusEnum } from '@/utils/constants'
 import { usePageList } from '@/hooks/usePageList'

@@ -14,12 +14,7 @@
           :options="messageOptions"
           @update:value="updateTaskMessage"
         />
-        <XButton
-          type="primary"
-          preIcon="ep:plus"
-          style="margin-left: 8px"
-          @click="openMessageModel"
-        />
+        <n-button type="primary" style="margin-left: 8px" @click="openMessageModel"><Icon icon="ep:plus" class="mr-1px" /></n-button>
       </div>
     </n-form-item>
 
@@ -33,8 +28,9 @@
 </template>
 
 <script lang="ts" setup>
+import { Icon } from '@/components/Icon'
 import { useFormModal } from '@/hooks/useFormModal'
-import { useMessage } from '@/hooks/web/useMessage'
+import { useMessage } from 'naive-ui'
 import { defineFields, defineModal, extractFormDefaults } from '@/utils/schema'
 
 defineOptions({ name: 'ReceiveTask' })

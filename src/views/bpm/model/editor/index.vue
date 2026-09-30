@@ -1,5 +1,5 @@
 <template>
-  <ContentWrap>
+  <n-card class="mb-15px" size="small" :bordered="true" :content-style="{ padding: '10px' }">
     <!-- 流程设计器，负责绘制流程等 -->
     <MyProcessDesigner
       key="designer"
@@ -24,7 +24,7 @@
       class="process-panel"
       :model="model"
     />
-  </ContentWrap>
+  </n-card>
 </template>
 
 <script lang="ts" setup>

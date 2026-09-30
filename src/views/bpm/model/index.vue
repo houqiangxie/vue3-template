@@ -67,8 +67,7 @@
 
 <script lang="ts" setup>
 import { useRoute, useRouter } from 'vue-router'
-import { useThemeVars } from 'naive-ui'
-import { useMessage } from '@/hooks/web/useMessage'
+import { useDialog, useMessage, useThemeVars } from 'naive-ui'
 import { getInfo } from '@/api/system/auth'
 import * as ModelApi from '@/api/bpm/model'
 import * as FormApi from '@/api/bpm/form'
@@ -87,7 +86,21 @@ import { resolveBpmRouteName } from '@/views/web/Bpm/routeNames'
 const router = useRouter()
 const route = useRoute()
 const message = useMessage()
+const dialog = useDialog()
 const themeVars = useThemeVars()
+
+function confirm(content: string, title = '提示') {
+  return new Promise<void>((resolve, reject) => {
+    dialog.warning({
+      title,
+      content,
+      positiveText: '确定',
+      negativeText: '取消',
+      onPositiveClick: () => resolve(),
+      onNegativeClick: () => reject(new Error('cancel')),
+    })
+  })
+}
 
 /** 向导壳跟随 web 主题（含深色与主色） */
 const editorThemeStyle = computed(() => {
@@ -353,7 +366,7 @@ const handleSave = async () => {
 
 const handleDeploy = async () => {
   try {
-    await message.confirm('是否确认发布该流程？')
+    await confirm('是否确认发布该流程？')
     await validateAllSteps()
     await syncProcessBeforePersist()
 

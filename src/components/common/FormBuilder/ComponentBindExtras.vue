@@ -585,4 +585,108 @@ const colorModeOptions = [
       />
     </n-form-item>
   </template>
+
+  <template v-if="comp === 'FormDivider'">
+    <n-form-item label="标题">
+      <n-input
+        :value="(bind?.title as string) || ''"
+        clearable
+        placeholder="可选"
+        @update:value="v => upd('title', v || undefined)"
+      />
+    </n-form-item>
+    <n-form-item label="虚线">
+      <n-switch
+        :value="!!bind?.dashed"
+        @update:value="v => upd('dashed', v || undefined)"
+      />
+    </n-form-item>
+    <n-form-item label="标题位置">
+      <n-select
+        :value="(bind?.titlePlacement as string) || 'center'"
+        :options="[
+          { label: '左', value: 'left' },
+          { label: '中', value: 'center' },
+          { label: '右', value: 'right' },
+        ]"
+        @update:value="v => upd('titlePlacement', v === 'center' ? undefined : v)"
+      />
+    </n-form-item>
+  </template>
+
+  <template v-if="comp === 'FormAlert'">
+    <n-form-item label="标题">
+      <n-input
+        :value="(bind?.title as string) || ''"
+        clearable
+        @update:value="v => upd('title', v || undefined)"
+      />
+    </n-form-item>
+    <n-form-item label="内容">
+      <n-input
+        type="textarea"
+        :rows="2"
+        :value="(bind?.content as string) || ''"
+        @update:value="v => upd('content', v || undefined)"
+      />
+    </n-form-item>
+    <n-form-item label="类型">
+      <n-select
+        :value="(bind?.type as string) || 'info'"
+        :options="[
+          { label: '默认', value: 'default' },
+          { label: '信息', value: 'info' },
+          { label: '成功', value: 'success' },
+          { label: '警告', value: 'warning' },
+          { label: '错误', value: 'error' },
+        ]"
+        @update:value="v => upd('type', v)"
+      />
+    </n-form-item>
+    <n-form-item label="边框">
+      <n-switch
+        :value="bind?.bordered !== false"
+        @update:value="v => upd('bordered', v)"
+      />
+    </n-form-item>
+  </template>
+
+  <template v-if="comp === 'FormHtml'">
+    <n-form-item label="HTML 内容">
+      <n-input
+        type="textarea"
+        :rows="4"
+        :value="(bind?.html as string) || (bind?.content as string) || ''"
+        placeholder="<p>说明文字</p>"
+        @update:value="(v) => { upd('html', v || undefined); upd('content', undefined) }"
+      />
+    </n-form-item>
+  </template>
+
+  <template v-if="comp === 'FormTable'">
+    <n-form-item label="行内列数">
+      <n-input-number
+        :value="(bind?.cols as number) || 2"
+        :min="1"
+        :max="4"
+        @update:value="v => upd('cols', v || 2)"
+      />
+    </n-form-item>
+    <n-form-item label="最少行数">
+      <n-input-number
+        :value="(bind?.min as number) ?? 0"
+        :min="0"
+        @update:value="v => upd('min', v ?? 0)"
+      />
+    </n-form-item>
+    <n-form-item label="最多行数">
+      <n-input-number
+        :value="bind?.max as number | undefined"
+        :min="1"
+        clearable
+        placeholder="不限"
+        @update:value="v => upd('max', v ?? undefined)"
+      />
+    </n-form-item>
+  </template>
 </template>

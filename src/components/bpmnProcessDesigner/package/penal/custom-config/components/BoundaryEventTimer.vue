@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <n-divider content-position="left">审批人超时未处理时</n-divider>
     <n-form-item label="启用开关" path="timeoutHandlerEnable">
@@ -67,8 +67,8 @@ import {
   TimeUnitType,
   TIME_UNIT_TYPES,
   TIMEOUT_HANDLER_TYPES
-} from '@/components/SimpleProcessDesignerV2/src/consts'
-import { convertTimeUnit } from '@/components/SimpleProcessDesignerV2/src/utils'
+} from '@/components/SimpleProcessDesigner/src/consts'
+import { convertTimeUnit } from '@/components/SimpleProcessDesigner/src/utils'
 
 defineOptions({ name: 'ElementCustomConfig4BoundaryEventTimer' })
 const props = defineProps({

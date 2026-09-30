@@ -85,7 +85,8 @@
         v-model:form-model="previewModel"
         :fields="builderPreviewFields"
         :cols="previewFormCols"
-        :label-width="100"
+        :label-width="previewLabelWidth"
+        row-gap="12px"
       />
       <n-space v-else-if="previewFields.length" vertical>
         <n-tag v-for="(f, idx) in previewFields" :key="idx" type="info" :bordered="false">
@@ -103,13 +104,16 @@ import type { FormInst, FormRules } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import * as FormApi from '@/api/bpm/form'
-import { parseFormFields } from '@/components/FormCreate/src/utils'
 import {
   isFormBuilderConf,
   listBpmFormFieldMeta,
+  parseFormFields,
+  resolveFieldDictOptions,
   unpackBpmForm,
-} from '@/components/FormCreate/src/bpmFormBuilder'
+  type BpmFormFieldMeta,
+} from '@/components/common/FormBuilder/bpmForm'
 import { getRuntimeField } from '@/components/common/FormBuilder/compile'
+import { fetchDictOptions } from '@/hooks/useDict'
 import { BpmModelFormType } from '@/utils/constants'
 import { Icon } from '@/components/Icon'
 import { resolveBpmRouteName } from '@/views/web/Bpm/routeNames'
@@ -135,6 +139,7 @@ const modelData = defineModel<any>()
 
 const previewModel = ref<Record<string, unknown>>({})
 const previewFormCols = ref(2)
+const previewLabelWidth = ref<number | string>(100)
 const builderPreviewFields = ref<any[]>([])
 const previewFields = ref<Array<Record<string, any>>>([])
 
@@ -144,7 +149,7 @@ async function loadFormPreview(formId: number | string) {
   previewModel.value = {}
   if (!formId)
     return
-  const data = await FormApi.getForm(formId) as FormApi.FormVO
+  const data = await FormApi.getForm(Number(formId)) as FormApi.FormVO
   if (isFormBuilderConf(data.conf) || (data.fields || []).some((f) => {
     try {
       const obj = typeof f === 'string' ? JSON.parse(f) : f
@@ -156,13 +161,15 @@ async function loadFormPreview(formId: number | string) {
   })) {
     const unpacked = unpackBpmForm(data.conf, data.fields)
     previewFormCols.value = unpacked.formCols
-    builderPreviewFields.value = unpacked.fields
+    previewLabelWidth.value = unpacked.labelWidth
+    const runtime = unpacked.fields
       .map(f => getRuntimeField(f))
       .filter(f => f.form !== false)
+    builderPreviewFields.value = await resolveFieldDictOptions(runtime, fetchDictOptions)
     previewFields.value = listBpmFormFieldMeta(data.fields)
   }
   else {
-    const fields: Array<Record<string, any>> = []
+    const fields: BpmFormFieldMeta[] = []
     ;(data.fields || []).forEach((fieldStr: string) => {
       try {
         parseFormFields(JSON.parse(fieldStr), fields)

@@ -1,11 +1,11 @@
-<template>
+﻿<template>
   <CommonForm
     v-if="runtimeFields.length"
     ref="formRef"
     v-model:form-model="model"
     :fields="runtimeFields"
     :cols="formCols"
-    :label-width="100"
+    :label-width="labelWidth"
     :disabled="disabled"
   />
   <n-empty v-else description="暂无表单字段" />
@@ -14,10 +14,12 @@
 <script setup lang="ts">
 import {
   isFormBuilderConf,
+  resolveFieldDictOptions,
   unpackBpmForm,
-} from '@/components/FormCreate/src/bpmFormBuilder'
+} from '@/components/common/FormBuilder/bpmForm'
 import { getRuntimeField } from '@/components/common/FormBuilder/compile'
-import { FieldPermissionType } from '@/components/SimpleProcessDesignerV2/src/consts'
+import { FieldPermissionType } from '@/components/SimpleProcessDesigner/src/consts'
+import { fetchDictOptions } from '@/hooks/useDict'
 
 defineOptions({ name: 'BpmProcessForm' })
 
@@ -39,7 +41,9 @@ const props = withDefaults(defineProps<{
 const formRef = ref<{ validate?: () => Promise<void> } | null>(null)
 const model = ref<Record<string, unknown>>({})
 const formCols = ref(2)
+const labelWidth = ref<number | string>(100)
 const baseFields = ref<any[]>([])
+let loadToken = 0
 
 const runtimeFields = computed(() => {
   const perms = props.permissions
@@ -72,7 +76,8 @@ const runtimeFields = computed(() => {
 
 watch(
   () => [props.formConf, props.formFields, props.formVariables] as const,
-  () => {
+  async () => {
+    const token = ++loadToken
     if (!isFormBuilderConf(props.formConf) && !(props.formFields || []).length) {
       baseFields.value = []
       model.value = { ...(props.formVariables || {}) }
@@ -80,9 +85,14 @@ watch(
     }
     const unpacked = unpackBpmForm(props.formConf, props.formFields)
     formCols.value = unpacked.formCols
-    baseFields.value = unpacked.fields
+    labelWidth.value = unpacked.labelWidth
+    const runtime = unpacked.fields
       .map(f => getRuntimeField(f))
       .filter(f => f.form !== false)
+    const withDict = await resolveFieldDictOptions(runtime, fetchDictOptions)
+    if (token !== loadToken)
+      return
+    baseFields.value = withDict
     model.value = { ...(props.formVariables || {}) }
   },
   { immediate: true, deep: true },

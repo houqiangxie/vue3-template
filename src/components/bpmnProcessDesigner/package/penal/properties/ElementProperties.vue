@@ -10,12 +10,7 @@
       :table-props="{ size: 'small', bordered: true }"
     />
     <div class="element-drawer__button">
-      <XButton
-        type="primary"
-        preIcon="ep:plus"
-        title="添加属性"
-        @click="handleAdd"
-      />
+      <n-button type="primary" @click="handleAdd"><Icon icon="ep:plus" class="mr-1px" />添加属性</n-button>
     </div>
 
     <CommonModal
@@ -28,6 +23,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Icon } from '@/components/Icon'
 import { useFormModal } from '@/hooks/useFormModal'
 import { defineFields, defineModal, extractFormDefaults } from '@/utils/schema'
 

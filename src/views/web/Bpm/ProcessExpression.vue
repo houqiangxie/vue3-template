@@ -171,7 +171,7 @@ function handleAdd() {
 async function handleExport() {
   exporting.value = true
   try {
-    await download('/jgzf-flowable/bpm/process-expression/export-excel', {
+    await download('/bpm/process-expression/export-excel', {
       params: { ...searchModel.value } as Record<string, unknown>,
       filename: `process_expression_${Date.now()}.xlsx`,
     })

@@ -3,6 +3,7 @@ import type { Component, VNode } from 'vue'
 import type { FormItemRule } from 'naive-ui'
 import {
   ARRAY_VALUE_COMPONENTS,
+  DISPLAY_ONLY_COMPONENTS,
   resolveComponentDefaultValue,
   toFormConfig,
   type FieldBind,
@@ -164,6 +165,10 @@ const CUSTOM_COMPONENTS: Record<string, Component> = {
   DeptSelect: defineAsyncComponent(() => import('@/components/common/DeptSelect.vue')),
   CronInput: defineAsyncComponent(() => import('@/components/Crontab/CronInput.vue')),
   SqlSearch: defineAsyncComponent(() => import('@/components/common/SqlSearch/index.vue')),
+  FormDivider: defineAsyncComponent(() => import('@/components/common/FormBuilder/FormDivider.vue')),
+  FormAlert: defineAsyncComponent(() => import('@/components/common/FormBuilder/FormAlert.vue')),
+  FormHtml: defineAsyncComponent(() => import('@/components/common/FormBuilder/FormHtml.vue')),
+  FormTable: defineAsyncComponent(() => import('@/components/common/FormBuilder/FormTable.vue')),
 }
 
 const COMPONENTS_WITH_CLEARABLE = new Set([
@@ -420,6 +425,7 @@ function inferFieldType(item: FormConfigItem, value: unknown, componentName: str
     case 'NTransfer':
     case 'UploadFile':
     case 'file':
+    case 'FormTable':
       return 'array'
     case 'UserSelect':
       return bind.multiple === false ? 'string' : 'array'
@@ -649,6 +655,25 @@ function renderFieldControl(item: FormConfigItem, index?: number) {
     )
   }
 
+  // 明细表：值为对象数组，行内再套 CommonForm
+  if (componentName === 'FormTable') {
+    if (!Array.isArray(model[fieldKey]))
+      model[fieldKey] = []
+    const rowFields = (item.children?.length
+      ? item.children
+      : (bind.fields as UnifiedFieldConfig[] | undefined)) || []
+    return (
+      <Component
+        {...commonProps}
+        pathKey={props.basePath + fieldKey}
+        fields={rowFields}
+        cols={Number(bind.cols ?? item.cols ?? props.cols) || 2}
+        labelWidth={props.labelWidth}
+        v-model:value={model[fieldKey]}
+      />
+    )
+  }
+
   return (
     <Component {...commonProps} v-model:value={model[fieldKey]}>
       {controlSlots}
@@ -689,15 +714,17 @@ function renderStandardFormItem(
   },
 ) {
   const labelSlotProp = options.labelSlot ? { label: options.labelSlot } : undefined
+  const showFeedback = options.showFeedback ?? item.showFeedback ?? true
+  // 关闭 feedback 时无底部占位，展示组件（Alert/Html/分割线等）会与下一项贴死
   return (
     <NFormItem
       key={options.itemKey}
-      class={['col-span-1', item.class]}
+      class={['col-span-1', item.class, !showFeedback ? 'common-form-item--no-feedback' : '']}
       style={fieldGridStyle(item)}
       label={options.label}
       path={options.fieldPath}
       rule={options.fieldPath ? setRule(item) : undefined}
-      showFeedback={options.showFeedback ?? item.showFeedback ?? true}
+      showFeedback={showFeedback}
       v-slots={labelSlotProp}
       {...options.bindItem}
     >
@@ -706,25 +733,33 @@ function renderStandardFormItem(
   )
 }
 
+function isDisplayOnlyField(item: FormConfigItem, index?: number) {
+  return DISPLAY_ONLY_COMPONENTS.has(resolveComponentName(item, index))
+}
+
 function renderFormField(item: FormConfigItem, nested = false) {
   const bind = resolveBind(item)
   const bindItem = resolveBindItem(item)
+  const displayOnly = isDisplayOnlyField(item)
 
   if (isHidden(item, bind))
     return null
 
   const isMultiKey = Array.isArray(item.key) && item.key.length > 1
   const customRender = hasCustomRender(item, bind)
-  const fieldPath = resolveFieldPath(item)
+  const fieldPath = displayOnly ? undefined : resolveFieldPath(item)
   const itemKey = resolveItemKey(item)
-  const labelSlot = renderLabel(item, bind)
+  const labelSlot = displayOnly ? undefined : renderLabel(item, bind)
+  const mergedBindItem = displayOnly
+    ? { showLabel: false, showFeedback: false, ...bindItem }
+    : bindItem
 
   if (isMultiKey && !nested && !customRender) {
     return renderStandardFormItem(item, {
       itemKey,
       label: item.label ?? item.title,
       showFeedback: false,
-      bindItem,
+      bindItem: mergedBindItem,
       labelSlot,
       children: (
         <NGrid cols={item.cols ?? props.cols} xGap={12}>
@@ -759,8 +794,9 @@ function renderFormField(item: FormConfigItem, nested = false) {
     return renderStandardFormItem(item, {
       itemKey,
       fieldPath,
-      label: item.label ?? item.title,
-      bindItem,
+      label: displayOnly ? undefined : (item.label ?? item.title),
+      showFeedback: displayOnly ? false : undefined,
+      bindItem: mergedBindItem,
       labelSlot,
       children: safeRenderCustomContent(item, bind),
     })
@@ -772,8 +808,9 @@ function renderFormField(item: FormConfigItem, nested = false) {
   return renderStandardFormItem(item, {
     itemKey: nested ? resolveItemKey(item, 0) : itemKey,
     fieldPath,
-    label: nested ? undefined : (item.label ?? item.title),
-    bindItem,
+    label: nested || displayOnly ? undefined : (item.label ?? item.title),
+    showFeedback: displayOnly ? false : undefined,
+    bindItem: mergedBindItem,
     labelSlot,
     children: renderFieldControl(item),
   })
@@ -820,12 +857,12 @@ function collectFieldPaths(items: FormConfigItem[] = resolvedConfig.value, prefi
   const paths: string[] = []
   for (const item of items) {
     const bind = resolveBind(item)
-    if (isHidden(item, bind))
+    if (isHidden(item, bind) || isDisplayOnlyField(item))
       continue
 
     if (Array.isArray(item.key) && item.key.length > 1 && !hasCustomRender(item, bind)) {
       item.key.forEach((subKey, subIndex) => {
-        if (!isHidden(item, bind, subIndex))
+        if (!isHidden(item, bind, subIndex) && !isDisplayOnlyField(item, subIndex))
           paths.push(`${prefix}${subKey}`)
       })
       continue
@@ -892,6 +929,11 @@ defineExpose({
   :deep(.user-select .label) {
     border: none !important;
   }
+}
+
+/* 关闭 feedback 时补齐与普通表单项相近的行间距（Alert / Html / 分割线等） */
+:deep(.n-form-item.common-form-item--no-feedback) {
+  margin-bottom: var(--n-feedback-height, 22px);
 }
 
 :deep(.n-input.n-input--disabled .n-input__input-el, .n-input.n-input--disabled .n-input__textarea-el) {

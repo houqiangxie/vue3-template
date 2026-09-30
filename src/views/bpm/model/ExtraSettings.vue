@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <n-form ref="formRef" :model="modelData" label-width="130px" class="mt-20px">
     <n-form-item class="mb-20px">
       <template #label>
@@ -248,9 +248,9 @@
 import dayjs from 'dayjs'
 import { BpmAutoApproveType, BpmModelFormType } from '@/utils/constants'
 import * as FormApi from '@/api/bpm/form'
-import { parseFormFields } from '@/components/FormCreate/src/utils'
-import { ProcessVariableEnum } from '@/components/SimpleProcessDesignerV2/src/consts'
-import HttpRequestSetting from '@/components/SimpleProcessDesignerV2/src/nodes-config/components/HttpRequestSetting.vue'
+import { parseFormFields } from '@/components/common/FormBuilder/bpmForm'
+import { ProcessVariableEnum } from '@/components/SimpleProcessDesigner/src/consts'
+import HttpRequestSetting from '@/components/SimpleProcessDesigner/src/nodes-config/components/HttpRequestSetting.vue'
 import { Icon } from '@/components/Icon'
 import PrintTemplate from './PrintTemplate/Index.vue'
 

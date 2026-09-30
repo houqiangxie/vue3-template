@@ -1,11 +1,14 @@
 <template>
-  <Dialog
-    v-model="dialogVisible"
-    title="编辑请求头"
-    width="600px"
-    :scroll="true"
-    max-height="480px"
-  >
+  <n-modal
+  v-model:show="dialogVisible"
+  preset="card"
+  title="编辑请求头"
+  :style="{ width: '600px' }"
+  :bordered="false"
+  display-directive="if"
+  class="app-dialog"
+>
+  <div :style="{ maxHeight: '480px', overflow: 'auto' }">
     <div class="header-editor">
       <div class="header-list">
         <div v-for="(item, index) in headerList" :key="index" class="header-item">
@@ -36,19 +39,19 @@
         添加请求头
       </n-button>
     </div>
-    <template #footer>
+    
+  </div>
+  <template #footer>
       <span class="dialog-footer">
         <n-button @click="handleClose">取消</n-button>
         <n-button type="primary" @click="handleSave">保存</n-button>
       </span>
     </template>
-  </Dialog>
+  </n-modal>
 </template>
 
 <script lang="ts" setup>
 import { TrashOutline, AddOutline } from '@vicons/ionicons5'
-import { Dialog } from '@/components/Dialog'
-
 defineOptions({ name: 'HttpHeaderEditor' })
 
 const props = defineProps({

@@ -160,6 +160,7 @@ export function fieldRuntimeSignature(field: BuilderField): string {
     JSON.stringify(field.form),
     JSON.stringify(field.search),
     JSON.stringify(field.table),
+    JSON.stringify(field.children),
   ].join('|')
 }
 

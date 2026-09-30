@@ -12,31 +12,31 @@ export interface ProcessExpressionVO {
 export const ProcessExpressionApi = {
   // 查询BPM 流程表达式分页
   getProcessExpressionPage: async (params: any) => {
-    return await request.get({ url: `/jgzf-flowable/bpm/process-expression/page`, params })
+    return await request.get({ url: `/bpm/process-expression/page`, params })
   },
 
   // 查询BPM 流程表达式详情
   getProcessExpression: async (id: number) => {
-    return await request.get({ url: `/jgzf-flowable/bpm/process-expression/get?id=` + id })
+    return await request.get({ url: `/bpm/process-expression/get?id=` + id })
   },
 
   // 新增BPM 流程表达式
   createProcessExpression: async (data: ProcessExpressionVO) => {
-    return await request.post({ url: `/jgzf-flowable/bpm/process-expression/create`, data })
+    return await request.post({ url: `/bpm/process-expression/create`, data })
   },
 
   // 修改BPM 流程表达式
   updateProcessExpression: async (data: ProcessExpressionVO) => {
-    return await request.put({ url: `/jgzf-flowable/bpm/process-expression/update`, data })
+    return await request.put({ url: `/bpm/process-expression/update`, data })
   },
 
   // 删除BPM 流程表达式
   deleteProcessExpression: async (id: number) => {
-    return await request.delete({ url: `/jgzf-flowable/bpm/process-expression/delete?id=` + id })
+    return await request.delete({ url: `/bpm/process-expression/delete?id=` + id })
   },
 
   // 导出BPM 流程表达式 Excel
   exportProcessExpression: async (params) => {
-    return await request.download({ url: `/jgzf-flowable/bpm/process-expression/export-excel`, params })
+    return await request.download({ url: `/bpm/process-expression/export-excel`, params })
   }
 }

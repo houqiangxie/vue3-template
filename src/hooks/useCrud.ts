@@ -33,7 +33,7 @@ export interface SubmitCreateOrUpdateOptions {
 }
 
 // 业务 API 多为 Partial<SysXxx>，用宽松签名避免每页包装
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type CrudApiFn = (payload: any) => Promise<unknown>
 
 type SubmitCreateOrUpdate = (

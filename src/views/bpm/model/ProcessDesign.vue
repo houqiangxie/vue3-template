@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- BPMN设计器 -->
   <div v-if="modelData.type === BpmModelType.BPMN" class="process-design">
     <BpmModelEditor
@@ -32,7 +32,7 @@ import {
   NodeType,
   NODE_DEFAULT_TEXT,
   type SimpleFlowNode
-} from '@/components/SimpleProcessDesignerV2/src/consts'
+} from '@/components/SimpleProcessDesigner/src/consts'
 import BpmModelEditor from './editor/index.vue'
 import SimpleModelDesign from '../simple/SimpleModelDesign.vue'
 

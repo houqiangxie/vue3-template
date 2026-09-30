@@ -1,22 +1,18 @@
-<template>
+﻿<template>
   <div class="process-viewer" :style="bpmnThemeStyle">
     <div style="height: 100%" ref="processCanvas" v-show="!isLoading"> </div>
-    <!-- 自定义箭头样式，用于已完成状态下流程连线箭头 -->
-    <defs ref="customDefs">
-      <marker id="sequenceflow-end-white-success" viewBox="0 0 20 20" refX="11" refY="10" markerWidth="10"
-        markerHeight="10" orient="auto">
-        <path class="success-arrow" d="M 1 5 L 11 10 L 1 15 Z"
-          style="stroke-width: 1px; stroke-linecap: round; stroke-dasharray: 10000, 1" />
-      </marker>
-      <marker id="conditional-flow-marker-white-success" viewBox="0 0 20 20" refX="-1" refY="10" markerWidth="10"
-        markerHeight="10" orient="auto">
-        <path class="success-conditional" d="M 0 10 L 8 6 L 16 10 L 8 14 Z"
-          style="stroke-width: 1px; stroke-linecap: round; stroke-dasharray: 10000, 1" />
-      </marker>
-    </defs>
 
     <!-- 审批记录 -->
-    <Dialog v-model="dialogVisible" :title="dialogTitle || '审批记录'" width="1000px" :scroll="true">
+    <n-modal
+  v-model:show="dialogVisible"
+  preset="card"
+  :title="dialogTitle || '审批记录'"
+  :style="{ width: '1000px' }"
+  :bordered="false"
+  display-directive="if"
+  class="app-dialog"
+>
+  <div :style="{ maxHeight: '400px', overflow: 'auto' }">
       <CommonTable
         :data="selectTasks"
         :fields="taskTableFields"
@@ -26,7 +22,9 @@
         show-index
         :table-props="{ size: 'small', bordered: true, singleLine: false }"
       />
-    </Dialog>
+    
+  </div>
+</n-modal>
 
     <!-- Zoom：放大、缩小 -->
     <div style="position: absolute; top: 0; left: 0; width: 100%">
@@ -63,8 +61,7 @@ import '../theme/index.scss'
 import { useBpmnTheme } from '../theme/useBpmnTheme'
 import BpmnViewer from 'bpmn-js/lib/Viewer'
 import MoveCanvasModule from 'diagram-js/lib/navigation/movecanvas'
-import { Dialog } from '@/components/Dialog'
-import DictTag from '@/components/bpm/DictTag.vue'
+import DictTag from '@/components/common/DictTag.vue'
 import { DICT_TYPE } from '@/utils/dict'
 import { formatDate, formatPast2 } from '@/utils/formatTime'
 import { BpmProcessInstanceStatus } from '@/utils/constants'
@@ -85,7 +82,6 @@ const props = defineProps({
 
 const processCanvas = ref()
 const bpmnViewer = ref<BpmnViewer | null>(null)
-const customDefs = ref()
 const defaultZoom = ref(1) // 默认缩放比例
 const isLoading = ref(false) // 是否加载中
 
@@ -223,15 +219,52 @@ const clearViewer = () => {
   bpmnViewer.value = null
 }
 
-/** 添加自定义箭头 */
-// TODO 芋艿：自定义箭头不生效，有点奇怪！！！！相关的 marker-end、marker-start 暂时也注释了！！！
+/** 向 viewer SVG 注入自定义箭头 marker（必须用 SVG 命名空间，HTML `<defs>` 无效） */
 const addCustomDefs = () => {
-  if (!bpmnViewer.value) {
+  if (!bpmnViewer.value)
     return
-  }
-  const canvas = bpmnViewer.value?.get('canvas')
+  const canvas = bpmnViewer.value.get('canvas') as { _svg?: SVGSVGElement }
   const svg = canvas?._svg
-  svg.appendChild(customDefs.value)
+  if (!svg)
+    return
+
+  svg.querySelector('#bpmn-custom-success-defs')?.remove()
+
+  const NS = 'http://www.w3.org/2000/svg'
+  const defs = document.createElementNS(NS, 'defs')
+  defs.id = 'bpmn-custom-success-defs'
+
+  const endMarker = document.createElementNS(NS, 'marker')
+  endMarker.setAttribute('id', 'sequenceflow-end-white-success')
+  endMarker.setAttribute('viewBox', '0 0 20 20')
+  endMarker.setAttribute('refX', '11')
+  endMarker.setAttribute('refY', '10')
+  endMarker.setAttribute('markerWidth', '10')
+  endMarker.setAttribute('markerHeight', '10')
+  endMarker.setAttribute('orient', 'auto')
+  const endPath = document.createElementNS(NS, 'path')
+  endPath.setAttribute('d', 'M 1 5 L 11 10 L 1 15 Z')
+  endPath.setAttribute('class', 'success-arrow')
+  endPath.setAttribute('style', 'stroke-width: 1px; stroke-linecap: round; stroke-dasharray: 10000, 1')
+  endMarker.appendChild(endPath)
+
+  const startMarker = document.createElementNS(NS, 'marker')
+  startMarker.setAttribute('id', 'conditional-flow-marker-white-success')
+  startMarker.setAttribute('viewBox', '0 0 20 20')
+  startMarker.setAttribute('refX', '-1')
+  startMarker.setAttribute('refY', '10')
+  startMarker.setAttribute('markerWidth', '10')
+  startMarker.setAttribute('markerHeight', '10')
+  startMarker.setAttribute('orient', 'auto')
+  const startPath = document.createElementNS(NS, 'path')
+  startPath.setAttribute('d', 'M 0 10 L 8 6 L 16 10 L 8 14 Z')
+  startPath.setAttribute('class', 'success-conditional')
+  startPath.setAttribute('style', 'stroke-width: 1px; stroke-linecap: round; stroke-dasharray: 10000, 1')
+  startMarker.appendChild(startPath)
+
+  defs.appendChild(endMarker)
+  defs.appendChild(startMarker)
+  svg.appendChild(defs)
 }
 
 /** 节点选中 */

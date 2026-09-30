@@ -1,4 +1,4 @@
-<!-- UserTask 自定义配置：
+﻿<!-- UserTask 自定义配置：
      1. 审批人与提交人为同一人时
      2. 审批人拒绝时
      3. 审批人为空时
@@ -192,9 +192,9 @@ import {
   APPROVE_TYPE,
   ApproveType,
   ButtonSetting
-} from '@/components/SimpleProcessDesignerV2/src/consts'
+} from '@/components/SimpleProcessDesigner/src/consts'
 import * as UserApi from '@/api/system/user'
-import { useFormFieldsPermission } from '@/components/SimpleProcessDesignerV2/src/node'
+import { useFormFieldsPermission } from '@/components/SimpleProcessDesigner/src/node'
 import { BpmModelFormType } from '@/utils/constants'
 
 defineOptions({ name: 'ElementCustomConfig4UserTask' })
@@ -232,7 +232,7 @@ const btnDisplayNameBlurEvent = (index: number) => {
 }
 
 // 字段权限
-const fieldsPermissionEl = ref([])
+const fieldsPermissionEl = ref<Array<{ field?: string, permission?: string, [key: string]: unknown }>>([])
 const { formType, fieldsPermissionConfig, getNodeConfigFormFields } = useFormFieldsPermission(
   FieldPermissionType.READ
 )
@@ -491,7 +491,6 @@ function useButtonsSetting() {
 }
 
 /** 批量更新权限 */
-// TODO @lesan：这个页面，有一些 idea 红色报错，咱要不要 fix 下！
 const updatePermission = (type: string) => {
   fieldsPermissionEl.value.forEach((field) => {
     field.permission =

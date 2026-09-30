@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="panel-tab__content">
     <n-radio-group
       v-if="type === 'UserTask'"
@@ -103,7 +103,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ApproveMethodType, APPROVE_METHODS } from '@/components/SimpleProcessDesignerV2/src/consts'
+import { ApproveMethodType, APPROVE_METHODS } from '@/components/SimpleProcessDesigner/src/consts'
 
 defineOptions({ name: 'ElementMultiInstance' })
 

@@ -13,33 +13,33 @@ export interface CategoryVO {
 export const CategoryApi = {
   // 查询流程分类分页
   getCategoryPage: async (params: any) => {
-    return await request.get({ url: `/jgzf-flowable/bpm/category/page`, params })
+    return await request.get({ url: `/bpm/category/page`, params })
   },
 
   // 查询流程分类列表
   getCategorySimpleList: async () => {
-    return await request.get({ url: `/jgzf-flowable/bpm/category/simple-list` })
+    return await request.get({ url: `/bpm/category/simple-list` })
   },
 
   // 查询流程分类详情
   getCategory: async (id: number) => {
-    return await request.get({ url: `/jgzf-flowable/bpm/category/get?id=` + id })
+    return await request.get({ url: `/bpm/category/get?id=` + id })
   },
 
   // 新增流程分类
   createCategory: async (data: CategoryVO) => {
-    return await request.post({ url: `/jgzf-flowable/bpm/category/create`, data })
+    return await request.post({ url: `/bpm/category/create`, data })
   },
 
   // 修改流程分类
   updateCategory: async (data: CategoryVO) => {
-    return await request.put({ url: `/jgzf-flowable/bpm/category/update`, data })
+    return await request.put({ url: `/bpm/category/update`, data })
   },
 
   // 批量修改流程分类的排序
   updateCategorySortBatch: async (ids: number[]) => {
     return await request.put({
-      url: `/jgzf-flowable/bpm/category/update-sort-batch`,
+      url: `/bpm/category/update-sort-batch`,
       params: {
         ids: ids.join(',')
       }
@@ -48,6 +48,6 @@ export const CategoryApi = {
 
   // 删除流程分类
   deleteCategory: async (id: number) => {
-    return await request.delete({ url: `/jgzf-flowable/bpm/category/delete?id=` + id })
+    return await request.delete({ url: `/bpm/category/delete?id=` + id })
   }
 }

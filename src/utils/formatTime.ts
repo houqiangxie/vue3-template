@@ -6,14 +6,9 @@ export function formatDate(date: Date | string | number | undefined, format = 'Y
   return dayjs(date).format(format)
 }
 
-/** 表格列日期格式化（兼容芋道签名） */
-export function dateFormatter(_row: unknown, _column: unknown, cellValue: unknown) {
-  return formatDate(cellValue as string | number | Date)
-}
-
 /**
  * 将毫秒转换成时长字符串。例如：`2 小时 30 分钟`
- * （兼容芋道签名；用于任务耗时 durationInMillis）
+ * （用于任务耗时 durationInMillis）
  */
 export function formatPast2(ms: number | string | undefined | null): string {
   if (ms == null || ms === '')

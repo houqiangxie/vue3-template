@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import type { DictOption } from '@/hooks/useDict'
+import { getDictOptions } from '@/utils/dict'
 import { NTag } from 'naive-ui'
 
+defineOptions({ name: 'DictTag' })
+
 type TagType = 'default' | 'error' | 'primary' | 'info' | 'success' | 'warning'
+type OptionItem = DictOption | { label: string, value: string | number | boolean, listClass?: string }
 
 const props = withDefaults(defineProps<{
-  options?: DictOption[] | Array<{ label: string, value: string | number | boolean, listClass?: string }>
+  /** 显式选项；与 type 同时存在时优先用 options */
+  options?: OptionItem[]
+  /** 字典类型（utils/dict），未传 options 时自动解析 */
+  type?: string
   value?: string | number | boolean | Array<string | number | boolean> | null
   size?: 'small' | 'medium' | 'large'
 }>(), {
-  options: () => [],
+  options: undefined,
   size: 'small',
 })
 
@@ -29,6 +36,18 @@ function resolveTagType(listClass?: string): TagType {
   return LIST_CLASS_MAP[listClass] ?? 'default'
 }
 
+const resolvedOptions = computed<OptionItem[]>(() => {
+  if (props.options?.length)
+    return props.options
+  if (!props.type)
+    return []
+  return getDictOptions(props.type).map(d => ({
+    label: d.label,
+    value: d.value,
+    listClass: d.colorType || d.cssClass,
+  }))
+})
+
 const matched = computed(() => {
   const values = Array.isArray(props.value)
     ? props.value
@@ -37,7 +56,7 @@ const matched = computed(() => {
       : [props.value]
 
   return values.map((val) => {
-    const hit = props.options.find(o => o.value === val || String(o.value) === String(val))
+    const hit = resolvedOptions.value.find(o => o.value === val || String(o.value) === String(val))
     return {
       key: String(val),
       label: hit?.label ?? String(val),

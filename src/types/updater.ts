@@ -3,4 +3,4 @@ export type {
   UpdatePhase,
   UpdateProgress,
   UpdateStatusPayload,
-} from '../../../electron/updater/types';
+} from '../../electron/updater/types';

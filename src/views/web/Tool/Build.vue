@@ -35,6 +35,18 @@
           />
         </div>
 
+        <div class="form-builder__toolbar-meta">
+          <span class="form-builder__toolbar-label">标签宽</span>
+          <n-input-number
+            v-model:value="labelWidth"
+            :min="60"
+            :max="240"
+            :step="10"
+            size="small"
+            class="form-builder__cols-input"
+          />
+        </div>
+
         <template v-if="!bpmMode">
           <div class="form-builder__toolbar-meta">
             <span class="form-builder__toolbar-label">自动保存</span>
@@ -374,11 +386,13 @@
     >
       <n-tabs v-model:value="previewTab" type="line" animated>
         <n-tab-pane name="form" tab="表单">
-          <n-form ref="previewFormRef" :model="previewModel" label-placement="left" label-width="90">
+          <n-form ref="previewFormRef" :model="previewModel" label-placement="left" :label-width="labelWidth">
             <CommonForm
               v-model:form-model="previewModel"
               :fields="previewFormFields"
               :cols="formCols"
+              :label-width="labelWidth"
+              row-gap="12px"
             />
           </n-form>
           <n-divider />
@@ -458,7 +472,7 @@ import {
 import { getBodyCssZoom } from '@/utils/bodyZoom'
 import { useRoute, useRouter } from 'vue-router'
 import * as FormApi from '@/api/bpm/form'
-import { packBpmForm, unpackBpmForm } from '@/components/FormCreate/src/bpmFormBuilder'
+import { packBpmForm, unpackBpmForm } from '@/components/common/FormBuilder/bpmForm'
 import { resolveBpmRouteName } from '@/views/web/Bpm/routeNames'
 
 const GRID_GAP = 10
@@ -483,6 +497,7 @@ const bpmSaving = ref(false)
 const bpmFormMeta = ref<Partial<FormApi.FormVO>>({})
 
 const formCols = ref(2)
+const labelWidth = ref(100)
 const fields = ref<BuilderField[]>([])
 const selectedUid = ref('')
 const bpmAutoSave = ref(false)
@@ -623,6 +638,11 @@ const previewTableData = computed(() => {
         row[key] = i * 10
       else if (field.component === 'NDynamicInput')
         row[key] = [{ key: 'k1', value: 'v1' }]
+      else if (field.component === 'FormTable') {
+        const child = (field.children || [])[0]
+        const childKey = child ? String(child.key || 'name') : 'name'
+        row[key] = [{ [childKey]: `${child?.label || childKey}${i}` }]
+      }
       else
         row[key] = `${field.label || key}${i}`
     }
@@ -1102,6 +1122,7 @@ async function loadBpmForm(id: number) {
     invalidateRuntimeCache()
     fields.value = unpacked.fields
     formCols.value = unpacked.formCols
+    labelWidth.value = typeof unpacked.labelWidth === 'number' ? unpacked.labelWidth : 100
     selectedUid.value = unpacked.fields[0]?.uid || ''
     document.title = `设计表单 · ${data.name || id}`
   }
@@ -1119,7 +1140,10 @@ async function handleBpmSave() {
   }
   bpmSaving.value = true
   try {
-    const packed = packBpmForm(fields.value, formCols.value)
+    const packed = packBpmForm(fields.value, {
+      formCols: formCols.value,
+      labelWidth: labelWidth.value,
+    })
     await FormApi.updateForm({
       id: bpmFormId.value,
       name: bpmFormMeta.value.name || '',

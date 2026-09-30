@@ -16,6 +16,9 @@
 | `serialize.ts` | 导入 / 导出 schema |
 | `exportCrud.ts` | 导出 CRUD 页面代码 |
 | `useFormBuilderPersistence.ts` | 草稿自动保存、撤销重做 |
+| `bpmForm.ts` | BPM 流程表单 pack/unpack、字段元数据、打印格式化、字典解析 |
+| `FormDivider.vue` / `FormAlert.vue` / `FormHtml.vue` | 布局类纯展示控件（分割线 / 提示条 / 静态 HTML） |
+| `FormTable.vue` | 明细表：对象数组，每行嵌套 CommonForm |
 
 相关运行时（不在本目录，但接入组件必改）：
 

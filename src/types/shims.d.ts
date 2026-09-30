@@ -47,6 +47,14 @@ declare module '*.svg' {
 
 interface ImportMetaEnv {
   readonly VITE_ENABLE_I18N?: string
+  readonly VITE_baseUrl?: string
+  readonly VITE_BPM_API_PREFIX?: string
+  readonly VITE_WS_URL?: string
+  readonly VITE_ALLOW_QUERY_TOKEN?: string
+  readonly VITE_LOGIN_AES_KEY?: string
+  readonly VITE_LOGIN_AES_IV?: string
+  readonly VITE_USE_MOCK?: string
+  readonly VITE_BUILD_URL?: string
 }
 
 interface ImportMeta {

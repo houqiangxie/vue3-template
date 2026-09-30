@@ -1,9 +1,10 @@
-/** BPM 管理页公共常量（芋道 CommonStatus：0 开启 / 1 关闭） */
+import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 
-export const bpmStatusOptions = [
-  { label: '开启', value: 0 },
-  { label: '关闭', value: 1 },
-]
+/** 开启/关闭，同源 utils/dict COMMON_STATUS */
+export const bpmStatusOptions = getIntDictOptions(DICT_TYPE.COMMON_STATUS).map(d => ({
+  label: d.label,
+  value: Number(d.value),
+}))
 
 export const processListenerTypeOptions = [
   { label: '执行监听器', value: 'execution' },
@@ -25,11 +26,11 @@ export const processListenerEventOptions = [
   { label: 'delete', value: 'delete' },
 ]
 
-export const leaveTypeOptions = [
-  { label: '病假', value: 1 },
-  { label: '事假', value: 2 },
-  { label: '婚假', value: 3 },
-]
+/** 请假类型，同源 utils/dict BPM_OA_LEAVE_TYPE */
+export const leaveTypeOptions = getIntDictOptions(DICT_TYPE.BPM_OA_LEAVE_TYPE).map(d => ({
+  label: d.label,
+  value: Number(d.value),
+}))
 
 function normalizeBpmDateRange(range: unknown): string[] | undefined {
   if (!Array.isArray(range) || range.length < 2 || range[0] == null || range[1] == null)

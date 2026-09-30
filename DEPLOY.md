@@ -10,6 +10,7 @@
 | --- | --- | --- |
 | Web 管理端 | `/` | `dist/index.html` |
 | App 端 | `/app/` | `dist/app/index.html` |
+| BPM 设计站 | `/bpm/` | `dist/bpm/index.html` |
 
 ```bash
 pnpm install
@@ -24,9 +25,11 @@ pnpm build
 | --- | --- | --- |
 | `VITE_baseUrl` | 前端请求 API 前缀 | `/api` |
 | `VITE_BUILD_URL` | 静态资源 publicPath | `/` 或子路径如 `/admin/` |
+| `VITE_BPM_API_PREFIX` | Flowable/BPM 网关前缀 | 默认 `/jgzf-flowable`，按后端改 |
 | `VITE_WS_URL` | WebSocket 地址；支持 `{token}` 占位 | `wss://your-domain/ws?token={token}` |
 | `VITE_WS_URL=false` | 关闭 WS，仅使用 HTTP 轮询 | Mock / 无 WS 后端时 |
 | `VITE_LOGIN_AES_KEY/IV` | 登录 AES（与后端一致） | 放 `.env.build.local`，勿提交 |
+| `VITE_ALLOW_QUERY_TOKEN` | 是否允许 URL `?token=` | 生产保持关闭 |
 
 子路径部署示例：
 
@@ -34,7 +37,7 @@ pnpm build
 VITE_BUILD_URL=/admin/ pnpm build
 ```
 
-Nginx 需将 `/admin/` 指向 `dist/`，并保留 `/admin/app/` 给 App 端。
+Nginx 需将 `/admin/` 指向 `dist/`，并保留 `/admin/app/`、`/admin/bpm/` 给对应入口。
 
 ## Docker 一键部署
 
@@ -46,15 +49,19 @@ docker compose up -d --build
 
 默认映射 **http://localhost:8080**。
 
-### 自定义 API 前缀（构建参数）
+### 自定义构建参数
 
 ```bash
 docker build \
   --build-arg VITE_baseUrl=/api \
   --build-arg VITE_BUILD_URL=/ \
+  --build-arg VITE_BPM_API_PREFIX=/jgzf-flowable \
+  --build-arg VITE_WS_URL=wss://your-domain/ws?token={token} \
   -t vue3-template:latest .
 docker run -d -p 8080:80 vue3-template:latest
 ```
+
+AES 密钥建议用 `--build-arg VITE_LOGIN_AES_KEY=...` / `VITE_LOGIN_AES_IV=...` 传入，或构建前写入 `.env.build.local`（勿提交）。
 
 ### 与后端联调
 
@@ -76,6 +83,9 @@ location / {
 }
 location /app/ {
     try_files $uri $uri/ /app/index.html;
+}
+location /bpm/ {
+    try_files $uri $uri/ /bpm/index.html;
 }
 location /api/ {
     proxy_pass http://127.0.0.1:8080;
@@ -123,10 +133,13 @@ location /api/ {
 ## 常见问题
 
 **Q: 刷新子路由 404？**  
-A: 确认 Nginx `try_files` 回退到对应 `index.html`。
+A: 确认 Nginx `try_files` 回退到对应 `index.html`（含 `/app/`、`/bpm/`）。
 
-**Q: App 端资源 404？**  
-A: 检查 `VITE_BUILD_URL` 与 Nginx 中 `/app/` 配置是否一致。
+**Q: App / BPM 端资源 404？**  
+A: 检查 `VITE_BUILD_URL` 与 Nginx 中 `/app/`、`/bpm/` 配置是否一致。
+
+**Q: BPM 接口 404？**  
+A: 确认后端网关前缀与 `VITE_BPM_API_PREFIX` 一致（默认 `/jgzf-flowable`）。
 
 **Q: 登录后接口 401？**  
 A: 确认网关转发 `token` / `Authorization` 头，并实现 `/auth/refresh`。

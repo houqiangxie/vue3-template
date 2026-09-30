@@ -35,6 +35,11 @@ $grid-dark: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiI
   .success.djs-connection {
     .djs-visual path {
       stroke: $success-color !important;
+      marker-end: url('#sequenceflow-end-white-success') !important;
+    }
+
+    &.condition-expression .djs-visual path {
+      marker-start: url('#conditional-flow-marker-white-success') !important;
     }
   }
 

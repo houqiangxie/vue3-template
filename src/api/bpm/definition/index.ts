@@ -2,27 +2,27 @@ import request from '@/config/axios'
 
 export const getProcessDefinition = async (id?: string, key?: string) => {
   return await request.get({
-    url: '/jgzf-flowable/bpm/process-definition/get',
+    url: '/bpm/process-definition/get',
     params: { id, key }
   })
 }
 
 export const getProcessDefinitionPage = async (params) => {
   return await request.get({
-    url: '/jgzf-flowable/bpm/process-definition/page',
+    url: '/bpm/process-definition/page',
     params
   })
 }
 
 export const getProcessDefinitionList = async (params) => {
   return await request.get({
-    url: '/jgzf-flowable/bpm/process-definition/list',
+    url: '/bpm/process-definition/list',
     params
   })
 }
 
 export const getSimpleProcessDefinitionList = async () => {
   return await request.get({
-    url: '/jgzf-flowable/bpm/process-definition/simple-list'
+    url: '/bpm/process-definition/simple-list'
   })
 }

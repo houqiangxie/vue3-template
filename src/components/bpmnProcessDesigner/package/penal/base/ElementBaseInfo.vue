@@ -28,6 +28,16 @@
           <n-input v-model:value="elementBaseInfo.name" clearable @update:value="() => updateBaseInfo('name')" />
         </n-form-item>
       </div>
+      <n-form-item label="文档">
+        <n-input
+          v-model:value="documentation"
+          type="textarea"
+          :rows="3"
+          placeholder="元素说明（写入 BPMN Documentation）"
+          clearable
+          @update:value="handleDocumentationUpdate"
+        />
+      </n-form-item>
     </n-form>
   </div>
 </template>
@@ -47,8 +57,7 @@ const props = defineProps({
 const needProps = ref<any>({})
 const bpmnElement = ref()
 const elementBaseInfo = ref<any>({})
-// 流程表单的下拉框的数据
-// const forms = ref([])
+const documentation = ref('')
 // 流程模型的校验
 const rules = reactive({
   id: [{ required: true, message: '流程标识不能为空', trigger: 'blur' }],
@@ -56,29 +65,28 @@ const rules = reactive({
 })
 
 const bpmnInstances = () => (window as any)?.bpmnInstances
-const resetBaseInfo = () => {
-  console.log(window, 'window')
-  console.log(bpmnElement.value, 'bpmnElement')
 
+function readDocumentation(businessObject: any): string {
+  const list = businessObject?.documentation
+  if (!Array.isArray(list) || !list.length)
+    return ''
+  return String(list[0]?.text ?? list[0]?.body ?? '')
+}
+
+const resetBaseInfo = () => {
   bpmnElement.value = bpmnInstances()?.bpmnElement
-  // console.log(bpmnElement.value, 'resetBaseInfo11111111111')
   elementBaseInfo.value = bpmnElement.value.businessObject
   needProps.value['type'] = bpmnElement.value.businessObject.$type
-  // elementBaseInfo.value['typess'] = bpmnElement.value.businessObject.$type
-
-  // elementBaseInfo.value = JSON.parse(JSON.stringify(bpmnElement.value.businessObject))
-  // console.log(elementBaseInfo.value, 'elementBaseInfo22222222222')
+  documentation.value = readDocumentation(bpmnElement.value.businessObject)
 }
-const handleKeyUpdate = (value) => {
+const handleKeyUpdate = (value: string) => {
   // 校验 value 的值，只有 XML NCName 通过的情况下，才进行赋值。否则，会导致流程图报错，无法绘制的问题
   if (!value) {
     return
   }
   if (!value.match(/[a-zA-Z_][\-_.0-9a-zA-Z$]*/)) {
-    console.log('key 不满足 XML NCName 规则，所以不进行赋值')
     return
   }
-  console.log('key 满足 XML NCName 规则，所以进行赋值')
 
   // 在 BPMN 的 XML 中，流程标识 key，其实对应的是 id 节点
   elementBaseInfo.value['id'] = value
@@ -87,8 +95,7 @@ const handleKeyUpdate = (value) => {
     updateBaseInfo('id')
   }, 100)
 }
-const handleNameUpdate = (value) => {
-  console.log(elementBaseInfo, 'elementBaseInfo')
+const handleNameUpdate = (value: string) => {
   if (!value) {
     return
   }
@@ -98,36 +105,33 @@ const handleNameUpdate = (value) => {
     updateBaseInfo('name')
   }, 100)
 }
-// const handleDescriptionUpdate=(value)=> {
-// TODO 芋艿：documentation 暂时无法修改，后续在看看
-// this.elementBaseInfo['documentation'] = value;
-// this.updateBaseInfo('documentation');
-// }
-const updateBaseInfo = (key) => {
-  console.log(key, 'key')
-  // 触发 elementBaseInfo 对应的字段
+
+const handleDocumentationUpdate = (value: string) => {
+  documentation.value = value ?? ''
+  const moddle = bpmnInstances()?.moddle
+  const modeling = bpmnInstances()?.modeling
+  const element = toRaw(bpmnElement.value)
+  if (!moddle || !modeling || !element)
+    return
+
+  const text = documentation.value.trim()
+  const docs = text
+    ? [moddle.create('bpmn:Documentation', { text })]
+    : undefined
+  modeling.updateProperties(element, { documentation: docs })
+}
+
+const updateBaseInfo = (key: string) => {
   const attrObj = Object.create(null)
-  // console.log(attrObj, 'attrObj')
   attrObj[key] = elementBaseInfo.value[key]
-  // console.log(attrObj, 'attrObj111')
-  // const attrObj = {
-  //   id: elementBaseInfo.value[key]
-  //   // di: { id: `${elementBaseInfo.value[key]}_di` }
-  // }
-  // console.log(elementBaseInfo, 'elementBaseInfo11111111111')
   needProps.value = { ...elementBaseInfo.value, ...needProps.value }
 
   if (key === 'id') {
-    // console.log('jinru')
-    console.log(window, 'window')
-    console.log(bpmnElement.value, 'bpmnElement')
-    console.log(toRaw(bpmnElement.value), 'bpmnElement')
     bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
       id: elementBaseInfo.value[key],
       di: { id: `${elementBaseInfo.value[key]}_di` }
     })
   } else {
-    console.log(attrObj, 'attrObj')
     bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), attrObj)
   }
 }
@@ -135,11 +139,8 @@ const updateBaseInfo = (key) => {
 watch(
   () => props.businessObject,
   (val) => {
-    // console.log(val, 'val11111111111111111111')
     if (val) {
-      // nextTick(() => {
       resetBaseInfo()
-      // })
     }
   }
 )
@@ -158,25 +159,6 @@ watch(
   }
 )
 
-// watch(
-//   () => ({ ...props }),
-//   (oldVal, newVal) => {
-//     console.log(oldVal, 'oldVal')
-//     console.log(newVal, 'newVal')
-//     if (newVal) {
-//       needProps.value = newVal
-//     }
-//   },
-//   {
-//     immediate: true
-//   }
-// )
-// 'model.key': {
-//   immediate: false,
-//   handler: function (val) {
-//     this.handleKeyUpdate(val)
-//   }
-// }
 onBeforeUnmount(() => {
   bpmnElement.value = null
 })

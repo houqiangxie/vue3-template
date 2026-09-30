@@ -482,6 +482,48 @@ function setDictType(value: string) {
     delete props.field._dictType
 }
 
+/** FormTable 行字段（不含 uid，导出为 children） */
+type FormTableChild = {
+  key: string
+  label: string
+  component: string
+  form?: { required?: boolean }
+  search?: false
+  table?: false
+}
+
+const formTableChildren = computed({
+  get: () => (Array.isArray(props.field.children) ? props.field.children : []) as FormTableChild[],
+  set: (next) => {
+    props.field.children = next.length
+      ? next.map(child => ({
+          key: child.key,
+          label: child.label,
+          component: child.component || 'NInput',
+          form: { required: Boolean(child.form?.required) },
+          search: false,
+          table: false,
+        }))
+      : undefined
+  },
+})
+
+function createFormTableChild(): FormTableChild {
+  const idx = (formTableChildren.value?.length || 0) + 1
+  return {
+    key: `col${idx}`,
+    label: `列${idx}`,
+    component: 'NInput',
+    form: { required: false },
+    search: false,
+    table: false,
+  }
+}
+
+const formTableChildComponentOptions = computed(() =>
+  componentOptions.filter(o => !['FormTable', 'FormDivider', 'FormAlert', 'FormHtml', 'SqlSearch'].includes(o.value)),
+)
+
 const committedFieldKey = ref(resolveFieldKey(props.field))
 
 watch(() => props.field.uid, () => {
@@ -1062,6 +1104,36 @@ watch(() => props.field.uid, () => {
             </n-form>
           </section>
 
+          <section v-if="field.component === 'FormTable'" class="field-props-section">
+            <div class="field-props-section__title">行字段</div>
+            <n-form label-placement="top" size="small" :show-feedback="false">
+              <n-dynamic-input
+                v-model:value="formTableChildren"
+                :on-create="createFormTableChild"
+              >
+                <template #default="{ value }">
+                  <div class="form-builder__option-row form-builder__option-row--stack">
+                    <n-input v-model:value="value.key" placeholder="字段名" />
+                    <n-input v-model:value="value.label" placeholder="标签" />
+                    <n-select
+                      v-model:value="value.component"
+                      :options="formTableChildComponentOptions"
+                      filterable
+                    />
+                    <n-switch
+                      :value="!!value.form?.required"
+                      size="small"
+                      @update:value="(v) => { value.form = { ...(value.form || {}), required: v || undefined } }"
+                    >
+                      <template #checked>必填</template>
+                      <template #unchecked>选填</template>
+                    </n-switch>
+                  </div>
+                </template>
+              </n-dynamic-input>
+            </n-form>
+          </section>
+
           <SceneExtraJsonEditor
             :field="field"
             :form-enabled="formEnabled"
@@ -1394,5 +1466,14 @@ watch(() => props.field.uid, () => {
   gap: 8px;
   width: 100%;
   align-items: center;
+}
+
+.form-builder__option-row--stack {
+  grid-template-columns: 1fr 1fr;
+}
+
+.form-builder__option-row--stack > :nth-child(3),
+.form-builder__option-row--stack > :nth-child(4) {
+  grid-column: 1 / -1;
 }
 </style>

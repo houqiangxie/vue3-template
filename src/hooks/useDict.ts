@@ -78,10 +78,10 @@ export function selectDictLabel(
 }
 
 /**
- * 异步按字典类型解析标签。
- * @example const label = await getDictLabel('sys_user_sex', '0')
+ * 异步按字典类型解析标签（与 `@/utils/dict` 的同步 getDictLabel 区分）。
+ * @example const label = await fetchDictLabel('sys_user_sex', '0')
  */
-export async function getDictLabel(
+export async function fetchDictLabel(
   dictType: string,
   value: string | number | Array<string | number> | null | undefined,
   separator = ', ',

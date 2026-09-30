@@ -13,13 +13,6 @@ import {
   unmarkIframeBridgeInstalled,
 } from '@/utils/iframeBridge'
 
-export {
-  postIframeBreadcrumb,
-  postIframeReady,
-  postIframeRouteChange,
-  postIframeResize,
-} from '@/utils/iframeBridge'
-
 export interface UseIframeChildOptions {
   /** 是否上报路由变化，默认 true */
   syncRoute?: boolean

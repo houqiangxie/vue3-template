@@ -92,6 +92,35 @@ export function compileFieldForRuntime(field: BuilderField): UnifiedFieldConfig 
     delete table.tagTypeValue
     compiled.table = table
   }
+  if (_dt)
+    compiled.dictType = _dt
+
+  // FormTable 行字段也走编译（可见性 / onChange 等）
+  if (Array.isArray(field.children) && field.children.length) {
+    compiled.children = field.children.map((child) => {
+      const row = child as BuilderField
+      return compileFieldForRuntime({
+        uid: row.uid || 'row',
+        key: row.key,
+        label: row.label,
+        title: row.title,
+        component: row.component,
+        options: row.options,
+        type: row.type,
+        bind: row.bind,
+        form: row.form,
+        search: false,
+        table: false,
+        dictType: (row as UnifiedFieldConfig).dictType,
+        _dictType: row._dictType,
+        _visibleExpr: row._visibleExpr,
+        _hiddenExpr: row._hiddenExpr,
+        _renderExpr: row._renderExpr,
+        _onChangeExpr: row._onChangeExpr,
+      } as BuilderField)
+    })
+  }
+
   return compiled
 }
 

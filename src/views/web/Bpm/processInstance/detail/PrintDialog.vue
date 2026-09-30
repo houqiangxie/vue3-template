@@ -8,7 +8,7 @@
   >
     <n-spin :show="loading">
       <div id="bpm-print-area" class="bpm-print">
-        <div v-if="printData?.printTemplateEnable" v-html="templateHtml" />
+        <div v-if="printData?.printTemplateEnable" v-html="safeTemplateHtml" />
         <div v-else-if="printData?.processInstance">
           <h2 class="bpm-print__title">{{ printData.processInstance.name }}</h2>
           <div class="bpm-print__meta-row bpm-print__meta-row--end">
@@ -40,7 +40,7 @@
               <tr v-for="item in formFields" :key="item.id">
                 <td>{{ item.name }}</td>
                 <td colspan="3">
-                  <div v-html="item.html" />
+                  <div v-html="sanitizeHtml(String(item.html ?? ''))" />
                 </td>
               </tr>
               <tr>
@@ -75,6 +75,8 @@ import { getInfo } from '@/api/system/auth'
 import { getProcessInstancePrintData } from '@/api/bpm/processInstance'
 import { formatDate } from '@/utils/formatTime'
 import { DICT_TYPE, getDictLabel } from '@/utils/dict'
+import { sanitizeHtml } from '@/utils/sanitizeHtml'
+import { formatBpmPrintValue } from '@/components/common/FormBuilder/bpmForm'
 
 defineOptions({ name: 'BpmPrintDialog' })
 
@@ -86,6 +88,7 @@ const printTime = ref('')
 const formFields = ref<Array<{ id: string, name: string, html: any }>>([])
 const printDataMap = ref<Record<string, any>>({})
 const templateHtml = ref('')
+const safeTemplateHtml = computed(() => sanitizeHtml(templateHtml.value))
 
 async function resolveUserName() {
   try {
@@ -125,22 +128,11 @@ function parseFormFields() {
   const res: Array<{ id: string, name: string, html: any }> = []
   for (const item of fields) {
     const id = item.field || item.key
+    if (!id)
+      continue
     const name = item.title || item.label || id
     const variable = variables[id]
-    let html: any = variable ?? ''
-    const type = item.type
-    if (type === 'UploadImg' && variable) {
-      html = `<img src="${variable}" style="max-width:600px;" />`
-    }
-    else if (['radio', 'checkbox', 'select'].includes(type)) {
-      const options = item.options || []
-      if (Array.isArray(variable)) {
-        html = options.filter((o: any) => variable.includes(o.value)).map((o: any) => o.label).join(',')
-      }
-      else {
-        html = options.find((o: any) => o.value === variable)?.label ?? variable ?? ''
-      }
-    }
+    const html = formatBpmPrintValue(item, variable)
     printDataMap.value[id] = html
     res.push({ id, name, html })
   }
@@ -172,15 +164,15 @@ function buildProcessRecordTable(): string {
   const headTd = document.createElement('td')
   headTd.setAttribute('colspan', '2')
   headTd.setAttribute('style', 'text-align:center;')
-  headTd.innerHTML = '流程节点'
+  headTd.textContent = '流程节点'
   headTr.appendChild(headTd)
   table.appendChild(headTr)
   for (const item of printData.value?.tasks || []) {
     const tr = document.createElement('tr')
     const td1 = document.createElement('td')
-    td1.innerHTML = item.name || ''
+    td1.textContent = item.name || ''
     const td2 = document.createElement('td')
-    td2.innerHTML = item.description || ''
+    td2.textContent = item.description || ''
     tr.appendChild(td1)
     tr.appendChild(td2)
     table.appendChild(tr)
@@ -223,7 +215,9 @@ async function open(id: string) {
     printData.value = await getProcessInstancePrintData(id)
     initPrintDataMap()
     parseFormFields()
-    templateHtml.value = printData.value?.printTemplateEnable ? getPrintTemplateHTML() : ''
+    templateHtml.value = printData.value?.printTemplateEnable
+      ? sanitizeHtml(getPrintTemplateHTML())
+      : ''
   }
   finally {
     loading.value = false

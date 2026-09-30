@@ -1,6 +1,6 @@
-import request from '@/config/axios'
+﻿import request from '@/config/axios'
 import { ProcessDefinitionVO } from '@/api/bpm/model'
-import { NodeType, CandidateStrategy } from '@/components/SimpleProcessDesignerV2/src/consts'
+import { NodeType, CandidateStrategy } from '@/components/SimpleProcessDesigner/src/consts'
 export type Task = {
   id: string
   name: string
@@ -56,68 +56,68 @@ export type ApprovalNodeInfo = {
 }
 
 export const getProcessInstanceMyPage = async (params: any) => {
-  return await request.get({ url: '/jgzf-flowable/bpm/process-instance/my-page', params })
+  return await request.get({ url: '/bpm/process-instance/my-page', params })
 }
 
 export const getProcessInstanceManagerPage = async (params: any) => {
-  return await request.get({ url: '/jgzf-flowable/bpm/process-instance/manager-page', params })
+  return await request.get({ url: '/bpm/process-instance/manager-page', params })
 }
 
 export const createProcessInstance = async (data) => {
-  return await request.post({ url: '/jgzf-flowable/bpm/process-instance/create', data: data })
+  return await request.post({ url: '/bpm/process-instance/create', data: data })
 }
 
 export const cancelProcessInstanceByStartUser = async (id: number | string, reason: string) => {
   return await request.delete({
-    url: '/jgzf-flowable/bpm/process-instance/cancel-by-start-user',
+    url: '/bpm/process-instance/cancel-by-start-user',
     params: { id, reason },
   })
 }
 
 export const cancelProcessInstanceByAdmin = async (id: number | string, reason: string) => {
   return await request.delete({
-    url: '/jgzf-flowable/bpm/process-instance/cancel-by-admin',
+    url: '/bpm/process-instance/cancel-by-admin',
     params: { id, reason },
   })
 }
 
 export const getProcessInstance = async (id: string) => {
-  return await request.get({ url: '/jgzf-flowable/bpm/process-instance/get?id=' + id })
+  return await request.get({ url: '/bpm/process-instance/get?id=' + id })
 }
 
 export const getProcessInstanceCopyPage = async (params: any) => {
-  return await request.get({ url: '/jgzf-flowable/bpm/process-instance/copy/page', params })
+  return await request.get({ url: '/bpm/process-instance/copy/page', params })
 }
 
 // 获取审批详情
 export const getApprovalDetail = async (params: any) => {
-  return await request.get({ url: '/jgzf-flowable/bpm/process-instance/get-approval-detail', params })
+  return await request.get({ url: '/bpm/process-instance/get-approval-detail', params })
 }
 
 // 获取下一个执行的流程节点
 export const getNextApprovalNodes = async (params: any) => {
-  return await request.get({ url: '/jgzf-flowable/bpm/process-instance/get-next-approval-nodes', params })
+  return await request.get({ url: '/bpm/process-instance/get-next-approval-nodes', params })
 }
 
 // 获取表单字段权限
 export const getFormFieldsPermission = async (params: any) => {
-  return await request.get({ url: '/jgzf-flowable/bpm/process-instance/get-form-fields-permission', params })
+  return await request.get({ url: '/bpm/process-instance/get-form-fields-permission', params })
 }
 
 // 获取流程实例的 BPMN 模型视图
 export const getProcessInstanceBpmnModelView = async (id: string) => {
-  return await request.get({ url: '/jgzf-flowable/bpm/process-instance/get-bpmn-model-view?id=' + id })
+  return await request.get({ url: '/bpm/process-instance/get-bpmn-model-view?id=' + id })
 }
 
 // 获取流程实例打印数据
 export const getProcessInstancePrintData = async (id: string) => {
-  return await request.get({ url: '/jgzf-flowable/bpm/process-instance/get-print-data?processInstanceId=' + id })
+  return await request.get({ url: '/bpm/process-instance/get-print-data?processInstanceId=' + id })
 }
 
 // 流转评论列表
 export const getProcessInstanceCommentList = async (processInstanceId: string) => {
   return await request.get({
-    url: '/jgzf-flowable/bpm/process-instance/comment/list',
+    url: '/bpm/process-instance/comment/list',
     params: { processInstanceId },
   })
 }
@@ -128,7 +128,7 @@ export const createProcessInstanceComment = async (data: {
   content: string
 }) => {
   return await request.post({
-    url: '/jgzf-flowable/bpm/process-instance/comment/create',
+    url: '/bpm/process-instance/comment/create',
     data,
   })
 }

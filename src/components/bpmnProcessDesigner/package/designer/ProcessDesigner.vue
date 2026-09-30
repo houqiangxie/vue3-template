@@ -4,31 +4,26 @@
       <slot name="control-header"></slot>
       <template v-if="!$slots['control-header']">
         <n-button-group key="file-control">
-          <XButton
-            :size="headerButtonSize"
-            preIcon="ep:folder-opened"
-            title="打开文件"
-            @click="refFile.click()"
-          />
+          <n-button :size="naiveHeaderSize" @click="refFile.click()"><Icon icon="ep:folder-opened" class="mr-1px" />打开文件</n-button>
           <n-tooltip placement="bottom" trigger="hover">
             <template #trigger>
-              <XButton :size="headerButtonSize" title="下载文件" preIcon="ep:download" />
+              <n-button :size="naiveHeaderSize"><Icon icon="ep:download" class="mr-1px" />下载文件</n-button>
             </template>
             <div class="bpmn-tooltip-actions">
-              <XTextButton title="下载为XML文件" @click="downloadProcessAsXml()" />
+              <n-button text @click="downloadProcessAsXml()">下载为XML文件</n-button>
               <br />
-              <XTextButton title="下载为SVG文件" @click="downloadProcessAsSvg()" />
+              <n-button text @click="downloadProcessAsSvg()">下载为SVG文件</n-button>
               <br />
-              <XTextButton title="下载为BPMN文件" @click="downloadProcessAsBpmn()" />
+              <n-button text @click="downloadProcessAsBpmn()">下载为BPMN文件</n-button>
             </div>
           </n-tooltip>
           <n-tooltip trigger="hover">
             <template #trigger>
-              <XButton :size="headerButtonSize" preIcon="ep:view" title="浏览" />
+              <n-button :size="naiveHeaderSize"><Icon icon="ep:view" class="mr-1px" />浏览</n-button>
             </template>
-            <XTextButton title="预览XML" @click="previewProcessXML" />
+            <n-button text @click="previewProcessXML">预览XML</n-button>
             <br />
-            <XTextButton title="预览JSON" @click="previewProcessJson" />
+            <n-button text @click="previewProcessJson">预览JSON</n-button>
           </n-tooltip>
           <n-tooltip
             v-if="props.simulation"
@@ -36,86 +31,46 @@
             :content="simulationStatus ? '退出模拟' : '开启模拟'"
           >
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="ep:cpu"
-                title="模拟"
-                @click="processSimulation"
-              />
+              <n-button :size="naiveHeaderSize" @click="processSimulation"><Icon icon="ep:cpu" class="mr-1px" />模拟</n-button>
             </template>
           </n-tooltip>
         </n-button-group>
         <n-button-group key="align-control">
           <n-tooltip trigger="hover" content="向左对齐">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="fa:align-left"
-                class="align align-bottom"
-                @click="elementsAlign('left')"
-              />
+              <n-button :size="naiveHeaderSize" class="align align-bottom" @click="elementsAlign('left')"><Icon icon="fa:align-left" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
           <n-tooltip trigger="hover" content="向右对齐">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="fa:align-left"
-                class="align align-top"
-                @click="elementsAlign('right')"
-              />
+              <n-button :size="naiveHeaderSize" class="align align-top" @click="elementsAlign('right')"><Icon icon="fa:align-left" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
           <n-tooltip trigger="hover" content="向上对齐">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="fa:align-left"
-                class="align align-left"
-                @click="elementsAlign('top')"
-              />
+              <n-button :size="naiveHeaderSize" class="align align-left" @click="elementsAlign('top')"><Icon icon="fa:align-left" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
           <n-tooltip trigger="hover" content="向下对齐">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="fa:align-left"
-                class="align align-right"
-                @click="elementsAlign('bottom')"
-              />
+              <n-button :size="naiveHeaderSize" class="align align-right" @click="elementsAlign('bottom')"><Icon icon="fa:align-left" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
           <n-tooltip trigger="hover" content="水平居中">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="fa:align-left"
-                class="align align-center"
-                @click="elementsAlign('center')"
-              />
+              <n-button :size="naiveHeaderSize" class="align align-center" @click="elementsAlign('center')"><Icon icon="fa:align-left" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
           <n-tooltip trigger="hover" content="垂直居中">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="fa:align-left"
-                class="align align-middle"
-                @click="elementsAlign('middle')"
-              />
+              <n-button :size="naiveHeaderSize" class="align align-middle" @click="elementsAlign('middle')"><Icon icon="fa:align-left" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
         </n-button-group>
         <n-button-group key="scale-control">
           <n-tooltip trigger="hover" content="缩小视图">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="ep:zoom-out"
-                @click="processZoomOut()"
-                :disabled="defaultZoom < 0.2"
-              />
+              <n-button :size="naiveHeaderSize" :disabled="defaultZoom < 0.2" @click="processZoomOut()"><Icon icon="ep:zoom-out" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
           <n-button :size="naiveHeaderSize" disabled>
@@ -123,48 +78,29 @@
           </n-button>
           <n-tooltip trigger="hover" content="放大视图">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="ep:zoom-in"
-                @click="processZoomIn()"
-                :disabled="defaultZoom > 4"
-              />
+              <n-button :size="naiveHeaderSize" :disabled="defaultZoom > 4" @click="processZoomIn()"><Icon icon="ep:zoom-in" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
           <n-tooltip trigger="hover" content="重置视图并居中">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="ep:scale-to-original"
-                @click="processReZoom()"
-              />
+              <n-button :size="naiveHeaderSize" @click="processReZoom()"><Icon icon="ep:scale-to-original" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
         </n-button-group>
         <n-button-group key="stack-control">
           <n-tooltip trigger="hover" content="撤销">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="ep:refresh-left"
-                @click="processUndo()"
-                :disabled="!revocable"
-              />
+              <n-button :size="naiveHeaderSize" :disabled="!revocable" @click="processUndo()"><Icon icon="ep:refresh-left" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
           <n-tooltip trigger="hover" content="恢复">
             <template #trigger>
-              <XButton
-                :size="headerButtonSize"
-                preIcon="ep:refresh-right"
-                @click="processRedo()"
-                :disabled="!recoverable"
-              />
+              <n-button :size="naiveHeaderSize" :disabled="!recoverable" @click="processRedo()"><Icon icon="ep:refresh-right" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
           <n-tooltip trigger="hover" content="重新绘制">
             <template #trigger>
-              <XButton :size="headerButtonSize" preIcon="ep:refresh" @click="processRestart()" />
+              <n-button :size="naiveHeaderSize" @click="processRestart()"><Icon icon="ep:refresh" class="mr-1px" /></n-button>
             </template>
           </n-tooltip>
         </n-button-group>
@@ -189,29 +125,33 @@
       <!-- <div id="js-properties-panel" class="panel"></div> -->
       <!-- <div class="my-process-designer__canvas" ref="bpmn-canvas"></div> -->
     </div>
-    <Dialog
-      title="预览"
-      v-model="previewModelVisible"
-      width="80%"
-      :scroll="true"
-      max-height="600px"
-    >
+    <n-modal
+  v-model:show="previewModelVisible"
+  preset="card"
+  title="预览"
+  :style="{ width: '80%' }"
+  :bordered="false"
+  display-directive="if"
+  class="app-dialog"
+>
+  <div :style="{ maxHeight: '600px', overflow: 'auto' }">
       <div>
         <pre><code v-dompurify-html="highlightedCode(previewResult)" class="hljs"></code></pre>
       </div>
-    </Dialog>
+    
+  </div>
+</n-modal>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { Icon } from '@/components/Icon'
 // import 'bpmn-js/dist/assets/diagram-js.css' // 左边工具栏以及编辑节点的样式
 // import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css'
 // import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-codes.css'
 // import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css'
 // import 'bpmn-js-properties-panel/dist/assets/bpmn-js-properties-panel.css' // 右侧框样式
-import { Dialog } from '@/components/Dialog'
-import { XButton, XTextButton } from '@/components/XButton'
-import { useMessage } from '@/hooks/web/useMessage'
+import { useDialog, useMessage } from 'naive-ui'
 import { useBpmnTheme } from '../theme/useBpmnTheme'
 import BpmnModeler from 'bpmn-js/lib/Modeler'
 import DefaultEmptyXML from './plugins/defaultEmpty'
@@ -243,8 +183,22 @@ const { bpmnThemeStyle } = useBpmnTheme()
 defineOptions({ name: 'MyProcessDesigner' })
 
 const message = useMessage()
+const dialog = useDialog()
 const bpmnCanvas = ref()
 const refFile = ref()
+
+function confirm(content: string, title = '提示') {
+  return new Promise<void>((resolve, reject) => {
+    dialog.warning({
+      title,
+      content,
+      positiveText: '确定',
+      negativeText: '取消',
+      onPositiveClick: () => resolve(),
+      onNegativeClick: () => reject(new Error('cancel')),
+    })
+  })
+}
 const emit = defineEmits([
   'destroy',
   'init-finished',
@@ -628,9 +582,9 @@ const elementsAlign = (align) => {
     message.warning('请按住 Shift 键选择多个元素对齐')
     return
   }
-  message.confirm('自动对齐可能造成图形变形，是否继续？', '警告').then(() => {
+  confirm('自动对齐可能造成图形变形，是否继续？', '警告').then(() => {
     Align.trigger(SelectedElements, align)
-  })
+  }).catch(() => {})
 }
 /*-----------------------------    方法结束     ---------------------------------*/
 const previewProcessXML = () => {

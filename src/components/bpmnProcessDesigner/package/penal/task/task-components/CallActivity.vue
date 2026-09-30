@@ -50,14 +50,7 @@
       <div>
         <div class="flex mb-10px">
           <span>输入参数</span>
-          <XButton
-            class="ml-auto"
-            type="primary"
-            preIcon="ep:plus"
-            title="添加参数"
-            size="small"
-            @click="openVariableForm('in', null, -1)"
-          />
+          <n-button type="primary" size="small" class="ml-auto" @click="openVariableForm('in', null, -1)"><Icon icon="ep:plus" class="mr-1px" />添加参数</n-button>
         </div>
         <CommonTable
           :data="inVariableList"
@@ -73,14 +66,7 @@
       <div>
         <div class="flex mb-10px">
           <span>输出参数</span>
-          <XButton
-            class="ml-auto"
-            type="primary"
-            preIcon="ep:plus"
-            title="添加参数"
-            size="small"
-            @click="openVariableForm('out', null, -1)"
-          />
+          <n-button type="primary" size="small" class="ml-auto" @click="openVariableForm('out', null, -1)"><Icon icon="ep:plus" class="mr-1px" />添加参数</n-button>
         </div>
         <CommonTable
           :data="outVariableList"
@@ -103,6 +89,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Icon } from '@/components/Icon'
 import { useFormModal } from '@/hooks/useFormModal'
 import { defineFields, defineModal, extractFormDefaults } from '@/utils/schema'
 import { getModelList } from '@/api/bpm/model'

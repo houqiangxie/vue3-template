@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div v-if="definition" class="bpm-create-detail">
     <div class="bpm-create-detail__head">
       <n-button quaternary @click="emit('cancel')">返回</n-button>
@@ -88,8 +88,8 @@ import { BpmModelFormType, BpmModelType } from '@/utils/constants'
 import {
   CandidateStrategy,
   NodeId,
-} from '@/components/SimpleProcessDesignerV2/src/consts'
-import { SimpleProcessViewer } from '@/components/SimpleProcessDesignerV2/src'
+} from '@/components/SimpleProcessDesigner/src/consts'
+import { SimpleProcessViewer } from '@/components/SimpleProcessDesigner/src'
 import ProcessViewer from '@/components/bpmnProcessDesigner/package/designer/ProcessViewer.vue'
 import BpmProcessForm from '../components/BpmProcessForm.vue'
 import ProcessInstanceTimeline from '../detail/ProcessInstanceTimeline.vue'
