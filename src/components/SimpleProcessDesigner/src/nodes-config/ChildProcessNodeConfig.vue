@@ -355,10 +355,10 @@ const configForm = ref<ChildProcessFormType>({
 const childProcessOptions = ref()
 const formFieldOptions = useFormFieldsAndStartUser()
 const digitalFormFieldOptions = computed(() => {
-  return formFieldOptions.filter((item) => isDigitalBpmFieldType(item.type))
+  return formFieldOptions.value.filter((item) => isDigitalBpmFieldType(item.type))
 })
 const multiFormFieldOptions = computed(() => {
-  return formFieldOptions.filter((item) => isMultiSourceBpmFieldType(item.type))
+  return formFieldOptions.value.filter((item) => isMultiSourceBpmFieldType(item.type))
 })
 const childFormFieldOptions = ref()
 
@@ -371,6 +371,7 @@ const saveConfig = async () => {
   const childInfo = childProcessOptions.value.find(
     (option: any) => option.key === configForm.value.calledProcessDefinitionKey
   )
+  if (!childInfo) return false
   currentNode.value.name = nodeName.value!
   if (currentNode.value.childProcessSetting) {
     // 1. 是否异步
@@ -499,8 +500,9 @@ const loadFormInfo = async () => {
   const childInfo = childProcessOptions.value.find(
     (option) => option.key === configForm.value.calledProcessDefinitionKey
   )
-  const formInfo = await getForm(childInfo.formId)
   childFormFieldOptions.value = []
+  if (!childInfo?.formId) return
+  const formInfo = await getForm(childInfo.formId)
   if (formInfo.fields) {
     formInfo.fields.forEach((fieldStr: string) => {
       parseFormFields(JSON.parse(fieldStr), childFormFieldOptions.value)

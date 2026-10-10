@@ -76,7 +76,8 @@ import { getProcessInstancePrintData } from '@/api/bpm/processInstance'
 import { formatDate } from '@/utils/formatTime'
 import { DICT_TYPE, getDictLabel } from '@/utils/dict'
 import { sanitizeHtml } from '@/utils/sanitizeHtml'
-import { formatBpmPrintValue } from '@/components/common/FormBuilder/bpmForm'
+import { formatBpmPrintValue, resolveFieldDictOptions } from '@/components/common/FormBuilder/bpmForm'
+import { fetchDictOptions } from '@/hooks/useDict'
 
 defineOptions({ name: 'BpmPrintDialog' })
 
@@ -116,14 +117,21 @@ function decodeFormFields(raw: any[]): any[] {
   }).filter(Boolean)
 }
 
-function parseFormFields() {
+async function parseFormFields() {
   if (!printData.value?.processInstance)
     return
-  const fields = decodeFormFields(
+  const rawFields = decodeFormFields(
     printData.value.processInstance.processDefinition?.formFields
     || printData.value.formFields
     || [],
-  )
+  ).map((item: any) => ({
+    ...item,
+    dictType: item.dictType || item._dictType || item.bind?.dictType,
+    _dictType: item._dictType || item.dictType || item.bind?.dictType,
+    options: item.options || item.bind?.options || item.props?.options,
+    children: item.children || item.bind?.fields || item.props?.fields,
+  }))
+  const fields = await resolveFieldDictOptions(rawFields, fetchDictOptions)
   const variables = printData.value.processInstance.formVariables || {}
   const res: Array<{ id: string, name: string, html: any }> = []
   for (const item of fields) {
@@ -214,7 +222,7 @@ async function open(id: string) {
   try {
     printData.value = await getProcessInstancePrintData(id)
     initPrintDataMap()
-    parseFormFields()
+    await parseFormFields()
     templateHtml.value = printData.value?.printTemplateEnable
       ? sanitizeHtml(getPrintTemplateHTML())
       : ''

@@ -104,8 +104,8 @@ export function useFormFieldsPermission(defaultPermission: FieldPermissionType) 
     return defaultFieldsPermission
   }
 
-  // 获取表单的所有字段，作为下拉框选项
-  const formFieldOptions = parseBpmFormFields(unref(formFields))
+  // 获取表单的所有字段，作为下拉框选项（需跟随 formFields 异步加载）
+  const formFieldOptions = computed(() => parseBpmFormFields(unref(formFields)))
 
   return {
     formType,
@@ -120,7 +120,7 @@ export function useFormFieldsPermission(defaultPermission: FieldPermissionType) 
  */
 export function useFormFields() {
   const formFields = inject<Ref<string[]>>('formFields', ref([])) // 流程表单字段
-  return parseBpmFormFields(unref(formFields))
+  return computed(() => parseBpmFormFields(unref(formFields)))
 }
 
 /**
@@ -129,14 +129,17 @@ export function useFormFields() {
  */
 export function useFormFieldsAndStartUser() {
   const injectFormFields = inject<Ref<string[]>>('formFields', ref([])) // 流程表单字段
-  const formFields = parseBpmFormFields(unref(injectFormFields))
-  // 添加发起人
-  formFields.unshift({
-    field: ProcessVariableEnum.START_USER_ID,
-    title: '发起人',
-    required: true
+  return computed(() => {
+    const formFields = parseBpmFormFields(unref(injectFormFields))
+    return [
+      {
+        field: ProcessVariableEnum.START_USER_ID,
+        title: '发起人',
+        required: true
+      },
+      ...formFields,
+    ]
   })
-  return formFields
 }
 
 export type UserTaskFormType = {

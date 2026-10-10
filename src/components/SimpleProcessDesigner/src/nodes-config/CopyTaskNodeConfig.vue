@@ -181,11 +181,11 @@ const { formType, fieldsPermissionConfig, formFieldOptions, getNodeConfigFormFie
   useFormFieldsPermission(FieldPermissionType.READ)
 // 表单内用户字段选项, 必须是必填和用户选择器
 const userFieldOnFormOptions = computed(() => {
-  return formFieldOptions.filter((item) => item.type === 'UserSelect')
+  return formFieldOptions.value.filter((item) => item.type === 'UserSelect')
 })
 // 表单内部门字段选项, 必须是必填和部门选择器
 const deptFieldOnFormOptions = computed(() => {
-  return formFieldOptions.filter((item) => item.type === 'DeptSelect')
+  return formFieldOptions.value.filter((item) => item.type === 'DeptSelect')
 })
 // 抄送人表单配置
 const formRef = ref() // 表单 Ref

@@ -139,6 +139,8 @@ export interface FormFieldConfig extends FormFieldDesignExprs {
   class?: string
   showFeedback?: boolean
   cols?: number
+  /** 校验失败文案；会合并进 bind.message 供 CommonForm 使用 */
+  message?: string
   bind?: FieldBind | FieldBind[]
   bindItem?: Record<string, unknown> | Array<Record<string, unknown>>
   slot?: Record<string, FieldSlotFn> | Array<Record<string, FieldSlotFn>>
@@ -222,10 +224,11 @@ export interface TableFieldConfig {
  *
  * - 不写 form/search/table：默认参与三个场景（仅含基础属性）
  * - 设为 false：该场景排除
+ * - 设为 true：该场景启用（等同于空对象扩展）
  * - 设为对象：该场景启用，并与基础属性合并
  *
  * @example
- * { key: 'name', label: '姓名', component: 'NInput', form: { required: true }, search: { enabled: true }, table: { width: 120 } }
+ * { key: 'name', label: '姓名', component: 'NInput', form: { required: true }, search: true, table: { width: 120 } }
  */
 export interface UnifiedFieldConfig {
   id?: string
@@ -236,9 +239,9 @@ export interface UnifiedFieldConfig {
   options?: FieldOption[] | unknown[]
   type?: string | string[]
   bind?: FieldBind | FieldBind[]
-  form?: false | FormFieldConfig
-  search?: false | SearchFieldConfig
-  table?: false | TableFieldConfig
+  form?: boolean | FormFieldConfig
+  search?: boolean | SearchFieldConfig
+  table?: boolean | TableFieldConfig
   /**
    * 子字段：
    * - table：多级表头
@@ -313,12 +316,19 @@ export type SearchConfigItem = {
   col?: number
 }
 
-function isSceneEnabled(sceneConfig: false | object | undefined, defaultEnabled = true) {
+function isSceneEnabled(sceneConfig: boolean | object | undefined, defaultEnabled = true) {
   if (sceneConfig === false)
     return false
   if (sceneConfig === undefined)
     return defaultEnabled
   return true
+}
+
+/** 场景扩展归一：false 已在 filter 排除；true/undefined → 空对象 */
+function sceneExtra<T extends object>(config: boolean | T | undefined): Partial<T> {
+  if (config === false || config === true || config == null)
+    return {}
+  return config
 }
 
 function mergeBind(base?: FieldBind | FieldBind[], extra?: FieldBind | FieldBind[]) {
@@ -345,7 +355,8 @@ export function toFormConfig(fields: UnifiedFieldConfig[]): FormConfigItem[] {
   return fields
     .filter(f => isFieldInScene(f, 'form'))
     .map((field) => {
-      const form = field.form === false ? {} : (field.form ?? {})
+      const form = sceneExtra<FormFieldConfig>(field.form)
+      const messageBind = form.message ? { message: form.message } : undefined
       return {
         id: field.id,
         key: field.key,
@@ -365,7 +376,7 @@ export function toFormConfig(fields: UnifiedFieldConfig[]): FormConfigItem[] {
         class: form.class,
         showFeedback: form.showFeedback,
         cols: form.cols,
-        bind: mergeBind(field.bind, form.bind),
+        bind: mergeBind(field.bind, mergeBind(messageBind, form.bind)),
         bindItem: form.bindItem,
         slot: form.slot,
         on: form.on,
@@ -381,11 +392,11 @@ export function toSearchConfig(fields: UnifiedFieldConfig[]): SearchConfigItem[]
     .filter((f) => {
       if (!isFieldInScene(f, 'search'))
         return false
-      const search = f.search === false ? undefined : f.search
-      return search?.enabled !== false
+      const search = sceneExtra<SearchFieldConfig>(f.search)
+      return search.enabled !== false
     })
     .map((field) => {
-      const search = field.search === false ? {} : (field.search ?? {})
+      const search = sceneExtra<SearchFieldConfig>(field.search)
       return {
         label: field.label ?? field.title,
         title: field.title,
@@ -609,7 +620,7 @@ function fieldToColumn(
   field: UnifiedFieldConfig,
   remote: boolean,
 ): DataTableColumns[number] {
-  const table = field.table === false ? {} : (field.table ?? {})
+  const table = sceneExtra<TableFieldConfig>(field.table)
   const colKey = resolveColumnKey(field)
   const label = field.label ?? field.title
   const childFields = field.children?.filter(f => isFieldInScene(f, 'table')) ?? []
@@ -678,7 +689,7 @@ export function extractSearchDefaults(fields: UnifiedFieldConfig[]): Record<stri
   for (const field of fields) {
     if (!isFieldInScene(field, 'search'))
       continue
-    const search = field.search === false ? {} : (field.search ?? {})
+    const search = sceneExtra<SearchFieldConfig>(field.search)
     const bind = mergeBind(field.bind, search.bind) as FieldBind | FieldBind[] | undefined
     const bindDefault = Array.isArray(bind) ? bind[0]?.defaultValue : bind?.defaultValue
     const defaultValue = search.defaultValue ?? bindDefault ?? resolveArrayAwareDefault(field.component, bind)
@@ -725,8 +736,8 @@ export function extractFormDefaults(fields: UnifiedFieldConfig[]): Record<string
   for (const field of fields) {
     if (!isFieldInScene(field, 'form'))
       continue
-    const form = field.form === false ? {} : (field.form ?? {})
-    const bind = mergeBind(field.bind, form.bind) as FieldBind | FieldBind[] | undefined
+    const form = sceneExtra<FormFieldConfig>(field.form)
+    const bind = mergeBind(field.bind, mergeBind(form.message ? { message: form.message } : undefined, form.bind)) as FieldBind | FieldBind[] | undefined
     const bindDefault = Array.isArray(bind) ? bind[0]?.defaultValue : bind?.defaultValue
     const defaultValue = form.defaultValue ?? bindDefault ?? resolveArrayAwareDefault(field.component, bind)
 

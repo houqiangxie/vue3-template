@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div v-loading="loading" class="bpm-detail">
     <n-card v-if="processInstance?.id" size="small" class="bpm-detail__header">
       <div class="bpm-detail__title-row">

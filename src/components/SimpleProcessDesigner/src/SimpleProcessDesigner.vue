@@ -123,8 +123,8 @@ provide('userList', userOptions)
 provide('deptList', deptOptions)
 provide('userGroupList', userGroupOptions)
 provide('deptTree', deptTreeOptions)
-provide('startUserIds', props.startUserIds)
-provide('startDeptIds', props.startDeptIds)
+provide('startUserIds', toRef(props, 'startUserIds'))
+provide('startDeptIds', toRef(props, 'startDeptIds'))
 provide('tasks', [])
 provide('processInstance', {})
 
@@ -164,7 +164,7 @@ const saveSimpleFlowModel = async (simpleModelNode: SimpleFlowNode) => {
   }
 }
 
-// 校验节点设置。 暂时以 showText 为空 未节点错误配置
+// 校验节点设置。 暂时以 showText 为空 为节点错误配置
 const validateNode = (node: SimpleFlowNode | undefined, nodes: SimpleFlowNode[]) => {
   if (node) {
     const { type, showText, conditionNodes } = node
@@ -174,23 +174,30 @@ const validateNode = (node: SimpleFlowNode | undefined, nodes: SimpleFlowNode[])
     if (type == NodeType.START_USER_NODE) {
       // 发起人节点暂时不用校验，直接校验孩子节点
       validateNode(node.childNode, nodes)
+      return
     }
 
     if (
-      type === NodeType.USER_TASK_NODE ||
-      type === NodeType.COPY_TASK_NODE ||
-      type === NodeType.CONDITION_NODE
+      type === NodeType.USER_TASK_NODE
+      || type === NodeType.COPY_TASK_NODE
+      || type === NodeType.CONDITION_NODE
+      || type === NodeType.TRANSACTOR_NODE
+      || type === NodeType.DELAY_TIMER_NODE
+      || type === NodeType.TRIGGER_NODE
+      || type === NodeType.CHILD_PROCESS_NODE
+      || type === NodeType.ROUTER_BRANCH_NODE
     ) {
       if (!showText) {
         nodes.push(node)
       }
       validateNode(node.childNode, nodes)
+      return
     }
 
     if (
-      type == NodeType.CONDITION_BRANCH_NODE ||
-      type == NodeType.PARALLEL_BRANCH_NODE ||
-      type == NodeType.INCLUSIVE_BRANCH_NODE
+      type == NodeType.CONDITION_BRANCH_NODE
+      || type == NodeType.PARALLEL_BRANCH_NODE
+      || type == NodeType.INCLUSIVE_BRANCH_NODE
     ) {
       // 分支节点
       // 1. 先校验各个分支

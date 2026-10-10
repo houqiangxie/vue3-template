@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="end-node-wrapper">
     <div class="end-node-box cursor-pointer" :class="`${useTaskStatusClass(currentNode?.activityStatus)}`"
       @click="nodeClick">

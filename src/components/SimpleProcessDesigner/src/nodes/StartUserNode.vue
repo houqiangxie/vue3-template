@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="node-wrapper">
     <div class="node-container">
       <div

@@ -200,23 +200,30 @@ const validateNode = (node: SimpleFlowNode | undefined, errorNodes: SimpleFlowNo
     if (type == NodeType.START_USER_NODE) {
       // 发起人节点暂时不用校验，直接校验孩子节点
       validateNode(node.childNode, errorNodes)
+      return
     }
 
     if (
-      type === NodeType.USER_TASK_NODE ||
-      type === NodeType.COPY_TASK_NODE ||
-      type === NodeType.CONDITION_NODE
+      type === NodeType.USER_TASK_NODE
+      || type === NodeType.COPY_TASK_NODE
+      || type === NodeType.CONDITION_NODE
+      || type === NodeType.TRANSACTOR_NODE
+      || type === NodeType.DELAY_TIMER_NODE
+      || type === NodeType.TRIGGER_NODE
+      || type === NodeType.CHILD_PROCESS_NODE
+      || type === NodeType.ROUTER_BRANCH_NODE
     ) {
       if (!showText) {
         errorNodes.push(node)
       }
       validateNode(node.childNode, errorNodes)
+      return
     }
 
     if (
-      type == NodeType.CONDITION_BRANCH_NODE ||
-      type == NodeType.PARALLEL_BRANCH_NODE ||
-      type == NodeType.INCLUSIVE_BRANCH_NODE
+      type == NodeType.CONDITION_BRANCH_NODE
+      || type == NodeType.PARALLEL_BRANCH_NODE
+      || type == NodeType.INCLUSIVE_BRANCH_NODE
     ) {
       // 分支节点
       // 1. 先校验各个分支

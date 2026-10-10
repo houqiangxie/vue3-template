@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <CommonModal
     v-model:show="dialogVisible"
     :config="modalConfig"

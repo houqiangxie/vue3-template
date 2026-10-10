@@ -1,4 +1,4 @@
-﻿# Vue3 Template
+# Vue3 Template
 
 基于 Vue 3 + Vite + Naive UI 的中后台前端模板，支持 **Web 管理端**、**App 端（MPA）** 与 **Electron 桌面端**。内置动态路由/权限、CRUD 组合式封装、iframe 嵌入同步，以及可切换的本地 Mock。
 

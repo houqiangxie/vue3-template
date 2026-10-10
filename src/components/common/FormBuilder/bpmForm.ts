@@ -152,11 +152,11 @@ function mapLegacyRule(rule: Record<string, any>) {
     bind.fileType = ['jpg', 'jpeg', 'png', 'gif', 'webp']
     bind.limit = bind.limit ?? 1
   }
-  return {
+  const mapped: Record<string, any> = {
     key: rule.field || rule.key,
     label: rule.title || rule.label || rule.field,
     component,
-    options: rule.options,
+    options: rule.options || rule.props?.options,
     form: {
       required: Boolean(rule.$required ?? rule.required),
       span: 1,
@@ -167,6 +167,12 @@ function mapLegacyRule(rule: Record<string, any>) {
     table: false,
     bind,
   }
+  if (rule.dictType || rule._dictType)
+    mapped._dictType = rule.dictType || rule._dictType
+  const kids = rule.children
+  if (Array.isArray(kids) && kids.length)
+    mapped.children = kids.map((child: any) => mapLegacyRule(child))
+  return mapped
 }
 
 function mapLegacyTypeToComponent(type?: string): string {
@@ -199,6 +205,9 @@ function mapLegacyTypeToComponent(type?: string): string {
     html: 'FormHtml',
     span: 'FormHtml',
     text: 'FormHtml',
+    tableForm: 'FormTable',
+    subForm: 'FormTable',
+    group: 'FormTable',
   }
   return map[type || ''] || 'NInput'
 }
@@ -261,6 +270,13 @@ export function parseFormFields(
     const tempTitle = rule.label || field
     const type = rule.component
     const isTable = String(type || '') === 'FormTable'
+    const options = Array.isArray(rule.options)
+      ? rule.options
+      : Array.isArray(rule.bind?.options)
+        ? rule.bind.options
+        : Array.isArray(rule.props?.options)
+          ? rule.props.options
+          : undefined
     // 明细表本身不进权限列表，只收集行内子字段
     if (field && tempTitle && !DISPLAY_ONLY_COMPONENTS.has(String(type || '')) && !isTable) {
       const title = parentTitle ? `${parentTitle}.${tempTitle}` : tempTitle
@@ -270,11 +286,14 @@ export function parseFormFields(
         type,
         kind: normalizeBpmFieldKind(type),
         required: Boolean(rule.form && rule.form !== false && rule.form.required),
-        options: Array.isArray(rule.options) ? rule.options : undefined,
+        options,
+        dictType: rule.dictType || rule._dictType,
+        _dictType: rule._dictType || rule.dictType,
       })
     }
-    if (rule.children && Array.isArray(rule.children))
-      rule.children.forEach((child: any) => parseFormFields(child, fields, isTable ? tempTitle : (tempTitle || parentTitle)))
+    const nested = rule.children || rule.bind?.fields || rule.props?.fields
+    if (nested && Array.isArray(nested))
+      nested.forEach((child: any) => parseFormFields(child, fields, isTable ? tempTitle : (tempTitle || parentTitle)))
     return fields
   }
 
@@ -287,11 +306,18 @@ export function parseFormFields(
       type,
       kind: normalizeBpmFieldKind(type),
       required: Boolean($required),
-      options: Array.isArray(options) ? options : undefined,
+      options: Array.isArray(options)
+        ? options
+        : Array.isArray(rule.props?.options)
+          ? rule.props.options
+          : undefined,
+      dictType: rule.dictType || rule._dictType,
+      _dictType: rule._dictType || rule.dictType,
     })
   }
-  if (children && Array.isArray(children))
-    children.forEach(child => parseFormFields(child, fields, tempTitle || parentTitle))
+  const nested = children || rule.props?.fields
+  if (nested && Array.isArray(nested))
+    nested.forEach(child => parseFormFields(child, fields, tempTitle || parentTitle))
   return fields
 }
 

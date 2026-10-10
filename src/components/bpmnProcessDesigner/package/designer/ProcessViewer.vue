@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="process-viewer" :style="bpmnThemeStyle">
     <div style="height: 100%" ref="processCanvas" v-show="!isLoading"> </div>
 

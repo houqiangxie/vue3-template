@@ -160,7 +160,7 @@ const saveConfig = async () => {
       condition.value?.conditionType,
       condition.value?.conditionExpression,
       condition.value.conditionGroups,
-      fieldOptions
+      fieldOptions.value
     )
     if (!showText) {
       return false

@@ -279,7 +279,7 @@ const formFields = useFormFields()
 
 // 可选的修改的表单字段
 const optionalUpdateFormFields = computed(() => {
-  return formFields.map((field) => ({
+  return formFields.value.map((field) => ({
     title: field.title,
     field: field.field,
     disabled: false
@@ -397,7 +397,7 @@ const showConditionText = (formSetting: FormTriggerSetting) => {
     formSetting.conditionType,
     formSetting.conditionExpression,
     formSetting.conditionGroups,
-    formFields
+    formFields.value
   )
 }
 

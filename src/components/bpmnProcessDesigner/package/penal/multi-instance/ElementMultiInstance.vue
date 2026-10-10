@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="panel-tab__content">
     <n-radio-group
       v-if="type === 'UserTask'"

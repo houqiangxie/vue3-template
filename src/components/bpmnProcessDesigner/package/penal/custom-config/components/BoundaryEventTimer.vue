@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <n-divider content-position="left">审批人超时未处理时</n-divider>
     <n-form-item label="启用开关" path="timeoutHandlerEnable">

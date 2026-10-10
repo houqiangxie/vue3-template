@@ -605,7 +605,7 @@ export const ASSIGN_START_USER_HANDLER_TYPES: DictDataVO[] = [
 ]
 
 // 比较运算符
-export const COMPARISON_OPERATORS: DictDataVO = [
+export const COMPARISON_OPERATORS: DictDataVO[] = [
   {
     value: '==',
     label: '等于'
@@ -671,7 +671,7 @@ export const START_USER_BUTTON_SETTING: ButtonSetting[] = [
   { id: OperationButtonType.RETURN, displayName: '退回', enable: false }
 ]
 
-export const MULTI_LEVEL_DEPT: DictDataVO = [
+export const MULTI_LEVEL_DEPT: DictDataVO[] = [
   { label: '第 1 级部门', value: 1 },
   { label: '第 2 级部门', value: 2 },
   { label: '第 3 级部门', value: 3 },

@@ -1,4 +1,4 @@
-﻿import { TaskStatusEnum } from '@/api/bpm/task'
+import { TaskStatusEnum } from '@/api/bpm/task'
 import { NodeType, type SimpleFlowNode } from '@/components/SimpleProcessDesigner/src/consts'
 
 /** 根据流程运行态，给简易流程图节点写入 activityStatus（用于节点着色） */

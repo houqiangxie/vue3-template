@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <n-form label-width="120px">
     <n-form-item label="规则类型" path="candidateStrategy">
       <n-select v-model:value="userTaskForm.candidateStrategy" clearable style="width: 100%"
@@ -115,11 +115,11 @@ const userGroupOptions = ref<UserGroupApi.UserGroupVO[]>([]) // 用户组列表
 const { formFieldOptions } = useFormFieldsPermission(FieldPermissionType.READ)
 // 表单内用户字段选项, 必须是必填和用户选择器
 const userFieldOnFormOptions = computed(() => {
-  return formFieldOptions.filter((item) => item.type === 'UserSelect')
+  return formFieldOptions.value.filter((item) => item.type === 'UserSelect')
 })
 // 表单内部门字段选项, 必须是必填和部门选择器
 const deptFieldOnFormOptions = computed(() => {
-  return formFieldOptions.filter((item) => item.type === 'DeptSelect')
+  return formFieldOptions.value.filter((item) => item.type === 'DeptSelect')
 })
 
 const deptLevel = ref(1)
