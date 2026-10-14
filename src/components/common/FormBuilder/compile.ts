@@ -27,6 +27,10 @@ export function compileFieldForRuntime(field: BuilderField): UnifiedFieldConfig 
     _visibleExpr,
     _hiddenExpr,
     _visibilityRule: _vr,
+    _disabledExpr,
+    _disabledRule: _dr,
+    _requiredExpr,
+    _requiredRule: _rr,
     _dictType: _dt,
     _renderExpr,
     _onChangeExpr,
@@ -47,7 +51,12 @@ export function compileFieldForRuntime(field: BuilderField): UnifiedFieldConfig 
         delete bind.pattern
       }
     }
+    if (_disabledExpr?.trim())
+      bind.disabled = compileExpr(_disabledExpr, false)
     compiled.bind = bind
+  }
+  else if (_disabledExpr?.trim()) {
+    compiled.bind = { disabled: compileExpr(_disabledExpr, false) }
   }
 
   if (compiled.form !== false) {
@@ -56,6 +65,8 @@ export function compileFieldForRuntime(field: BuilderField): UnifiedFieldConfig 
       form.visible = compileExpr(_visibleExpr, false)
     if (_hiddenExpr)
       form.hidden = compileExpr(_hiddenExpr, false)
+    if (_requiredExpr?.trim())
+      form.required = compileExpr(_requiredExpr, false)
     if (_renderExpr?.trim()) {
       try {
         // eslint-disable-next-line no-new-func
@@ -115,6 +126,8 @@ export function compileFieldForRuntime(field: BuilderField): UnifiedFieldConfig 
         _dictType: row._dictType,
         _visibleExpr: row._visibleExpr,
         _hiddenExpr: row._hiddenExpr,
+        _disabledExpr: row._disabledExpr,
+        _requiredExpr: row._requiredExpr,
         _renderExpr: row._renderExpr,
         _onChangeExpr: row._onChangeExpr,
       } as BuilderField)

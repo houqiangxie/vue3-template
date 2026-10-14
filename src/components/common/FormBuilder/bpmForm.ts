@@ -8,18 +8,117 @@ import {
 
 export const BPM_FORM_ENGINE = 'formBuilder' as const
 
+/** Naive UI NForm 仅支持 left / top；遗留 form-create 的 right 会归一为 left */
+export type FormLabelPlacement = 'left' | 'top'
+export type FormSize = 'small' | 'medium' | 'large'
+
+/** 表单级配置（对齐 flowable FcDesigner「表单配置」常用项） */
+export type BpmFormSettings = {
+  formCols: number
+  labelWidth: number | string
+  labelPlacement: FormLabelPlacement
+  size: FormSize
+  labelSuffix: string
+  showRequireMark: boolean
+  /** 显示校验错误信息（对齐 form-create showMessage） */
+  showFeedback: boolean
+  showSubmitBtn: boolean
+  showResetBtn: boolean
+  /** 表单事件函数体（对齐 form-create `_event` / FnConfig） */
+  onSubmitExpr?: string
+  onResetExpr?: string
+  onCreatedExpr?: string
+  onMountedExpr?: string
+  onChangeExpr?: string
+}
+
+export const DEFAULT_BPM_FORM_SETTINGS: BpmFormSettings = {
+  formCols: 2,
+  labelWidth: 100,
+  labelPlacement: 'left',
+  size: 'medium',
+  labelSuffix: '',
+  showRequireMark: true,
+  showFeedback: true,
+  showSubmitBtn: false,
+  showResetBtn: false,
+}
+
+const FORM_EVENT_KEYS = [
+  'onSubmitExpr',
+  'onResetExpr',
+  'onCreatedExpr',
+  'onMountedExpr',
+  'onChangeExpr',
+] as const
+
+type FormEventKey = typeof FORM_EVENT_KEYS[number]
+
+function normalizeEventExpr(value: unknown): string | undefined {
+  if (typeof value !== 'string')
+    return undefined
+  const trimmed = value.trim()
+  return trimmed || undefined
+}
+
+function pickEventExprs(
+  source: Record<string, unknown> | null | undefined,
+): Partial<Pick<BpmFormSettings, FormEventKey>> {
+  if (!source)
+    return {}
+  const out: Partial<Pick<BpmFormSettings, FormEventKey>> = {}
+  for (const key of FORM_EVENT_KEYS) {
+    const v = normalizeEventExpr(source[key])
+    if (v)
+      out[key] = v
+  }
+  return out
+}
+
+/** 兼容 form-create option._event / event 中的函数字符串 */
+function pickLegacyEventExprs(
+  parsed: BpmFormConf,
+): Partial<Pick<BpmFormSettings, FormEventKey>> {
+  const raw = (parsed._event || parsed.event) as Record<string, unknown> | undefined
+  if (!raw || typeof raw !== 'object')
+    return {}
+  const map: Record<string, FormEventKey> = {
+    onSubmit: 'onSubmitExpr',
+    onReset: 'onResetExpr',
+    onCreated: 'onCreatedExpr',
+    onMounted: 'onMountedExpr',
+    onChange: 'onChangeExpr',
+  }
+  const out: Partial<Pick<BpmFormSettings, FormEventKey>> = {}
+  for (const [legacy, ours] of Object.entries(map)) {
+    const body = normalizeEventExpr(raw[legacy])
+    if (body)
+      out[ours] = body
+  }
+  return out
+}
+
 export type BpmFormConf = {
   engine?: typeof BPM_FORM_ENGINE
   version?: number
   formCols?: number
   labelWidth?: number | string
+  labelPlacement?: FormLabelPlacement
+  size?: FormSize
+  labelSuffix?: string
+  showRequireMark?: boolean
+  showFeedback?: boolean
+  showSubmitBtn?: boolean
+  showResetBtn?: boolean
+  onSubmitExpr?: string
+  onResetExpr?: string
+  onCreatedExpr?: string
+  onMountedExpr?: string
+  onChangeExpr?: string
   [key: string]: unknown
 }
 
-export type BpmFormPackOptions = {
-  formCols?: number
-  labelWidth?: number | string
-}
+export type BpmFormPackOptions = Partial<BpmFormSettings>
 
 export type BpmFormFieldMeta = {
   field: string
@@ -73,6 +172,90 @@ export function parseBpmFormConf(
   }
 }
 
+function normalizeLabelPlacement(value: unknown): FormLabelPlacement {
+  if (value === 'top' || value === 'left')
+    return value
+  // Element Plus form-create：right → Naive left
+  if (value === 'right')
+    return 'left'
+  return DEFAULT_BPM_FORM_SETTINGS.labelPlacement
+}
+
+function normalizeFormSize(value: unknown): FormSize {
+  if (value === 'small' || value === 'medium' || value === 'large')
+    return value
+  // Element Plus form-create: default → Naive medium
+  if (value === 'default')
+    return 'medium'
+  return DEFAULT_BPM_FORM_SETTINGS.size
+}
+
+function normalizeLabelWidth(value: unknown): number | string {
+  if (typeof value === 'number' && Number.isFinite(value))
+    return value
+  if (typeof value === 'string' && value.trim())
+    return value
+  return DEFAULT_BPM_FORM_SETTINGS.labelWidth
+}
+
+/** 从 FormBuilder conf 或遗留 form-create option 解析表单级设置 */
+export function resolveBpmFormSettings(
+  conf: string | Record<string, any> | null | undefined,
+): BpmFormSettings {
+  const parsed = parseBpmFormConf(conf)
+  // form-create：option.form.* / submitBtn / resetBtn
+  const legacyForm = (parsed.form && typeof parsed.form === 'object')
+    ? parsed.form as Record<string, unknown>
+    : null
+  const submitBtn = parsed.submitBtn as { show?: boolean } | undefined
+  const resetBtn = parsed.resetBtn as { show?: boolean } | undefined
+
+  const formColsRaw = parsed.formCols
+  const formCols = typeof formColsRaw === 'number' && formColsRaw > 0
+    ? formColsRaw
+    : DEFAULT_BPM_FORM_SETTINGS.formCols
+
+  const hideRequired = legacyForm?.hideRequiredAsterisk
+  let showRequireMark = DEFAULT_BPM_FORM_SETTINGS.showRequireMark
+  if (typeof parsed.showRequireMark === 'boolean')
+    showRequireMark = parsed.showRequireMark
+  else if (typeof hideRequired === 'boolean')
+    showRequireMark = !hideRequired
+
+  let showFeedback = DEFAULT_BPM_FORM_SETTINGS.showFeedback
+  if (typeof parsed.showFeedback === 'boolean')
+    showFeedback = parsed.showFeedback
+  else if (typeof legacyForm?.showMessage === 'boolean')
+    showFeedback = legacyForm.showMessage as boolean
+
+  const ownEvents = pickEventExprs(parsed as Record<string, unknown>)
+  const legacyEvents = pickLegacyEventExprs(parsed)
+
+  return {
+    formCols,
+    labelWidth: normalizeLabelWidth(
+      parsed.labelWidth ?? legacyForm?.labelWidth,
+    ),
+    labelPlacement: normalizeLabelPlacement(
+      parsed.labelPlacement ?? legacyForm?.labelPosition,
+    ),
+    size: normalizeFormSize(parsed.size ?? legacyForm?.size),
+    labelSuffix: String(
+      parsed.labelSuffix ?? legacyForm?.labelSuffix ?? DEFAULT_BPM_FORM_SETTINGS.labelSuffix,
+    ),
+    showRequireMark,
+    showFeedback,
+    showSubmitBtn: typeof parsed.showSubmitBtn === 'boolean'
+      ? parsed.showSubmitBtn
+      : (typeof submitBtn?.show === 'boolean' ? submitBtn.show : DEFAULT_BPM_FORM_SETTINGS.showSubmitBtn),
+    showResetBtn: typeof parsed.showResetBtn === 'boolean'
+      ? parsed.showResetBtn
+      : (typeof resetBtn?.show === 'boolean' ? resetBtn.show : DEFAULT_BPM_FORM_SETTINGS.showResetBtn),
+    ...legacyEvents,
+    ...ownEvents,
+  }
+}
+
 /** BuilderField → 后端 FormVO.conf / fields */
 export function packBpmForm(
   fields: BuilderField[],
@@ -81,29 +264,54 @@ export function packBpmForm(
   const options = typeof formColsOrOptions === 'number'
     ? { formCols: formColsOrOptions }
     : (formColsOrOptions || {})
-  const formCols = options.formCols && options.formCols > 0 ? options.formCols : 2
+  const settings: BpmFormSettings = {
+    ...DEFAULT_BPM_FORM_SETTINGS,
+    ...options,
+    formCols: options.formCols && options.formCols > 0
+      ? options.formCols
+      : DEFAULT_BPM_FORM_SETTINGS.formCols,
+  }
   const exported = toExportFields(fields)
   const conf: BpmFormConf = {
     engine: BPM_FORM_ENGINE,
     version: 1,
-    formCols,
+    formCols: settings.formCols,
+    labelWidth: settings.labelWidth,
+    labelPlacement: settings.labelPlacement,
+    size: settings.size,
+    labelSuffix: settings.labelSuffix,
+    showRequireMark: settings.showRequireMark,
+    showFeedback: settings.showFeedback,
+    showSubmitBtn: settings.showSubmitBtn,
+    showResetBtn: settings.showResetBtn,
   }
-  if (options.labelWidth != null && options.labelWidth !== '')
-    conf.labelWidth = options.labelWidth
+  for (const key of FORM_EVENT_KEYS) {
+    const expr = normalizeEventExpr(settings[key])
+    if (expr)
+      conf[key] = expr
+  }
   return {
     conf: JSON.stringify(conf),
     fields: exported.map(f => JSON.stringify(f)),
   }
 }
 
+export type UnpackedBpmForm = BpmFormSettings & {
+  fields: BuilderField[]
+}
+
+/** 从 UnpackedBpmForm 抽出表单级设置（忽略 fields） */
+export function toBpmFormSettings(unpacked: UnpackedBpmForm): BpmFormSettings {
+  const { fields: _fields, ...settings } = unpacked
+  return { ...DEFAULT_BPM_FORM_SETTINGS, ...settings }
+}
+
 /** 后端 FormVO → 设计器字段（兼容遗留 form-create 规则结构） */
 export function unpackBpmForm(
   conf: string | Record<string, any> | null | undefined,
   fields: Array<string | Record<string, any>> | null | undefined,
-): { fields: BuilderField[], formCols: number, labelWidth: number | string } {
-  const parsed = parseBpmFormConf(conf)
-  const formCols = typeof parsed.formCols === 'number' && parsed.formCols > 0 ? parsed.formCols : 2
-  const labelWidth = parsed.labelWidth ?? 100
+): UnpackedBpmForm {
+  const settings = resolveBpmFormSettings(conf)
 
   const rawList = (fields || []).map((f) => {
     if (typeof f === 'string') {
@@ -118,18 +326,17 @@ export function unpackBpmForm(
   }).filter(Boolean) as Record<string, any>[]
 
   if (!rawList.length)
-    return { fields: [], formCols, labelWidth }
+    return { fields: [], ...settings }
 
   // FormBuilder / UnifiedFieldConfig
   if (rawList.some(item => item.key || item.component)) {
     try {
-      return { fields: parseImportedFields(rawList), formCols, labelWidth }
+      return { fields: parseImportedFields(rawList), ...settings }
     }
     catch {
       return {
         fields: rawList.map(item => normalizeImportedField(item as any)),
-        formCols,
-        labelWidth,
+        ...settings,
       }
     }
   }
@@ -139,7 +346,7 @@ export function unpackBpmForm(
     const mapped = mapLegacyRule(rule)
     return normalizeImportedField(mapped as any)
   })
-  return { fields: converted, formCols, labelWidth }
+  return { fields: converted, ...settings }
 }
 
 function mapLegacyRule(rule: Record<string, any>) {
@@ -152,6 +359,17 @@ function mapLegacyRule(rule: Record<string, any>) {
     bind.fileType = ['jpg', 'jpeg', 'png', 'gif', 'webp']
     bind.limit = bind.limit ?? 1
   }
+  const wrap = rule.wrap && typeof rule.wrap === 'object' ? rule.wrap as Record<string, unknown> : null
+  const bindItem: Record<string, unknown> = {}
+  if (wrap?.labelWidth != null && wrap.labelWidth !== '')
+    bindItem.labelWidth = wrap.labelWidth
+
+  // form-create col.span 为 24 栅格；FormBuilder 用相对列数，默认 1，跨半行约等于 span>=12
+  let span = 1
+  const colSpan = rule.col?.span ?? rule.props?.span
+  if (typeof colSpan === 'number' && colSpan >= 12)
+    span = 2
+
   const mapped: Record<string, any> = {
     key: rule.field || rule.key,
     label: rule.title || rule.label || rule.field,
@@ -159,9 +377,12 @@ function mapLegacyRule(rule: Record<string, any>) {
     options: rule.options || rule.props?.options,
     form: {
       required: Boolean(rule.$required ?? rule.required),
-      span: 1,
+      span,
       notValidate: DISPLAY_ONLY_COMPONENTS.has(component),
       showFeedback: !DISPLAY_ONLY_COMPONENTS.has(component),
+      ...(rule.info ? { info: String(rule.info) } : {}),
+      ...(Object.keys(bindItem).length ? { bindItem } : {}),
+      ...(rule.value !== undefined ? { defaultValue: rule.value } : {}),
     },
     search: false,
     table: false,

@@ -41,6 +41,7 @@ import {
   NTimePicker,
   NTransfer,
   NTreeSelect,
+  NTooltip,
   NUpload,
   useThemeVars,
 } from 'naive-ui'
@@ -87,6 +88,8 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   readonly?: boolean
   labelWidth?: number | string | 'auto'
+  /** 标签后缀，如 「：」；拼到展示标签后 */
+  labelSuffix?: string
   columnGap?: string
   rowGap?: string
   compact?: boolean
@@ -97,6 +100,8 @@ const props = withDefaults(defineProps<{
   /** 字段隐藏时是否清空值（字段级 hiddenClear 优先） */
   hiddenClear?: boolean
   showRequireMark?: boolean
+  /** 字段未单独设置 showFeedback 时的默认值（对齐 form-create showMessage） */
+  showFeedback?: boolean
 }>(), {
   config: () => [],
   cols: 2,
@@ -107,10 +112,12 @@ const props = withDefaults(defineProps<{
   messages: () => ({}),
   disabled: false,
   readonly: false,
+  labelSuffix: '',
   columnGap: '1.25rem',
   rowGap: '0',
   compact: false,
   hiddenClear: false,
+  showFeedback: true,
 })
 
 /** CommonForm 是表单项渲染器，需放在 NForm 内；多个实例共享同一 formModel，一次 validate 即可 */
@@ -407,9 +414,30 @@ function pickControlBind(bind: FieldBind): Record<string, unknown> {
   return controlBind
 }
 
+function resolveDynamicFlag(
+  value: boolean | ((model: Record<string, unknown>) => boolean) | undefined,
+  fallback = false,
+): boolean {
+  if (typeof value === 'function') {
+    try {
+      return !!value(formModel.value)
+    }
+    catch {
+      return fallback
+    }
+  }
+  if (typeof value === 'boolean')
+    return value
+  return fallback
+}
+
 function resolveControlState(bind: FieldBind) {
+  const disabled = resolveDynamicFlag(
+    bind.disabled as boolean | ((model: Record<string, unknown>) => boolean) | undefined,
+    false,
+  ) || props.disabled
   return {
-    disabled: bind.disabled ?? props.disabled,
+    disabled,
     readonly: bind.readonly ?? props.readonly,
   }
 }
@@ -455,22 +483,28 @@ function setRule(item: FormConfigItem, index?: number): FormItemRule | FormItemR
   const componentName = resolveComponentName(item, index)
   const value = formModel.value[fieldKey]
 
-  const required = bind.required ?? (
+  const requiredRaw = bind.required ?? (
     Array.isArray(item.required) && index !== undefined
       ? item.required[index]
       : item.required
   )
+  const required = resolveDynamicFlag(
+    requiredRaw as boolean | ((model: Record<string, unknown>) => boolean) | undefined,
+    false,
+  )
 
   const rule: FormItemRule = {
-    required: !!required,
+    required,
     trigger: required ? ['input', 'blur'] : [],
     type: bind.fileType ?? inferFieldType(item, value, componentName),
     message: bind.message ?? requiredMessage(label),
   }
 
+  const rules: FormItemRule[] = [rule]
+
   if (bind.patternType || bind.pattern) {
     const patternKey = bind.patternType ?? 'default'
-    const pattern = bind.pattern ?? validateRegMap.value[patternKey as string]
+    const pattern = bind.pattern ?? validateRegMap.value[patternKey as keyof typeof validateRegMap.value]
     if (!pattern && import.meta.env.DEV)
       console.warn(`[CommonForm] 未找到校验规则 "${patternKey}"`)
     const isDefaultPattern = !bind.pattern && patternKey === 'default'
@@ -487,11 +521,34 @@ function setRule(item: FormConfigItem, index?: number): FormItemRule | FormItemR
     }
   }
 
+  const minLength = typeof bind.minLength === 'number' ? bind.minLength : undefined
+  const maxLength = typeof bind.maxLength === 'number' ? bind.maxLength : undefined
+  if (minLength != null || maxLength != null) {
+    rules.push({
+      trigger: ['input', 'blur', 'change'],
+      validator: (_rule, val) => {
+        if (isHidden(item, bind, index))
+          return true
+        if (!required && isEmptyValue(val))
+          return true
+        // 多选（NCheckboxGroup / NSelect multiple 等）按数组长度，其余按字符串长度
+        const isArr = Array.isArray(val)
+        const len = isArr ? val.length : (val != null ? String(val).length : 0)
+        const unit = isArr ? '项' : '个字符'
+        if (minLength != null && len < minLength)
+          return new Error(bind.message ?? `${label}至少 ${minLength} ${unit}`)
+        if (maxLength != null && len > maxLength)
+          return new Error(bind.message ?? `${label}最多 ${maxLength} ${unit}`)
+        return true
+      },
+    })
+  }
+
   if (bind.extendRule)
-    return [{ ...rule, ...bind.extendRule }]
+    return [{ ...rule, ...bind.extendRule }, ...rules.slice(1)]
   if (bind.extendRules)
-    return [rule, ...bind.extendRules]
-  return [rule]
+    return [...rules, ...bind.extendRules]
+  return rules
 }
 
 function initDefaultValues(items: FormConfigItem[]) {
@@ -535,17 +592,38 @@ function fieldGridStyle(item: FormConfigItem) {
   return { gridColumn: `span ${span}` }
 }
 
-function renderLabel(item: FormConfigItem, bind: FieldBind) {
+function resolveDisplayLabel(item: FormConfigItem, bind: FieldBind) {
   const text = item.label ?? item.title ?? bind.label ?? bind.title
   if (!text)
     return undefined
+  const suffix = props.labelSuffix || ''
+  return suffix ? `${text}${suffix}` : text
+}
+
+function renderLabel(item: FormConfigItem, bind: FieldBind) {
+  const text = resolveDisplayLabel(item, bind)
+  if (!text)
+    return undefined
   const { disabled } = resolveControlState(bind)
+  const info = item.info
   return () => (
-    <NEllipsis
-      class={['w-full pr-2', props.disabledHideBorder && disabled ? 'text-[#757575]' : '']}
-    >
-      {text}
-    </NEllipsis>
+    <span class={['common-form-label', props.disabledHideBorder && disabled ? 'text-[#757575]' : '']}>
+      <NEllipsis class="common-form-label__text pr-1">
+        {text}
+      </NEllipsis>
+      {info
+        ? (
+            <NTooltip>
+              {{
+                trigger: () => (
+                  <span class="common-form-label__info" title={info}>?</span>
+                ),
+                default: () => info,
+              }}
+            </NTooltip>
+          )
+        : null}
+    </span>
   )
 }
 
@@ -714,13 +792,17 @@ function renderStandardFormItem(
   },
 ) {
   const labelSlotProp = options.labelSlot ? { label: options.labelSlot } : undefined
-  const showFeedback = options.showFeedback ?? item.showFeedback ?? true
+  const showFeedback = options.showFeedback ?? item.showFeedback ?? props.showFeedback ?? true
+  const gridStyle = fieldGridStyle(item)
+  const mergedStyle = item.style
+    ? (typeof item.style === 'string' ? [gridStyle, item.style] : { ...gridStyle, ...item.style })
+    : gridStyle
   // 关闭 feedback 时无底部占位，展示组件（Alert/Html/分割线等）会与下一项贴死
   return (
     <NFormItem
       key={options.itemKey}
       class={['col-span-1', item.class, !showFeedback ? 'common-form-item--no-feedback' : '']}
-      style={fieldGridStyle(item)}
+      style={mergedStyle}
       label={options.label}
       path={options.fieldPath}
       rule={options.fieldPath ? setRule(item) : undefined}
@@ -757,7 +839,7 @@ function renderFormField(item: FormConfigItem, nested = false) {
   if (isMultiKey && !nested && !customRender) {
     return renderStandardFormItem(item, {
       itemKey,
-      label: item.label ?? item.title,
+      label: resolveDisplayLabel(item, bind),
       showFeedback: false,
       bindItem: mergedBindItem,
       labelSlot,
@@ -794,7 +876,7 @@ function renderFormField(item: FormConfigItem, nested = false) {
     return renderStandardFormItem(item, {
       itemKey,
       fieldPath,
-      label: displayOnly ? undefined : (item.label ?? item.title),
+      label: displayOnly ? undefined : resolveDisplayLabel(item, bind),
       showFeedback: displayOnly ? false : undefined,
       bindItem: mergedBindItem,
       labelSlot,
@@ -808,7 +890,7 @@ function renderFormField(item: FormConfigItem, nested = false) {
   return renderStandardFormItem(item, {
     itemKey: nested ? resolveItemKey(item, 0) : itemKey,
     fieldPath,
-    label: nested || displayOnly ? undefined : (item.label ?? item.title),
+    label: nested || displayOnly ? undefined : resolveDisplayLabel(item, bind),
     showFeedback: displayOnly ? false : undefined,
     bindItem: mergedBindItem,
     labelSlot,
@@ -929,6 +1011,33 @@ defineExpose({
   :deep(.user-select .label) {
     border: none !important;
   }
+}
+
+.common-form-label {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.common-form-label__text {
+  min-width: 0;
+}
+
+.common-form-label__info {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--n-text-color-3);
+  cursor: help;
+  border: 1px solid var(--n-border-color);
+  border-radius: 50%;
 }
 
 /* 关闭 feedback 时补齐与普通表单项相近的行间距（Alert / Html / 分割线等） */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BuilderField } from './types'
+import type { BuilderField, VisibilityRule } from './types'
 import { visibilityLogicOptions } from './constants'
 import {
   buildVisibilityExpr,
@@ -9,30 +9,43 @@ import {
   visibilityOperatorOptions,
 } from './visibilityBuilder'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   field: BuilderField
   refFieldOptions: Array<{ label: string, value: string }>
-}>()
+  /** visible | disabled | required，默认显隐 */
+  target?: 'visible' | 'disabled' | 'required'
+}>(), {
+  target: 'visible',
+})
 
 const emit = defineEmits<{
   updateExpr: [expr: string]
 }>()
 
-function ensureRule() {
-  if (!props.field._visibilityRule)
-    props.field._visibilityRule = createEmptyRule()
-  return props.field._visibilityRule
+function ruleKey(): '_visibilityRule' | '_disabledRule' | '_requiredRule' {
+  if (props.target === 'disabled')
+    return '_disabledRule'
+  if (props.target === 'required')
+    return '_requiredRule'
+  return '_visibilityRule'
+}
+
+function ensureRule(): VisibilityRule {
+  const key = ruleKey()
+  if (!props.field[key])
+    props.field[key] = createEmptyRule()
+  return props.field[key]!
 }
 
 watch(
-  () => props.field.uid,
+  () => [props.field.uid, props.target] as const,
   () => {
     ensureRule()
   },
   { immediate: true },
 )
 
-const rule = computed(() => props.field._visibilityRule!)
+const rule = computed(() => ensureRule())
 
 function syncExpr() {
   emit('updateExpr', buildVisibilityExpr(ensureRule()))
@@ -78,92 +91,40 @@ function updateCondition(index: number, patch: Partial<typeof rule.value.conditi
         class="visibility-builder__row"
       >
         <n-select
-          class="visibility-builder__field"
           :value="condition.fieldKey || null"
           :options="refFieldOptions"
           placeholder="引用字段"
           clearable
           @update:value="v => updateCondition(index, { fieldKey: v || '' })"
         />
-        <div class="visibility-builder__controls">
-          <n-select
-            class="visibility-builder__operator"
-            :value="condition.operator"
-            :options="[...visibilityOperatorOptions]"
-            @update:value="v => updateCondition(index, { operator: v as typeof condition.operator })"
-          />
-          <n-input
-            v-if="needsConditionValue(condition.operator)"
-            class="visibility-builder__value"
-            :value="condition.value ?? ''"
-            placeholder="比较值"
-            @update:value="v => updateCondition(index, { value: v })"
-          />
-          <n-button
-            quaternary
-            circle
-            size="tiny"
-            class="visibility-builder__remove"
-            :disabled="rule.conditions.length <= 1"
-            @click="removeCondition(index)"
-          >
-            ×
-          </n-button>
-        </div>
+        <n-select
+          :value="condition.operator"
+          :options="[...visibilityOperatorOptions]"
+          @update:value="v => updateCondition(index, { operator: v })"
+        />
+        <n-input
+          v-if="needsConditionValue(condition.operator)"
+          :value="condition.value || ''"
+          placeholder="比较值"
+          @update:value="v => updateCondition(index, { value: v })"
+        />
+        <n-button size="tiny" quaternary type="error" @click="removeCondition(index)">
+          删
+        </n-button>
       </div>
       <n-button size="tiny" dashed block @click="addCondition">
         添加条件
       </n-button>
     </n-space>
   </n-form-item>
-  <n-alert type="info" :bordered="false" style="margin-bottom: 12px">
-    可视化条件会自动生成表达式；也可在下方直接编辑表达式
-  </n-alert>
 </template>
 
 <style scoped>
 .visibility-builder__row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--n-border-color);
-  border-radius: var(--n-border-radius);
-  background: var(--n-color-modal);
-  box-sizing: border-box;
-}
-
-.visibility-builder__field {
-  width: 100%;
-  min-width: 0;
-}
-
-.visibility-builder__controls {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 1fr) auto;
   gap: 6px;
   align-items: center;
   width: 100%;
-  min-width: 0;
-}
-
-.visibility-builder__controls:not(:has(.visibility-builder__value)) {
-  grid-template-columns: 88px auto;
-}
-
-.visibility-builder__operator,
-.visibility-builder__value {
-  min-width: 0;
-}
-
-.visibility-builder__remove {
-  flex-shrink: 0;
-}
-
-.visibility-builder__field :deep(.n-base-selection-label) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 </style>

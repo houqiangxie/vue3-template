@@ -1,6 +1,10 @@
 import type { Ref } from 'vue'
 import { local } from 'ux-web-storage'
 import type { UnifiedFieldConfig } from '@/components/common/table/fieldSchema'
+import {
+  DEFAULT_BPM_FORM_SETTINGS,
+  type BpmFormSettings,
+} from './bpmForm'
 import type { BuilderField, FormBuilderDraft, FormBuilderSaveStatus } from './types'
 import {
   AUTO_SAVE_PREF_KEY,
@@ -13,8 +17,8 @@ import { cloneBuilderFields, normalizeImportedField, rehydrateBuilderField } fro
 
 interface HistoryEntry {
   fields: BuilderField[]
-  formCols: number
-  /** 与 fields + formCols 对应的指纹，用于去重 */
+  formSettings: BpmFormSettings
+  /** 与 fields + formSettings 对应的指纹，用于去重 */
   fingerprint: string
 }
 
@@ -36,8 +40,18 @@ function writeAutoSavePref(enabled: boolean) {
   }
 }
 
-function fingerprintOf(fieldsJson: string, formCols: number): string {
-  return `${formCols}\0${fieldsJson}`
+function fingerprintOf(fieldsJson: string, settings: BpmFormSettings): string {
+  return `${JSON.stringify(settings)}\0${fieldsJson}`
+}
+
+function normalizeDraftSettings(draft: FormBuilderDraft): BpmFormSettings {
+  return {
+    ...DEFAULT_BPM_FORM_SETTINGS,
+    ...(draft.formSettings || {}),
+    formCols: draft.formSettings?.formCols && draft.formSettings.formCols > 0
+      ? draft.formSettings.formCols
+      : (draft.formCols > 0 ? draft.formCols : DEFAULT_BPM_FORM_SETTINGS.formCols),
+  }
 }
 
 function isDraftV1(draft: FormBuilderDraft): draft is FormBuilderDraft & { version: 1, fields: BuilderField[] } {
@@ -51,7 +65,7 @@ export interface FormBuilderPersistenceOptions {
 
 export function useFormBuilderPersistence(
   fields: Ref<BuilderField[]>,
-  formCols: Ref<number>,
+  formSettings: Ref<BpmFormSettings>,
   selectedUid: Ref<string>,
   options?: FormBuilderPersistenceOptions,
 ) {
@@ -70,11 +84,11 @@ export function useFormBuilderPersistence(
   function createSnapshot(): HistoryEntry {
     const fieldsJson = JSON.stringify(fields.value)
     const cloned = (JSON.parse(fieldsJson) as BuilderField[]).map(rehydrateBuilderField)
-    const cols = formCols.value
+    const settings = { ...formSettings.value }
     return {
       fields: cloned,
-      formCols: cols,
-      fingerprint: fingerprintOf(fieldsJson, cols),
+      formSettings: settings,
+      fingerprint: fingerprintOf(fieldsJson, settings),
     }
   }
 
@@ -100,7 +114,7 @@ export function useFormBuilderPersistence(
       return
     skipHistory = true
     fields.value = cloneBuilderFields(snap.fields)
-    formCols.value = snap.formCols
+    formSettings.value = { ...snap.formSettings }
     if (!fields.value.some(f => f.uid === selectedUid.value))
       selectedUid.value = fields.value[0]?.uid || ''
     historyIndex.value = index
@@ -133,7 +147,8 @@ export function useFormBuilderPersistence(
     const draft: FormBuilderDraft = {
       version: DRAFT_VERSION,
       fields: entry.fields,
-      formCols: entry.formCols,
+      formCols: entry.formSettings.formCols,
+      formSettings: entry.formSettings,
       selectedUid: selectedUid.value,
     }
     try {
@@ -205,7 +220,7 @@ export function useFormBuilderPersistence(
       else {
         fields.value = (draft.fields as UnifiedFieldConfig[]).map(item => normalizeImportedField(item))
       }
-      formCols.value = draft.formCols ?? 2
+      formSettings.value = normalizeDraftSettings(draft)
       selectedUid.value = draft.selectedUid && fields.value.some(f => f.uid === draft.selectedUid)
         ? draft.selectedUid
         : fields.value[0]?.uid || ''
@@ -230,9 +245,9 @@ export function useFormBuilderPersistence(
     schedulePersist()
   }, { deep: true })
 
-  watch(formCols, () => {
+  watch(formSettings, () => {
     schedulePersist()
-  })
+  }, { deep: true })
 
   watch(selectedUid, () => {
     if (skipHistory)

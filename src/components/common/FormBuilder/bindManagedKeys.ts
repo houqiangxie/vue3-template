@@ -14,15 +14,17 @@ export const COMMON_MANAGED_BIND_KEYS = new Set([
   'patternType',
   'fileType',
   'message',
+  'minLength',
+  'maxLength',
 ])
 
 /** 各组件在 ComponentBindExtras 中已管理的 bind 键 */
 export const COMPONENT_MANAGED_BIND_KEYS: Record<string, readonly string[]> = {
   NInput: ['maxlength', 'showCount', 'clearable'],
-  NInputNumber: ['min', 'max', 'step', 'precision', 'showButton'],
+  NInputNumber: ['min', 'max', 'step', 'precision', 'showButton', 'clearable'],
   NSelect: ['filterable', 'clearable', 'tag'],
-  NDatePicker: ['type', 'format', 'valueFormat', 'dateValueSuffix'],
-  NTimePicker: ['format', 'valueFormat', 'dateValueSuffix'],
+  NDatePicker: ['type', 'format', 'valueFormat', 'dateValueSuffix', 'startPlaceholder', 'endPlaceholder', 'separator', 'clearable'],
+  NTimePicker: ['format', 'valueFormat', 'dateValueSuffix', 'clearable'],
   NSlider: ['min', 'max', 'step', 'range'],
   NRate: ['count', 'allowHalf'],
   NSwitch: ['checkedValue', 'uncheckedValue'],
@@ -39,11 +41,12 @@ export const COMPONENT_MANAGED_BIND_KEYS: Record<string, readonly string[]> = {
   IconSelect: ['clearable'],
   UserSelect: ['multiple', 'placeholder'],
   CronInput: ['placeholder'],
-  NColorPicker: ['modes', 'showAlpha'],
+  NColorPicker: ['modes', 'showAlpha', 'clearable'],
   SqlSearch: ['maxDepth', 'showSqlPreview', 'showCopySql', 'validationMode', 'paramsKey', 'sqlKey', 'fields'],
-  NCascader: ['filterable', 'clearable'],
-  NTreeSelect: ['filterable', 'clearable'],
-  DeptSelect: ['filterable', 'clearable', 'onlyEnabled'],
+  NCascader: ['filterable', 'clearable', 'checkStrategy', 'showPath', 'separator'],
+  NTreeSelect: ['filterable', 'clearable', 'checkStrategy'],
+  NCheckboxGroup: ['min', 'max'],
+  DeptSelect: ['filterable', 'clearable', 'onlyEnabled', 'multiple', 'placeholder'],
   FormDivider: ['title', 'dashed', 'titlePlacement'],
   FormAlert: ['title', 'content', 'type', 'bordered', 'closable'],
   FormHtml: ['html', 'content'],
@@ -69,6 +72,9 @@ export const FORM_MANAGED_KEYS = new Set([
   'notValidate',
   'showFeedback',
   'hiddenClear',
+  'info',
+  'class',
+  'style',
 ])
 
 /** 场景 Tab 搜索区已管理的 search 键 */

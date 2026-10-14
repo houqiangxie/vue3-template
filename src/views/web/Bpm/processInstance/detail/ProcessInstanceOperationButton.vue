@@ -147,8 +147,10 @@ const props = defineProps<{
   processInstanceId: string
   processInstanceStatus?: number
   allowCancel?: boolean
-  /** 校验主表单并返回全部值 */
+  /** 仅校验主表单（打开审批弹窗预检，不触发 onSubmit） */
   validateForm?: () => Promise<Record<string, unknown>>
+  /** 校验主表单并触发 onSubmit（确认通过时调用） */
+  submitForm?: () => Promise<Record<string, unknown>>
   /** 仅返回可编辑字段变量 */
   getWritableVariables?: () => Record<string, unknown>
 }>()
@@ -364,7 +366,8 @@ async function openAction(id: number) {
   nextAssignees.value = {}
   reasonTitle.value = enabledButtons.value.find((b: any) => b.id === id)?.displayName || '操作'
 
-  if (id === OperationButtonType.APPROVE || id === OperationButtonType.REJECT) {
+  // 仅通过前预检字段；拒绝不强制校验主表单，也不触发 onSubmit
+  if (id === OperationButtonType.APPROVE) {
     try {
       if (props.validateForm)
         await props.validateForm()
@@ -458,7 +461,9 @@ async function submitReason() {
     const userIds = resolveUserIds()
     switch (currentAction.value) {
       case OperationButtonType.APPROVE: {
-        if (props.validateForm)
+        if (props.submitForm)
+          await props.submitForm()
+        else if (props.validateForm)
           await props.validateForm()
         const variables = getMergedVariables()
         await approveTask({

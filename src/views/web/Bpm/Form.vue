@@ -287,7 +287,19 @@ function goDesign(id: number) {
 function handleAdd() {
   openCreate({
     status: 0,
-    conf: JSON.stringify({ engine: 'formBuilder', version: 1, formCols: 2 }),
+    conf: JSON.stringify({
+      engine: 'formBuilder',
+      version: 1,
+      formCols: 2,
+      labelWidth: 100,
+      labelPlacement: 'left',
+      size: 'medium',
+      labelSuffix: '',
+      showRequireMark: true,
+      showFeedback: true,
+      showSubmitBtn: false,
+      showResetBtn: false,
+    }),
     fields: [],
   })
 }
@@ -304,7 +316,19 @@ async function handleCopy(row: FormVO) {
       status: detail.status ?? 0,
       remark: detail.remark || '',
       conf: detail.conf
-        || JSON.stringify({ engine: 'formBuilder', version: 1, formCols: 2 }),
+        || JSON.stringify({
+          engine: 'formBuilder',
+          version: 1,
+          formCols: 2,
+          labelWidth: 100,
+          labelPlacement: 'left',
+          size: 'medium',
+          labelSuffix: '',
+          showRequireMark: true,
+          showFeedback: true,
+          showSubmitBtn: false,
+          showResetBtn: false,
+        }),
       fields: Array.isArray(detail.fields) ? [...detail.fields] : [],
     })
   }
@@ -326,7 +350,19 @@ async function handleSubmit() {
     const body = {
       ...formData.value,
       conf: formData.value.conf
-        || JSON.stringify({ engine: 'formBuilder', version: 1, formCols: 2 }),
+        || JSON.stringify({
+          engine: 'formBuilder',
+          version: 1,
+          formCols: 2,
+          labelWidth: 100,
+          labelPlacement: 'left',
+          size: 'medium',
+          labelSuffix: '',
+          showRequireMark: true,
+          showFeedback: true,
+          showSubmitBtn: false,
+          showResetBtn: false,
+        }),
       fields: Array.isArray(formData.value.fields) ? formData.value.fields : [],
       status: formData.value.status ?? 0,
     }

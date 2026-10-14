@@ -80,14 +80,26 @@
         <span class="text-15px font-bold">表单预览</span>
       </div>
 
-      <CommonForm
+      <n-form
         v-if="builderPreviewFields.length"
-        v-model:form-model="previewModel"
-        :fields="builderPreviewFields"
-        :cols="previewFormCols"
-        :label-width="previewLabelWidth"
-        row-gap="12px"
-      />
+        :model="previewModel"
+        :label-placement="previewSettings.labelPlacement"
+        :label-width="previewSettings.labelWidth"
+        :size="previewSettings.size"
+        :show-require-mark="previewSettings.showRequireMark"
+      >
+        <CommonForm
+          v-model:form-model="previewModel"
+          :fields="builderPreviewFields"
+          :cols="previewSettings.formCols"
+          :label-width="previewSettings.labelWidth"
+          :label-suffix="previewSettings.labelSuffix"
+          :size="previewSettings.size"
+          :show-require-mark="previewSettings.showRequireMark"
+          :show-feedback="previewSettings.showFeedback"
+          row-gap="12px"
+        />
+      </n-form>
       <n-space v-else-if="previewFields.length" vertical>
         <n-tag v-for="(f, idx) in previewFields" :key="idx" type="info" :bordered="false">
           {{ f.title || f.field || `字段 ${idx + 1}` }}
@@ -105,12 +117,15 @@ import { useRouter } from 'vue-router'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import * as FormApi from '@/api/bpm/form'
 import {
+  DEFAULT_BPM_FORM_SETTINGS,
   isFormBuilderConf,
   listBpmFormFieldMeta,
   parseFormFields,
   resolveFieldDictOptions,
+  toBpmFormSettings,
   unpackBpmForm,
   type BpmFormFieldMeta,
+  type BpmFormSettings,
 } from '@/components/common/FormBuilder/bpmForm'
 import { getRuntimeField } from '@/components/common/FormBuilder/compile'
 import { fetchDictOptions } from '@/hooks/useDict'
@@ -138,8 +153,7 @@ const formOptions = computed(() =>
 const modelData = defineModel<any>()
 
 const previewModel = ref<Record<string, unknown>>({})
-const previewFormCols = ref(2)
-const previewLabelWidth = ref<number | string>(100)
+const previewSettings = ref<BpmFormSettings>({ ...DEFAULT_BPM_FORM_SETTINGS })
 const builderPreviewFields = ref<any[]>([])
 const previewFields = ref<Array<Record<string, any>>>([])
 
@@ -147,6 +161,7 @@ async function loadFormPreview(formId: number | string) {
   builderPreviewFields.value = []
   previewFields.value = []
   previewModel.value = {}
+  previewSettings.value = { ...DEFAULT_BPM_FORM_SETTINGS }
   if (!formId)
     return
   const data = await FormApi.getForm(Number(formId)) as FormApi.FormVO
@@ -160,8 +175,7 @@ async function loadFormPreview(formId: number | string) {
     }
   })) {
     const unpacked = unpackBpmForm(data.conf, data.fields)
-    previewFormCols.value = unpacked.formCols
-    previewLabelWidth.value = unpacked.labelWidth
+    previewSettings.value = toBpmFormSettings(unpacked)
     const runtime = unpacked.fields
       .map(f => getRuntimeField(f))
       .filter(f => f.form !== false)

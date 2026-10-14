@@ -24,29 +24,6 @@
 
         <div class="form-builder__toolbar-divider" />
 
-        <div class="form-builder__toolbar-meta">
-          <span class="form-builder__toolbar-label">列数</span>
-          <n-input-number
-            v-model:value="formCols"
-            :min="1"
-            :max="4"
-            size="small"
-            class="form-builder__cols-input"
-          />
-        </div>
-
-        <div class="form-builder__toolbar-meta">
-          <span class="form-builder__toolbar-label">标签宽</span>
-          <n-input-number
-            v-model:value="labelWidth"
-            :min="60"
-            :max="240"
-            :step="10"
-            size="small"
-            class="form-builder__cols-input"
-          />
-        </div>
-
         <template v-if="!bpmMode">
           <div class="form-builder__toolbar-meta">
             <span class="form-builder__toolbar-label">自动保存</span>
@@ -140,6 +117,7 @@
             @dragleave.prevent="onDropzoneDragLeave"
             @dragover.prevent="onDropzoneDragOver"
             @drop.prevent="onCanvasDrop"
+            @click.self="clearFieldSelection"
           >
             <n-empty
               v-if="!fields.length && !paletteDragging"
@@ -274,13 +252,30 @@
 
       <section class="form-builder__panel form-builder__props">
         <div class="form-builder__panel-head">
-          <span>字段属性</span>
-          <span v-if="selectedField" class="form-builder__panel-hint">
-            {{ selectedField.label || resolveFieldKey(selectedField) }}
-          </span>
+          <span>{{ selectedField ? '组件配置' : '表单配置' }}</span>
+          <div class="form-builder__panel-head-right">
+            <span v-if="selectedField" class="form-builder__panel-hint">
+              {{ selectedField.label || resolveFieldKey(selectedField) }}
+            </span>
+            <n-button
+              v-if="selectedField"
+              size="tiny"
+              quaternary
+              @click="clearFieldSelection"
+            >
+              表单配置
+            </n-button>
+            <span v-else class="form-builder__panel-hint">
+              点击画布字段编辑组件
+            </span>
+          </div>
         </div>
         <div class="form-builder__panel-body">
-          <n-empty v-if="!selectedField" description="请选择画布中的字段" size="small" />
+          <FormPropsPanel
+            v-if="!selectedField"
+            :settings="formSettings"
+            @update="onFormSettingsUpdate"
+          />
           <FieldPropsPanel
             v-else
             :field="selectedField"
@@ -386,15 +381,46 @@
     >
       <n-tabs v-model:value="previewTab" type="line" animated>
         <n-tab-pane name="form" tab="表单">
-          <n-form ref="previewFormRef" :model="previewModel" label-placement="left" :label-width="labelWidth">
+          <n-form
+            ref="previewFormRef"
+            :model="previewModel"
+            :label-placement="formSettings.labelPlacement"
+            :label-width="formSettings.labelWidth"
+            :size="formSettings.size"
+            :show-require-mark="formSettings.showRequireMark"
+          >
             <CommonForm
               v-model:form-model="previewModel"
               :fields="previewFormFields"
               :cols="formCols"
-              :label-width="labelWidth"
+              :label-width="formSettings.labelWidth"
+              :label-suffix="formSettings.labelSuffix"
+              :size="formSettings.size"
+              :show-require-mark="formSettings.showRequireMark"
+              :show-feedback="formSettings.showFeedback"
               row-gap="12px"
             />
           </n-form>
+          <n-space
+            v-if="formSettings.showSubmitBtn || formSettings.showResetBtn"
+            class="form-builder__preview-actions"
+          >
+            <n-button
+              v-if="formSettings.showSubmitBtn"
+              type="primary"
+              :size="formSettings.size"
+              @click="handlePreviewSubmit"
+            >
+              提交
+            </n-button>
+            <n-button
+              v-if="formSettings.showResetBtn"
+              :size="formSettings.size"
+              @click="handlePreviewReset"
+            >
+              重置
+            </n-button>
+          </n-space>
           <n-divider />
           <n-code :code="previewModelJson" language="json" word-wrap />
         </n-tab-pane>
@@ -432,6 +458,7 @@ import type { FieldOption } from '@/components/common/table/fieldSchema'
 import { extractFormDefaults, extractSearchDefaults } from '@/utils/schema'
 import { fetchDictOptions } from '@/hooks/useDict'
 import FieldPropsPanel from '@/components/common/FormBuilder/FieldPropsPanel.vue'
+import FormPropsPanel from '@/components/common/FormBuilder/FormPropsPanel.vue'
 import { getRuntimeField, invalidateRuntimeCache } from '@/components/common/FormBuilder/compile'
 import {
   IMPORT_EXAMPLE,
@@ -472,7 +499,21 @@ import {
 import { getBodyCssZoom } from '@/utils/bodyZoom'
 import { useRoute, useRouter } from 'vue-router'
 import * as FormApi from '@/api/bpm/form'
-import { packBpmForm, unpackBpmForm } from '@/components/common/FormBuilder/bpmForm'
+import {
+  DEFAULT_BPM_FORM_SETTINGS,
+  packBpmForm,
+  toBpmFormSettings,
+  unpackBpmForm,
+  type BpmFormSettings,
+} from '@/components/common/FormBuilder/bpmForm'
+import {
+  cloneFormModel,
+  compileFormEvents,
+  createFormEventApi,
+  emitFormFieldChanges,
+  type CompiledFormEvents,
+  type FormEventApi,
+} from '@/components/common/FormBuilder/formEvents'
 import { resolveBpmRouteName } from '@/views/web/Bpm/routeNames'
 
 const GRID_GAP = 10
@@ -496,17 +537,30 @@ const bpmMode = computed(() => bpmFormId.value != null)
 const bpmSaving = ref(false)
 const bpmFormMeta = ref<Partial<FormApi.FormVO>>({})
 
-const formCols = ref(2)
-const labelWidth = ref(100)
+const formSettings = ref<BpmFormSettings>({ ...DEFAULT_BPM_FORM_SETTINGS })
+const formCols = computed({
+  get: () => formSettings.value.formCols,
+  set: (v: number) => {
+    formSettings.value = { ...formSettings.value, formCols: v || 1 }
+  },
+})
 const fields = ref<BuilderField[]>([])
 const selectedUid = ref('')
 const bpmAutoSave = ref(false)
 const { autoSave, saveStatus, canUndo, canRedo, undo, redo } = useFormBuilderPersistence(
   fields,
-  formCols,
+  formSettings,
   selectedUid,
   { autoSave: bpmMode.value ? bpmAutoSave : undefined },
 )
+
+function onFormSettingsUpdate(patch: Partial<BpmFormSettings>) {
+  formSettings.value = { ...formSettings.value, ...patch }
+}
+
+function clearFieldSelection() {
+  selectedUid.value = ''
+}
 
 const saveStatusText = computed(() => {
   if (saveStatus.value === 'pending')
@@ -901,12 +955,94 @@ async function loadFieldDictOptions() {
   }))
 }
 
+let previewEvents: CompiledFormEvents = {}
+let previewApi: FormEventApi | null = null
+let previewModelSnapshot: Record<string, unknown> = {}
+let previewChangeReady = false
+
+function rebuildPreviewEventApi() {
+  previewEvents = compileFormEvents(formSettings.value)
+  previewApi = createFormEventApi({
+    getModel: () => previewModel.value,
+    setModel: (next) => {
+      previewModel.value = next
+    },
+    validate: async () => previewFormRef.value?.validate(),
+    reset: () => {
+      previewModel.value = extractFormDefaults(previewFormFields.value)
+    },
+  })
+}
+
 async function handlePreview() {
   await loadFieldDictOptions()
   previewModel.value = extractFormDefaults(previewFormFields.value)
   previewSearchModel.value = extractSearchDefaults(previewSearchFields.value)
   previewTab.value = 'form'
   previewVisible.value = true
+  rebuildPreviewEventApi()
+  previewModelSnapshot = cloneFormModel(previewModel.value)
+  previewChangeReady = false
+  try {
+    await previewEvents.onCreated?.(previewApi!)
+  }
+  catch (e) {
+    console.warn('[FormBuilder] onCreated', e)
+  }
+  await nextTick()
+  try {
+    await previewEvents.onMounted?.(previewApi!)
+  }
+  catch (e) {
+    console.warn('[FormBuilder] onMounted', e)
+  }
+  // lifecycle 可能改过 model，同步 snapshot 避免首次编辑误触发 onChange
+  previewModelSnapshot = cloneFormModel(previewModel.value)
+  previewChangeReady = true
+}
+
+// 预览打开时改表单事件表达式，立即重新编译
+watch(formSettings, () => {
+  if (previewVisible.value)
+    rebuildPreviewEventApi()
+}, { deep: true })
+
+watch(previewModel, (next) => {
+  if (!previewVisible.value || !previewChangeReady || !previewEvents.onChange)
+    return
+  emitFormFieldChanges(previewModelSnapshot, next, previewEvents.onChange)
+  previewModelSnapshot = cloneFormModel(next)
+}, { deep: true })
+
+async function handlePreviewSubmit() {
+  try {
+    await previewFormRef.value?.validate()
+  }
+  catch {
+    message.warning('请先修正校验错误')
+    return
+  }
+  try {
+    if (previewEvents.onSubmit && previewApi)
+      await previewEvents.onSubmit(previewModel.value, previewApi)
+    message.success('校验通过（设计器预览，未提交后端）')
+  }
+  catch (e: any) {
+    message.error(e?.message || 'onSubmit 执行失败')
+  }
+}
+
+async function handlePreviewReset() {
+  previewModel.value = extractFormDefaults(previewFormFields.value)
+  if (previewEvents.onReset && previewApi) {
+    try {
+      await previewEvents.onReset(previewApi)
+    }
+    catch (e: any) {
+      message.error(e?.message || 'onReset 执行失败')
+    }
+  }
+  previewModelSnapshot = cloneFormModel(previewModel.value)
 }
 
 function fillImportExample() {
@@ -1121,8 +1257,7 @@ async function loadBpmForm(id: number) {
     const unpacked = unpackBpmForm(data.conf, data.fields)
     invalidateRuntimeCache()
     fields.value = unpacked.fields
-    formCols.value = unpacked.formCols
-    labelWidth.value = typeof unpacked.labelWidth === 'number' ? unpacked.labelWidth : 100
+    formSettings.value = toBpmFormSettings(unpacked)
     selectedUid.value = unpacked.fields[0]?.uid || ''
     document.title = `设计表单 · ${data.name || id}`
   }
@@ -1140,10 +1275,7 @@ async function handleBpmSave() {
   }
   bpmSaving.value = true
   try {
-    const packed = packBpmForm(fields.value, {
-      formCols: formCols.value,
-      labelWidth: labelWidth.value,
-    })
+    const packed = packBpmForm(fields.value, formSettings.value)
     await FormApi.updateForm({
       id: bpmFormId.value,
       name: bpmFormMeta.value.name || '',
@@ -1249,8 +1381,8 @@ function handleBpmBack() {
   white-space: nowrap;
 }
 
-.form-builder__cols-input {
-  width: 72px;
+.form-builder__preview-actions {
+  margin-top: 12px;
 }
 
 .form-builder__duplicate-alert {
@@ -1306,10 +1438,20 @@ function handleBpmBack() {
   color: #111827;
 }
 
+.form-builder__panel-head-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .form-builder__panel-hint {
   font-size: 12px;
   font-weight: 400;
   color: var(--fb-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .form-builder__panel-body {

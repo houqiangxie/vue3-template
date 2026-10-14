@@ -44,6 +44,34 @@ const { message } = useConfirm()
 
 const visibilityRefField = ref<string | null>(null)
 const visibilityBuilderMode = ref(true)
+const disabledBuilderMode = ref(true)
+const requiredBuilderMode = ref(true)
+const disabledLinkageEnabled = computed({
+  get: () => props.field._disabledExpr != null,
+  set: (enabled: boolean) => {
+    if (enabled) {
+      props.field._disabledExpr = props.field._disabledExpr || ''
+      if (!props.field._disabledRule)
+        props.field._disabledRule = createEmptyRule()
+      return
+    }
+    props.field._disabledExpr = undefined
+    delete props.field._disabledRule
+  },
+})
+const requiredLinkageEnabled = computed({
+  get: () => props.field._requiredExpr != null,
+  set: (enabled: boolean) => {
+    if (enabled) {
+      props.field._requiredExpr = props.field._requiredExpr || ''
+      if (!props.field._requiredRule)
+        props.field._requiredRule = createEmptyRule()
+      return
+    }
+    props.field._requiredExpr = undefined
+    delete props.field._requiredRule
+  },
+})
 const treeEditorMode = ref(true)
 const dictLoading = ref(false)
 const activeTab = ref('field')
@@ -164,13 +192,37 @@ function ensureFormConfig(field: BuilderField): FormFieldConfig {
   return field.form
 }
 
-function setFormProp(key: 'required' | 'span' | 'colStart' | 'defaultValue' | 'notValidate' | 'showFeedback' | 'hiddenClear', value: unknown) {
+function setFormProp(
+  key: 'required' | 'span' | 'colStart' | 'defaultValue' | 'notValidate' | 'showFeedback' | 'hiddenClear' | 'info' | 'class' | 'style',
+  value: unknown,
+) {
   const form = ensureFormConfig(props.field)
   if (value == null || value === '')
     delete (form as Record<string, unknown>)[key]
   else
     (form as Record<string, unknown>)[key] = value
 }
+
+function setFormBindItem(key: string, value: unknown) {
+  const form = ensureFormConfig(props.field)
+  const current = (Array.isArray(form.bindItem) ? form.bindItem[0] : form.bindItem) || {}
+  const next = { ...current } as Record<string, unknown>
+  if (value == null || value === '')
+    delete next[key]
+  else
+    next[key] = value
+  if (Object.keys(next).length)
+    form.bindItem = next
+  else
+    delete form.bindItem
+}
+
+const fieldLabelWidth = computed(() => {
+  const bindItem = formConfig.value?.bindItem
+  const item = Array.isArray(bindItem) ? bindItem[0] : bindItem
+  const w = item?.labelWidth
+  return typeof w === 'number' ? w : undefined
+})
 
 function ensureSearchConfig(field: BuilderField): SearchFieldConfig {
   if (field.search === false || field.search == null)
@@ -353,6 +405,24 @@ function ensureVisibilityRule() {
   syncVisibilityRuleFromExpr(props.field, visibilityExpr.value)
   if (!props.field._visibilityRule)
     props.field._visibilityRule = createEmptyRule()
+}
+
+function updateDisabledExpr(expr: string) {
+  props.field._disabledExpr = expr
+  syncVisibilityRuleFromExpr(props.field, expr, '_disabledRule')
+}
+
+function onDisabledBuilderExpr(expr: string) {
+  props.field._disabledExpr = expr
+}
+
+function updateRequiredExpr(expr: string) {
+  props.field._requiredExpr = expr
+  syncVisibilityRuleFromExpr(props.field, expr, '_requiredRule')
+}
+
+function onRequiredBuilderExpr(expr: string) {
+  props.field._requiredExpr = expr
 }
 
 function setTableTagType(value: string | null) {
@@ -685,6 +755,14 @@ watch(() => props.field.uid, () => {
                   </n-form-item>
                 </n-gi>
               </n-grid>
+              <n-form-item label="提示信息">
+                <n-input
+                  :value="formConfig?.info || ''"
+                  placeholder="标签旁问号提示"
+                  clearable
+                  @update:value="v => setFormProp('info', v || undefined)"
+                />
+              </n-form-item>
             </n-form>
           </section>
 
@@ -782,6 +860,30 @@ watch(() => props.field.uid, () => {
               </n-form-item>
               <n-grid :cols="2" :x-gap="8">
                 <n-gi>
+                  <n-form-item label="最小长度">
+                    <n-input-number
+                      :value="bind?.minLength as number | undefined"
+                      :min="0"
+                      clearable
+                      style="width: 100%"
+                      @update:value="v => updateBind('minLength', v ?? undefined)"
+                    />
+                  </n-form-item>
+                </n-gi>
+                <n-gi>
+                  <n-form-item label="最大长度">
+                    <n-input-number
+                      :value="bind?.maxLength as number | undefined"
+                      :min="1"
+                      clearable
+                      style="width: 100%"
+                      @update:value="v => updateBind('maxLength', v ?? undefined)"
+                    />
+                  </n-form-item>
+                </n-gi>
+              </n-grid>
+              <n-grid :cols="2" :x-gap="8">
+                <n-gi>
                   <n-form-item label="值类型">
                     <n-select
                       :value="String(bind?.fileType || '')"
@@ -871,6 +973,34 @@ watch(() => props.field.uid, () => {
                 <div v-if="formCols > 1" class="field-props-panel__hint">
                   当前 {{ formConfig?.span ?? 1 }} / {{ formCols }} 列
                 </div>
+                <n-form-item label="标签宽度">
+                  <n-input-number
+                    :value="fieldLabelWidth"
+                    :min="60"
+                    :max="240"
+                    :step="10"
+                    clearable
+                    placeholder="跟随表单"
+                    style="width: 100%"
+                    @update:value="v => setFormBindItem('labelWidth', v ?? undefined)"
+                  />
+                </n-form-item>
+                <n-form-item label="样式类名">
+                  <n-input
+                    :value="formConfig?.class || ''"
+                    placeholder="如 field-wide"
+                    clearable
+                    @update:value="v => setFormProp('class', v || undefined)"
+                  />
+                </n-form-item>
+                <n-form-item label="内联样式">
+                  <n-input
+                    :value="typeof formConfig?.style === 'string' ? formConfig.style : ''"
+                    placeholder="如 margin-bottom: 8px"
+                    clearable
+                    @update:value="v => setFormProp('style', v || undefined)"
+                  />
+                </n-form-item>
                 <n-form-item label="默认值">
                   <n-input
                     :value="defaultValueText"
@@ -1286,6 +1416,78 @@ watch(() => props.field.uid, () => {
                   </n-alert>
                   <n-alert v-else type="info" :bordered="false" class="field-props-panel__alert">
                     使用 model.字段名 访问表单值；JSON 导出为 visibleExpr / hiddenExpr
+                  </n-alert>
+                </template>
+              </n-form>
+            </section>
+
+            <section class="field-props-section">
+              <div class="field-props-section__title">联动禁用</div>
+              <n-form label-placement="top" size="small" :show-feedback="false">
+                <n-form-item label="启用">
+                  <n-switch v-model:value="disabledLinkageEnabled" />
+                </n-form-item>
+                <template v-if="disabledLinkageEnabled">
+                  <n-form-item label="编辑方式">
+                    <n-radio-group v-model:value="disabledBuilderMode" size="small">
+                      <n-radio-button :value="true">可视化</n-radio-button>
+                      <n-radio-button :value="false">表达式</n-radio-button>
+                    </n-radio-group>
+                  </n-form-item>
+                  <VisibilityBuilder
+                    v-if="disabledBuilderMode"
+                    target="disabled"
+                    :field="field"
+                    :ref-field-options="refFieldOptions"
+                    @update-expr="onDisabledBuilderExpr"
+                  />
+                  <n-form-item label="表达式">
+                    <n-input
+                      type="textarea"
+                      :rows="2"
+                      :value="field._disabledExpr || ''"
+                      placeholder="如 model.status === '0'"
+                      @update:value="updateDisabledExpr"
+                    />
+                  </n-form-item>
+                  <n-alert type="info" :bordered="false" class="field-props-panel__alert">
+                    条件为真时禁用；导出为 disabledExpr
+                  </n-alert>
+                </template>
+              </n-form>
+            </section>
+
+            <section class="field-props-section">
+              <div class="field-props-section__title">联动必填</div>
+              <n-form label-placement="top" size="small" :show-feedback="false">
+                <n-form-item label="启用">
+                  <n-switch v-model:value="requiredLinkageEnabled" />
+                </n-form-item>
+                <template v-if="requiredLinkageEnabled">
+                  <n-form-item label="编辑方式">
+                    <n-radio-group v-model:value="requiredBuilderMode" size="small">
+                      <n-radio-button :value="true">可视化</n-radio-button>
+                      <n-radio-button :value="false">表达式</n-radio-button>
+                    </n-radio-group>
+                  </n-form-item>
+                  <VisibilityBuilder
+                    v-if="requiredBuilderMode"
+                    target="required"
+                    :field="field"
+                    :ref-field-options="refFieldOptions"
+                    @update-expr="onRequiredBuilderExpr"
+                  />
+                  <n-form-item label="表达式">
+                    <n-input
+                      type="textarea"
+                      :rows="2"
+                      :value="field._requiredExpr || ''"
+                      placeholder="如 model.type === 'other'"
+                      @update:value="updateRequiredExpr"
+                    />
+                  </n-form-item>
+                  <n-alert type="info" :bordered="false" class="field-props-panel__alert">
+                    条件为真时必填；导出为 requiredExpr（优先于静态必填开关）
                   </n-alert>
                 </template>
               </n-form>

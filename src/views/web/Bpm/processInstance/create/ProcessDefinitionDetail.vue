@@ -237,7 +237,7 @@ async function handleSubmit() {
   try {
     let variables: Record<string, unknown> = {}
     if (formRef.value)
-      variables = await formRef.value.validate()
+      variables = await formRef.value.submit()
 
     for (const task of startUserSelectTasks.value) {
       if (!startUserSelectAssignees.value[task.id]?.length) {

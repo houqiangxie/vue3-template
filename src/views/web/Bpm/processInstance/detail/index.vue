@@ -107,6 +107,7 @@
           :process-instance-status="processInstance.status"
           :allow-cancel="processDefinition.allowCancelRunningProcess !== false"
           :validate-form="validateForm"
+          :submit-form="submitForm"
           :get-writable-variables="getWritableVariables"
           @success="refresh"
         />
@@ -310,10 +311,18 @@ async function loadDetail() {
   }
 }
 
+/** 仅校验主表单（打开审批弹窗预检，不触发 onSubmit） */
 async function validateForm() {
   if (!formRef.value)
     return {}
   return await formRef.value.validate()
+}
+
+/** 校验 + onSubmit（确认通过时调用） */
+async function submitForm() {
+  if (!formRef.value)
+    return {}
+  return await formRef.value.submit()
 }
 
 function getWritableVariables() {

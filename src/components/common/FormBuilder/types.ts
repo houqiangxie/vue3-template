@@ -1,4 +1,5 @@
 import type { FormFieldConfig, NaiveComponentName, SearchFieldConfig, TableFieldConfig, UnifiedFieldConfig } from '@/components/common/table/fieldSchema'
+import type { BpmFormSettings } from './bpmForm'
 
 export type VisibilityOperator = 'eq' | 'neq' | 'truthy' | 'empty' | 'gt' | 'lt' | 'includes'
 
@@ -21,6 +22,12 @@ export interface BuilderField extends UnifiedFieldConfig {
   _hiddenExpr?: string
   /** 可视化联动条件，同步到 _visibleExpr / _hiddenExpr */
   _visibilityRule?: VisibilityRule
+  /** 禁用联动表达式，导出为 disabledExpr */
+  _disabledExpr?: string
+  _disabledRule?: VisibilityRule
+  /** 必填联动表达式，导出为 requiredExpr */
+  _requiredExpr?: string
+  _requiredRule?: VisibilityRule
   /** 字典类型，导出为 dictType */
   _dictType?: string
   /** 自定义 render 函数体，导出为 renderExpr */
@@ -50,6 +57,8 @@ export interface FormBuilderDraft {
   fields: BuilderField[] | UnifiedFieldConfig[]
   formCols: number
   selectedUid: string
+  /** 表单级设置；旧草稿可能仅有 formCols */
+  formSettings?: Partial<BpmFormSettings>
 }
 
 export type FormBuilderSaveStatus = 'idle' | 'pending' | 'saved' | 'error'

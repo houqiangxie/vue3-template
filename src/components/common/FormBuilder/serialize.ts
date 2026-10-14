@@ -11,17 +11,29 @@ import { createEmptyRule } from './visibilityBuilder'
 import { createUid, resolveFieldKey, uniqueFieldKey } from './utils'
 
 function extractExprFromForm(form: FormFieldConfig | false | undefined) {
-  if (form == null || form === false)
-    return { visibleExpr: '', hiddenExpr: '', renderExpr: '', onChangeExpr: '' }
+  if (form == null || form === false) {
+    return {
+      visibleExpr: '',
+      hiddenExpr: '',
+      disabledExpr: '',
+      requiredExpr: '',
+      renderExpr: '',
+      onChangeExpr: '',
+    }
+  }
   const formRecord = form as FormFieldConfig & {
     visibleExpr?: string
     hiddenExpr?: string
+    disabledExpr?: string
+    requiredExpr?: string
     renderExpr?: string
     onChangeExpr?: string
   }
   return {
     visibleExpr: formRecord.visibleExpr || '',
     hiddenExpr: formRecord.hiddenExpr || '',
+    disabledExpr: formRecord.disabledExpr || '',
+    requiredExpr: formRecord.requiredExpr || '',
     renderExpr: formRecord.renderExpr || '',
     onChangeExpr: formRecord.onChangeExpr || '',
   }
@@ -48,8 +60,12 @@ export function normalizeImportedField(raw: UnifiedFieldConfig): BuilderField {
   const field = JSON.parse(JSON.stringify(raw)) as BuilderField & {
     dictType?: string
     visibilityRule?: BuilderField['_visibilityRule']
+    disabledRule?: BuilderField['_disabledRule']
+    requiredRule?: BuilderField['_requiredRule']
     visibleExpr?: string
     hiddenExpr?: string
+    disabledExpr?: string
+    requiredExpr?: string
     renderExpr?: string
     onChangeExpr?: string
   }
@@ -64,6 +80,14 @@ export function normalizeImportedField(raw: UnifiedFieldConfig): BuilderField {
     field._visibilityRule = field.visibilityRule
     delete field.visibilityRule
   }
+  if (field.disabledRule) {
+    field._disabledRule = field.disabledRule
+    delete field.disabledRule
+  }
+  if (field.requiredRule) {
+    field._requiredRule = field.requiredRule
+    delete field.requiredRule
+  }
 
   // form: false 时表达式可能挂在顶层（见 toExportFields）
   if (field.visibleExpr) {
@@ -73,6 +97,14 @@ export function normalizeImportedField(raw: UnifiedFieldConfig): BuilderField {
   if (field.hiddenExpr) {
     field._hiddenExpr = field.hiddenExpr
     delete field.hiddenExpr
+  }
+  if (field.disabledExpr) {
+    field._disabledExpr = field.disabledExpr
+    delete field.disabledExpr
+  }
+  if (field.requiredExpr) {
+    field._requiredExpr = field.requiredExpr
+    delete field.requiredExpr
   }
   if (field.renderExpr) {
     field._renderExpr = field.renderExpr
@@ -85,17 +117,30 @@ export function normalizeImportedField(raw: UnifiedFieldConfig): BuilderField {
 
   const form = field.form
   if (form != null && form !== false) {
-    const { visibleExpr, hiddenExpr, renderExpr, onChangeExpr } = extractExprFromForm(form)
+    const {
+      visibleExpr,
+      hiddenExpr,
+      disabledExpr,
+      requiredExpr,
+      renderExpr,
+      onChangeExpr,
+    } = extractExprFromForm(form)
     if (visibleExpr)
       field._visibleExpr = visibleExpr
     if (hiddenExpr)
       field._hiddenExpr = hiddenExpr
+    if (disabledExpr)
+      field._disabledExpr = disabledExpr
+    if (requiredExpr)
+      field._requiredExpr = requiredExpr
     if (renderExpr)
       field._renderExpr = renderExpr
     if (onChangeExpr)
       field._onChangeExpr = onChangeExpr
     delete (form as FormFieldConfig & { visibleExpr?: string }).visibleExpr
     delete (form as FormFieldConfig & { hiddenExpr?: string }).hiddenExpr
+    delete (form as FormFieldConfig & { disabledExpr?: string }).disabledExpr
+    delete (form as FormFieldConfig & { requiredExpr?: string }).requiredExpr
     delete (form as FormFieldConfig & { renderExpr?: string }).renderExpr
     delete (form as FormFieldConfig & { onChangeExpr?: string }).onChangeExpr
   }
@@ -104,6 +149,10 @@ export function normalizeImportedField(raw: UnifiedFieldConfig): BuilderField {
 
   if (field._visibleExpr && !field._visibilityRule)
     field._visibilityRule = createEmptyRule()
+  if (field._disabledExpr && !field._disabledRule)
+    field._disabledRule = createEmptyRule()
+  if (field._requiredExpr && !field._requiredRule)
+    field._requiredRule = createEmptyRule()
 
   return field
 }
@@ -193,6 +242,10 @@ export function toExportFields(fields: BuilderField[]): UnifiedFieldConfig[] {
       _visibleExpr,
       _hiddenExpr,
       _visibilityRule,
+      _disabledExpr,
+      _disabledRule,
+      _requiredExpr,
+      _requiredRule,
       _dictType,
       _renderExpr,
       _onChangeExpr,
@@ -204,33 +257,60 @@ export function toExportFields(fields: BuilderField[]): UnifiedFieldConfig[] {
     const exported = JSON.parse(JSON.stringify(rest)) as UnifiedFieldConfig & {
       dictType?: string
       visibilityRule?: BuilderField['_visibilityRule']
+      disabledRule?: BuilderField['_disabledRule']
+      requiredRule?: BuilderField['_requiredRule']
+      visibleExpr?: string
+      hiddenExpr?: string
+      disabledExpr?: string
+      requiredExpr?: string
+      renderExpr?: string
+      onChangeExpr?: string
     }
     if (_dictType)
       exported.dictType = _dictType
     if (_visibilityRule?.conditions?.length)
       exported.visibilityRule = _visibilityRule
+    if (_disabledRule?.conditions?.length)
+      exported.disabledRule = _disabledRule
+    if (_requiredRule?.conditions?.length)
+      exported.requiredRule = _requiredRule
     // form: false 时保留禁用态；表达式改挂顶层，避免误启用表单场景，同时保证往返不丢
-    if (_visibleExpr || _hiddenExpr || _renderExpr || _onChangeExpr) {
+    if (_visibleExpr || _hiddenExpr || _disabledExpr || _requiredExpr || _renderExpr || _onChangeExpr) {
       if (exported.form === false) {
         if (_visibleExpr)
           exported.visibleExpr = _visibleExpr
         if (_hiddenExpr)
           exported.hiddenExpr = _hiddenExpr
+        if (_disabledExpr)
+          exported.disabledExpr = _disabledExpr
+        if (_requiredExpr)
+          exported.requiredExpr = _requiredExpr
         if (_renderExpr)
           exported.renderExpr = _renderExpr
         if (_onChangeExpr)
           exported.onChangeExpr = _onChangeExpr
       }
       else {
-        const form = { ...(exported.form || {}) }
+        const form = { ...(exported.form || {}) } as FormFieldConfig & {
+          visibleExpr?: string
+          hiddenExpr?: string
+          disabledExpr?: string
+          requiredExpr?: string
+          renderExpr?: string
+          onChangeExpr?: string
+        }
         if (_visibleExpr)
-          (form as FormFieldConfig & { visibleExpr?: string }).visibleExpr = _visibleExpr
+          form.visibleExpr = _visibleExpr
         if (_hiddenExpr)
-          (form as FormFieldConfig & { hiddenExpr?: string }).hiddenExpr = _hiddenExpr
+          form.hiddenExpr = _hiddenExpr
+        if (_disabledExpr)
+          form.disabledExpr = _disabledExpr
+        if (_requiredExpr)
+          form.requiredExpr = _requiredExpr
         if (_renderExpr)
-          (form as FormFieldConfig & { renderExpr?: string }).renderExpr = _renderExpr
+          form.renderExpr = _renderExpr
         if (_onChangeExpr)
-          (form as FormFieldConfig & { onChangeExpr?: string }).onChangeExpr = _onChangeExpr
+          form.onChangeExpr = _onChangeExpr
         exported.form = form
       }
     }
@@ -303,10 +383,20 @@ export function serializeField(field: BuilderField, indent = 2): string {
       formParts.push('showFeedback: false')
     if (field.form.hiddenClear)
       formParts.push('hiddenClear: true')
+    if (field.form.info)
+      formParts.push(`info: ${serializeValue(field.form.info)}`)
+    if (field.form.class)
+      formParts.push(`class: ${serializeValue(field.form.class)}`)
+    if (field.form.style)
+      formParts.push(`style: ${serializeValue(field.form.style)}`)
     if (field._visibleExpr)
       formParts.push(`visibleExpr: '${field._visibleExpr.replace(/'/g, '\\\'')}'`)
     else if (field._hiddenExpr)
       formParts.push(`hiddenExpr: '${field._hiddenExpr.replace(/'/g, '\\\'')}'`)
+    if (field._disabledExpr)
+      formParts.push(`disabledExpr: '${field._disabledExpr.replace(/'/g, '\\\'')}'`)
+    if (field._requiredExpr)
+      formParts.push(`requiredExpr: '${field._requiredExpr.replace(/'/g, '\\\'')}'`)
     if (field._renderExpr)
       formParts.push(`renderExpr: '${field._renderExpr.replace(/'/g, '\\\'')}'`)
     if (field._onChangeExpr)
@@ -321,6 +411,10 @@ export function serializeField(field: BuilderField, indent = 2): string {
       lines.push(`${pad}  visibleExpr: '${field._visibleExpr.replace(/'/g, '\\\'')}',`)
     else if (field._hiddenExpr)
       lines.push(`${pad}  hiddenExpr: '${field._hiddenExpr.replace(/'/g, '\\\'')}',`)
+    if (field._disabledExpr)
+      lines.push(`${pad}  disabledExpr: '${field._disabledExpr.replace(/'/g, '\\\'')}',`)
+    if (field._requiredExpr)
+      lines.push(`${pad}  requiredExpr: '${field._requiredExpr.replace(/'/g, '\\\'')}',`)
     if (field._renderExpr)
       lines.push(`${pad}  renderExpr: '${field._renderExpr.replace(/'/g, '\\\'')}',`)
     if (field._onChangeExpr)

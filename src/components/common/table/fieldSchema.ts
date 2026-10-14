@@ -109,9 +109,13 @@ export interface FieldBind {
   options?: FieldOption[]
   col?: number
   multiple?: boolean
-  disabled?: boolean
+  disabled?: boolean | ((model: Record<string, unknown>) => boolean)
   readonly?: boolean
   button?: boolean
+  /** 字符串最小长度校验 */
+  minLength?: number
+  /** 字符串最大长度校验 */
+  maxLength?: number
   /** NDatePicker 时间戳字段后缀，默认 `value` → `{key}value` */
   dateValueSuffix?: string
   [key: string]: unknown
@@ -121,13 +125,15 @@ export interface FieldBind {
 export interface FormFieldDesignExprs {
   visibleExpr?: string
   hiddenExpr?: string
+  disabledExpr?: string
+  requiredExpr?: string
   renderExpr?: string
   onChangeExpr?: string
 }
 
 /** 表单场景扩展（CommonForm） */
 export interface FormFieldConfig extends FormFieldDesignExprs {
-  required?: boolean | boolean[]
+  required?: boolean | boolean[] | ((model: Record<string, unknown>) => boolean)
   hidden?: HiddenValue
   visible?: HiddenValue
   hiddenClear?: boolean
@@ -137,8 +143,12 @@ export interface FormFieldConfig extends FormFieldDesignExprs {
   /** 栅格起始列（1 起），与 span 配合定位 */
   colStart?: number
   class?: string
+  /** 表单项 style（CSS 字符串或对象） */
+  style?: string | Record<string, string>
   showFeedback?: boolean
   cols?: number
+  /** 字段提示（标签旁 tooltip，对齐 form-create info） */
+  info?: string
   /** 校验失败文案；会合并进 bind.message 供 CommonForm 使用 */
   message?: string
   bind?: FieldBind | FieldBind[]
@@ -284,7 +294,10 @@ export type FormConfigItem = {
   render?: FieldRenderFn
   cols?: number
   class?: string
+  style?: string | Record<string, string>
   showFeedback?: boolean
+  /** 字段提示（标签旁 tooltip） */
+  info?: string
   /** 占几列，如 2 表示跨两列 */
   span?: number
   /** 栅格起始列（1 起） */
@@ -374,7 +387,9 @@ export function toFormConfig(fields: UnifiedFieldConfig[]): FormConfigItem[] {
         span: form.span,
         colStart: form.colStart,
         class: form.class,
+        style: form.style,
         showFeedback: form.showFeedback,
+        info: form.info,
         cols: form.cols,
         bind: mergeBind(field.bind, mergeBind(messageBind, form.bind)),
         bindItem: form.bindItem,
@@ -794,6 +809,19 @@ function hydrateFieldDesignExprs(field: UnifiedFieldConfig): UnifiedFieldConfig 
     if (form.hiddenExpr && typeof form.hidden !== 'function') {
       form.hidden = compileDesignExpr(form.hiddenExpr, false)
       delete form.hiddenExpr
+    }
+    if (form.disabledExpr?.trim()) {
+      const bind = (field.bind && typeof field.bind === 'object' && !Array.isArray(field.bind))
+        ? { ...field.bind } as FieldBind
+        : {} as FieldBind
+      if (typeof bind.disabled !== 'function')
+        bind.disabled = compileDesignExpr(form.disabledExpr, false)
+      field.bind = bind
+      delete form.disabledExpr
+    }
+    if (form.requiredExpr?.trim() && typeof form.required !== 'function') {
+      form.required = compileDesignExpr(form.requiredExpr, false)
+      delete form.requiredExpr
     }
     if (form.renderExpr?.trim() && typeof form.render !== 'function') {
       try {

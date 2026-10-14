@@ -199,6 +199,23 @@ export const componentOptions: Array<{ label: string, value: string }> = [
   { label: 'SQL 条件搜索 (SqlSearch)', value: 'SqlSearch' },
 ]
 
+export const formLabelPlacementOptions = [
+  { label: '左', value: 'left' },
+  { label: '上', value: 'top' },
+]
+
+export const formSizeOptions = [
+  { label: '小', value: 'small' },
+  { label: '中', value: 'medium' },
+  { label: '大', value: 'large' },
+]
+
+export const checkStrategyOptions = [
+  { label: '全部', value: 'all' },
+  { label: '仅父节点', value: 'parent' },
+  { label: '仅子节点', value: 'child' },
+]
+
 export const inputModeOptions = [
   { label: '单行', value: 'text' },
   { label: '多行', value: 'textarea' },

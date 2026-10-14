@@ -2,6 +2,7 @@
 import type { FieldBind } from '@/components/common/table/fieldSchema'
 import type { NaiveComponentName } from '@/components/common/table/fieldSchema'
 import {
+  checkStrategyOptions,
   datePickerTypeOptions,
   dynamicInputPresetOptions,
   timePickerFormatOptions,
@@ -32,7 +33,7 @@ const colorModeOptions = [
 </script>
 
 <template>
-  <template v-if="comp === 'NInput' && bind?.type !== 'textarea'">
+  <template v-if="comp === 'NInput'">
     <template v-if="bind?.type !== 'password'">
       <n-form-item label="最大长度">
         <n-input-number
@@ -55,7 +56,7 @@ const colorModeOptions = [
         />
       </n-form-item>
     </template>
-    <n-form-item label="密码框">
+    <n-form-item v-if="bind?.type !== 'textarea'" label="密码框">
       <n-switch
         :value="bind?.type === 'password'"
         @update:value="v => upd('type', v ? 'password' : undefined)"
@@ -98,6 +99,12 @@ const colorModeOptions = [
       <n-switch
         :value="bind?.showButton !== false"
         @update:value="v => upd('showButton', v)"
+      />
+    </n-form-item>
+    <n-form-item label="可清空">
+      <n-switch
+        :value="bind?.clearable !== false"
+        @update:value="v => upd('clearable', v)"
       />
     </n-form-item>
   </template>
@@ -152,6 +159,33 @@ const colorModeOptions = [
         @update:value="v => upd('dateValueSuffix', v || undefined)"
       />
     </n-form-item>
+    <n-form-item label="开始占位符">
+      <n-input
+        :value="String(bind?.startPlaceholder || '')"
+        placeholder="范围类型时生效"
+        @update:value="v => upd('startPlaceholder', v || undefined)"
+      />
+    </n-form-item>
+    <n-form-item label="结束占位符">
+      <n-input
+        :value="String(bind?.endPlaceholder || '')"
+        placeholder="范围类型时生效"
+        @update:value="v => upd('endPlaceholder', v || undefined)"
+      />
+    </n-form-item>
+    <n-form-item label="分隔符">
+      <n-input
+        :value="String(bind?.separator || '')"
+        placeholder="至"
+        @update:value="v => upd('separator', v || undefined)"
+      />
+    </n-form-item>
+    <n-form-item label="可清空">
+      <n-switch
+        :value="bind?.clearable !== false"
+        @update:value="v => upd('clearable', v)"
+      />
+    </n-form-item>
   </template>
 
   <template v-if="comp === 'NTimePicker'">
@@ -174,6 +208,12 @@ const colorModeOptions = [
         :value="String(bind?.dateValueSuffix ?? 'value')"
         placeholder="value"
         @update:value="v => upd('dateValueSuffix', v || undefined)"
+      />
+    </n-form-item>
+    <n-form-item label="可清空">
+      <n-switch
+        :value="bind?.clearable !== false"
+        @update:value="v => upd('clearable', v)"
       />
     </n-form-item>
   </template>
@@ -484,6 +524,12 @@ const colorModeOptions = [
         @update:value="v => upd('showAlpha', v)"
       />
     </n-form-item>
+    <n-form-item label="可清空">
+      <n-switch
+        :value="bind?.clearable !== false"
+        @update:value="v => upd('clearable', v)"
+      />
+    </n-form-item>
   </template>
 
   <template v-if="comp === 'SqlSearch'">
@@ -550,6 +596,25 @@ const colorModeOptions = [
     </n-form-item>
   </template>
 
+  <template v-if="comp === 'NCheckboxGroup'">
+    <n-form-item label="最少选中">
+      <n-input-number
+        :value="bind?.min as number | undefined"
+        :min="0"
+        clearable
+        @update:value="v => upd('min', v)"
+      />
+    </n-form-item>
+    <n-form-item label="最多选中">
+      <n-input-number
+        :value="bind?.max as number | undefined"
+        :min="1"
+        clearable
+        @update:value="v => upd('max', v)"
+      />
+    </n-form-item>
+  </template>
+
   <template v-if="comp === 'DeptSelect'">
     <n-form-item label="可筛选">
       <n-switch
@@ -569,6 +634,19 @@ const colorModeOptions = [
         @update:value="v => upd('onlyEnabled', v)"
       />
     </n-form-item>
+    <n-form-item label="多选">
+      <n-switch
+        :value="!!bind?.multiple"
+        @update:value="v => upd('multiple', v || undefined)"
+      />
+    </n-form-item>
+    <n-form-item label="占位符">
+      <n-input
+        :value="String(bind?.placeholder || '')"
+        placeholder="请选择部门"
+        @update:value="v => upd('placeholder', v || undefined)"
+      />
+    </n-form-item>
   </template>
 
   <template v-if="['NCascader', 'NTreeSelect'].includes(comp)">
@@ -582,6 +660,26 @@ const colorModeOptions = [
       <n-switch
         :value="bind?.clearable !== false"
         @update:value="v => upd('clearable', v)"
+      />
+    </n-form-item>
+    <n-form-item label="勾选策略">
+      <n-select
+        :value="String(bind?.checkStrategy || 'all')"
+        :options="checkStrategyOptions"
+        @update:value="v => upd('checkStrategy', v === 'all' ? undefined : v)"
+      />
+    </n-form-item>
+    <n-form-item v-if="comp === 'NCascader'" label="显示完整路径">
+      <n-switch
+        :value="bind?.showPath !== false"
+        @update:value="v => upd('showPath', v)"
+      />
+    </n-form-item>
+    <n-form-item v-if="comp === 'NCascader'" label="路径分隔符">
+      <n-input
+        :value="String(bind?.separator || '')"
+        placeholder="/"
+        @update:value="v => upd('separator', v || undefined)"
       />
     </n-form-item>
   </template>
@@ -647,6 +745,12 @@ const colorModeOptions = [
       <n-switch
         :value="bind?.bordered !== false"
         @update:value="v => upd('bordered', v)"
+      />
+    </n-form-item>
+    <n-form-item label="可关闭">
+      <n-switch
+        :value="!!bind?.closable"
+        @update:value="v => upd('closable', v || undefined)"
       />
     </n-form-item>
   </template>

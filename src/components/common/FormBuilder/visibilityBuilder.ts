@@ -220,15 +220,18 @@ export function tryParseVisibilityExpr(expr: string): VisibilityRule | null {
   return conditions.length ? { logic, conditions } : createEmptyRule()
 }
 
+export type LinkageRuleKey = '_visibilityRule' | '_disabledRule' | '_requiredRule'
+
 export function syncVisibilityRuleFromExpr(
-  field: { _visibilityRule?: VisibilityRule },
+  field: Partial<Record<LinkageRuleKey, VisibilityRule>>,
   expr: string,
+  key: LinkageRuleKey = '_visibilityRule',
 ) {
   const parsed = tryParseVisibilityExpr(expr)
   if (!parsed)
     return
   // 单条件表达式不含 && / ||，解析会默认成 and；保留已有 logic，避免可视化切换被冲掉
-  if (parsed.conditions.length <= 1 && field._visibilityRule?.logic)
-    parsed.logic = field._visibilityRule.logic
-  field._visibilityRule = parsed
+  if (parsed.conditions.length <= 1 && field[key]?.logic)
+    parsed.logic = field[key]!.logic
+  field[key] = parsed
 }
